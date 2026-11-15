@@ -1,0 +1,1 @@
+apply from: 'client_config.gradle'

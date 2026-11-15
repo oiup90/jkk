@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -49,6 +52,24 @@ void main() {
     );
     await store.removeItem(key: 'verifier');
     expect(await store.getItem(key: 'verifier'), null);
+  });
+  test('checked-in production config uses public client credentials', () {
+    final config =
+        jsonDecode(File('config/production.json').readAsStringSync()) as Map;
+    expect(config.keys.toSet(), {'SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'});
+    expect(
+      validClientConfiguration(
+        config['SUPABASE_URL'] as String,
+        config['SUPABASE_PUBLISHABLE_KEY'] as String,
+      ),
+      true,
+    );
+    expect(
+      (config['SUPABASE_PUBLISHABLE_KEY'] as String).startsWith(
+        'sb_publishable_',
+      ),
+      true,
+    );
   });
   test('rejects unsafe project configuration', () {
     const key = 'sb_publishable_syntheticpublickey';

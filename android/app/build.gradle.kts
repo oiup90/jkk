@@ -12,6 +12,8 @@ if (firebaseConfigFile.isFile) {
     apply(plugin = "com.google.gms.google-services")
 }
 
+apply(from = rootProject.file("validate-client-config.gradle"))
+
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
 if (keyPropertiesFile.isFile) { keyPropertiesFile.inputStream().use { keyProperties.load(it) } }
@@ -22,6 +24,14 @@ val hasSigningProperties = keyPropertiesFile.isFile && missingSigningProperties.
 // Never produce an unsigned artifact for distribution. Debug builds do not
 // require a release keystore.
 fun requireReleaseConfiguration() {
+    // The admin entrypoint connects interactively; the user entrypoint requires
+    // compile-time project values. Preserve the admin's existing setup flow.
+    val entrypoint = file(project.findProperty("target")?.toString() ?: "../../lib/main.dart")
+    if (entrypoint.canonicalFile != rootProject.file("../lib/admin_main.dart").canonicalFile) {
+        val validate = extra["validateSupabaseDartDefines"] as groovy.lang.Closure<*>
+        validate.call(project.findProperty("dart-defines")?.toString().orEmpty())
+    }
+
     if (!firebaseConfigFile.isFile) {
         throw GradleException("Firebase configuration is required for release push notifications. Register space.freelan.app in Firebase and download android/app/google-services.json; see docs/USER_FEATURES.md.")
     }
