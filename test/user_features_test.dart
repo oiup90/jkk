@@ -96,6 +96,7 @@ void main() {
         home: CoinHistoryPage(
           uid: 'user',
           historyStream: Stream.value([
+            {'amount': 100, 'reason': 'purchase', 'createdAt': '2026-01-04'},
             {'amount': 2, 'reason': 'task', 'createdAt': '2026-01-03'},
             {'amount': -1, 'reason': 'campaign', 'createdAt': '2026-01-02'},
             {'amount': 1, 'reason': 'refund', 'createdAt': '2026-01-01'},
@@ -104,6 +105,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.text('Coin purchase'), findsOneWidget);
     await tester.tap(find.text('Refunds'));
     await tester.pumpAndSettle();
     expect(find.text('Campaign refund'), findsOneWidget);

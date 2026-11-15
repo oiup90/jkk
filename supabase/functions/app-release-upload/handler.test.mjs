@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createHandler} from './handler.mjs';
 import {preventDestinationOverwrite} from './r2_destination.mjs';
+import {failureLog, runStage, StageFailure} from './diagnostics.mjs';
 
 const user = '12345678-1234-4234-8234-123456789abc';
 const id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -15,7 +16,7 @@ function fixture(overrides = {}) {
     signUpload: async (path, size) => {calls.push(['sign', path, size]); return 'https://upload.example.test';},
     copyUpload: async (...args) => {calls.push(['copy', ...args]);},
     publish: async args => {calls.push(['publish', args]);},
-    publicBase: 'https://releases.example.test', randomUUID: () => id, ...overrides,
+    publicBase: 'https://releases.example.test', randomUUID: () => id, logFailure: () => {}, ...overrides,
   });
   return {handler, calls};
 }
@@ -85,6 +86,47 @@ test('rechecks editor access before publishing after a copy', async () => {
   let checks = 0;
   const {handler, calls} = fixture({authorize: async () => ++checks === 1 ? user : null});
   assert.equal((await handler(request(metadata))).status, 403);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0][0], 'copy');
+});
+
+test('validator rejection records only its stage/status and blocks publication', async () => {
+  for (const status of [401, 422, 502]) {
+    const logs = [];
+    const {handler, calls} = fixture({
+      copyUpload: () => runStage('validator_request', () => { throw new StageFailure('validator_request', status); }),
+      logFailure: message => logs.push(JSON.parse(message)),
+    });
+    const response = await handler(request(metadata));
+    assert.equal(response.status, 503);
+    assert.deepEqual(await response.json(), {error: 'publication_unconfirmed'});
+    assert.deepEqual(calls, []);
+    assert.deepEqual(logs, [{event: 'app_release_failure', stage: 'validator_request', httpStatus: status}]);
+  }
+});
+
+test('SDK exceptions and malformed diagnostic fields cannot leak to logs or responses', async () => {
+  const secret = 'https://r2.example/staging/private.apk?X-Amz-Signature=private-secret';
+  const logs = [];
+  const {handler} = fixture({
+    copyUpload: () => runStage('staging_head', () => { throw Object.assign(new Error(secret), {$metadata: {httpStatusCode: 403}, response: secret}); }),
+    logFailure: message => logs.push(message),
+  });
+  const response = await handler(request(metadata));
+  assert.equal(response.status, 503);
+  assert.equal((await response.text()).includes(secret), false);
+  assert.deepEqual(logs, [JSON.stringify({event: 'app_release_failure', stage: 'staging_head', httpStatus: 403})]);
+  assert.deepEqual(JSON.parse(failureLog(new StageFailure(secret, secret))), {event: 'app_release_failure', stage: 'unknown', httpStatus: null});
+});
+
+test('logging failures preserve the uncertain-publication response after a failed RPC', async () => {
+  const {handler, calls} = fixture({
+    publish: () => runStage('publish_rpc', () => { throw new StageFailure('publish_rpc', 409); }),
+    logFailure: () => { throw new Error('logger unavailable'); },
+  });
+  const response = await handler(request(metadata));
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {error: 'publication_unconfirmed'});
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], 'copy');
 });
