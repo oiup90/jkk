@@ -16,6 +16,19 @@ import java.net.URL
 import java.security.MessageDigest
 
 class MainActivity : FlutterActivity() {
+    private var coinPlayer: android.media.MediaPlayer? = null
+    private fun stopCoins() {
+        coinPlayer?.release()
+        coinPlayer = null
+    }
+    override fun onPause() {
+        stopCoins()
+        super.onPause()
+    }
+    override fun onDestroy() {
+        stopCoins()
+        super.onDestroy()
+    }
     private var downloading = false
     @Suppress("DEPRECATION")
     private fun code(info: PackageInfo): Long = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
@@ -38,8 +51,43 @@ class MainActivity : FlutterActivity() {
     }
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "growth_circle/wallet_audio").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "playCoinCount" -> {
+                    stopCoins()
+                    try {
+                        coinPlayer = android.media.MediaPlayer.create(this, R.raw.coin_count)?.apply {
+                            setVolume(0.35f, 0.35f)
+                            setOnCompletionListener { stopCoins() }
+                            start()
+                        }
+                        result.success(null)
+                    } catch (_: Exception) {
+                        stopCoins()
+                        result.error("audio", "Unable to play coin sound.", null)
+                    }
+                }
+                "stopCoinCount" -> { stopCoins(); result.success(null) }
+                else -> result.notImplemented()
+            }
+        }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "growth_circle/app_updates").setMethodCallHandler { call, result ->
             when (call.method) {
+                "openNotificationSoundSettings" -> {
+                    try {
+                        val settings = if (Build.VERSION.SDK_INT >= 26) {
+                            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+                                .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                                .putExtra(Settings.EXTRA_CHANNEL_ID, "freelan_updates")
+                        } else {
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                .putExtra("app_package", packageName)
+                                .putExtra("app_uid", applicationInfo.uid)
+                        }
+                        startActivity(settings)
+                        result.success(null)
+                    } catch (_: Exception) { result.error("settings", "Unable to open sound settings.", null) }
+                }
                 "openNotificationSettings" -> {
                     try {
                         val settings = if (Build.VERSION.SDK_INT >= 26) {

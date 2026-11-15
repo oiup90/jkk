@@ -10,6 +10,8 @@ import 'push_notifications.dart';
 import 'personal_information.dart';
 import 'secure_auth_storage.dart';
 import 'referral_download.dart';
+import 'wallet_balance.dart';
+import 'coin_purchase.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -171,6 +173,7 @@ const words = <String, List<String>>{
   'profile': ['Profile', 'പ്രൊഫൈൽ'],
   'balance': ['Your coin balance', 'നിങ്ങളുടെ coin ബാലൻസ്'],
   'coins': ['coins', 'coins'],
+  'purchaseReason': ['Coin purchase', 'Coins വാങ്ങിയത്'],
   'welcome': [
     'Small actions. Shared momentum.',
     'ചെറിയ പ്രവർത്തനങ്ങൾ. ഒരുമിച്ചുള്ള വളർച്ച.',
@@ -2083,132 +2086,34 @@ class BalanceCard extends StatefulWidget {
 }
 
 class _BalanceCardState extends State<BalanceCard> {
-  bool revealed = false;
-  late final Stream<List<Map<String, dynamic>>> balances =
+  late Stream<List<Map<String, dynamic>>> balances =
       widget.balanceStream ??
       db.from('wallets').stream(primaryKey: ['id']).eq('id', widget.uid);
 
   @override
-  Widget build(BuildContext context) => Container(
-    clipBehavior: Clip.antiAlias,
-    decoration: BoxDecoration(
-      gradient: growthGradient,
-      borderRadius: BorderRadius.circular(26),
-    ),
-    child: Stack(
-      children: [
-        Positioned.fill(
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: FractionallySizedBox(
-              widthFactor: .55,
-              heightFactor: 1,
-              child: ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Colors.transparent, Colors.white],
-                  stops: [0, .4],
-                ).createShader(bounds),
-                blendMode: BlendMode.dstIn,
-                child: Image.asset(
-                  'assets/design/wallet_reference.png',
-                  fit: BoxFit.cover,
-                  excludeFromSemantics: true,
-                ),
-              ),
-            ),
-          ),
+  void didUpdateWidget(covariant BalanceCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uid != widget.uid ||
+        oldWidget.balanceStream != widget.balanceStream) {
+      balances =
+          widget.balanceStream ??
+          db.from('wallets').stream(primaryKey: ['id']).eq('id', widget.uid);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => WalletBalance(
+    key: ValueKey(widget.uid),
+    balances: balances,
+    onBuyCoins: () => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CoinPurchasePage(
+          source: SupabaseCoinPurchases(db),
+          isMalayalam: language.value.languageCode == 'ml',
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.account_balance_wallet_outlined,
-                    color: Colors.white,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      uf(context, 'Wallet', 'വാലറ്റ്'),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              if (revealed)
-                StreamBuilder<List<Map<String, dynamic>>>(
-                  stream: balances,
-                  builder: (context, snapshot) => Text(
-                    snapshot.hasError
-                        ? uf(
-                            context,
-                            'Unable to load balance. Try again later.',
-                            'Balance ലഭിച്ചില്ല. പിന്നീട് വീണ്ടും ശ്രമിക്കുക.',
-                          )
-                        : !snapshot.hasData
-                        ? tr(context, 'loading')
-                        : snapshot.data!.isEmpty
-                        ? uf(context, 'Balance unavailable', 'Balance ലഭ്യമല്ല')
-                        : '${snapshot.data!.first['balance']} ${tr(context, 'coins')}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              if (!revealed)
-                const Text(
-                  '••••',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              const SizedBox(height: 4),
-              Tooltip(
-                message: revealed
-                    ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
-                    : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
-                child: TextButton.icon(
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 28),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    backgroundColor: const Color(0xffd3b8ff),
-                    foregroundColor: growthPurple,
-                  ),
-                  onPressed: () => setState(() => revealed = !revealed),
-                  icon: Icon(
-                    revealed
-                        ? Icons.visibility_off_outlined
-                        : Icons.visibility_outlined,
-                    size: 16,
-                  ),
-                  label: Text(
-                    revealed
-                        ? uf(context, 'Hide balance', 'Balance മറയ്ക്കുക')
-                        : uf(context, 'Check balance', 'Balance പരിശോധിക്കുക'),
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     ),
+    isMalayalam: language.value.languageCode == 'ml',
   );
 }
 
@@ -4091,6 +3996,7 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                         'refund' => 'refundReason',
                         'referral' => 'referrals',
                         'admin_adjustment' => 'adminAdjustment',
+                        'purchase' => 'purchaseReason',
                         _ => 'history',
                       };
                       return Card(
@@ -6304,149 +6210,154 @@ class _UserSettingsPageState extends State<UserSettingsPage>
       title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),
       actions: [const GrowthArt('settings_reference', height: 100)],
     ),
-    body: LayoutBuilder(
-      builder: (context, constraints) => Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: (constraints.maxHeight - 40).clamp(
-                  0.0,
-                  double.infinity,
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Card(
+              child: ListTile(
+                minTileHeight: 64,
+                leading: const GrowthIcon(Icons.system_update),
+                title: Text(uf(context, 'App updates', 'App updates')),
+                subtitle: Text(
+                  uf(
+                    context,
+                    'Check for latest version',
+                    'പുതിയ പതിപ്പ് പരിശോധിക്കുക',
+                  ),
                 ),
-              ),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Card(
-                      child: ListTile(
-                        minTileHeight: 64,
-                        leading: const GrowthIcon(Icons.system_update),
-                        title: Text(uf(context, 'App updates', 'App updates')),
-                        subtitle: Text(
-                          uf(
-                            context,
-                            'Check for latest version',
-                            'പുതിയ പതിപ്പ് പരിശോധിക്കുക',
-                          ),
-                        ),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute<void>(
-                            builder: (_) => const AppUpdatePage(),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Card(
-                      child: SwitchListTile(
-                        secondary: const GrowthIcon(Icons.notifications_active),
-                        subtitle: Text(
-                          uf(
-                            context,
-                            'Get notified about important updates',
-                            'പ്രധാന updates അറിയുക',
-                          ),
-                        ),
-                        title: Text(
-                          uf(
-                            context,
-                            'Push notifications',
-                            'Push notifications',
-                          ),
-                        ),
-                        value: enabled,
-                        onChanged: loading || busy ? null : changePush,
-                      ),
-                    ),
-                    Card(
-                      child: ListTile(
-                        minTileHeight: 64,
-                        leading: const GrowthIcon(Icons.language),
-                        title: Text(uf(context, 'Language', 'ഭാഷ')),
-                        subtitle: Text(
-                          uf(
-                            context,
-                            'Choose your preferred language',
-                            'നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക',
-                          ),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xfff0e8ff),
-                            borderRadius: BorderRadius.circular(28),
-                            border: Border.all(color: const Color(0xffd9c7fb)),
-                          ),
-                          child: DropdownButton<String>(
-                            underline: const SizedBox(),
-                            style: const TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 11,
-                              color: growthInk,
-                            ),
-                            icon: const Icon(
-                              Icons.keyboard_arrow_down,
-                              size: 18,
-                            ),
-                            value: Localizations.localeOf(context).languageCode,
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'en',
-                                child: Text('English'),
-                              ),
-                              DropdownMenuItem(
-                                value: 'ml',
-                                child: Text('മലയാളം'),
-                              ),
-                            ],
-                            onChanged: (value) async {
-                              if (value != null &&
-                                  await (widget.authorizeChange?.call() ??
-                                      confirmSecurityPin(context))) {
-                                language.value = Locale(value);
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (loading || busy) const LinearProgressIndicator(),
-                    const Spacer(),
-                    const SizedBox(height: 24),
-                    Card(
-                      color: const Color(0xffe8dcfb),
-                      child: ListTile(
-                        minTileHeight: 64,
-                        leading: const Icon(
-                          Icons.verified_user_outlined,
-                          color: growthPurple,
-                        ),
-                        title: Text(
-                          uf(
-                            context,
-                            'Your data is safe and secure',
-                            'നിങ്ങളുടെ വിവരങ്ങൾ സുരക്ഷിതമാണ്',
-                          ),
-                        ),
-                        subtitle: Text(
-                          uf(
-                            context,
-                            'We value your privacy',
-                            'നിങ്ങളുടെ സ്വകാര്യത പ്രധാനമാണ്',
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AppUpdatePage(),
+                  ),
                 ),
               ),
             ),
-          ),
+            Card(
+              child: SwitchListTile(
+                secondary: const GrowthIcon(Icons.notifications_active),
+                subtitle: Text(
+                  uf(
+                    context,
+                    'Get notified about important updates',
+                    'പ്രധാന updates അറിയുക',
+                  ),
+                ),
+                title: Text(
+                  uf(context, 'Push notifications', 'Push notifications'),
+                ),
+                value: enabled,
+                onChanged: loading || busy ? null : changePush,
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const GrowthIcon(Icons.music_note_outlined),
+                title: Text(
+                  uf(context, 'Notification sound', 'Notification ശബ്ദം'),
+                ),
+                subtitle: Text(
+                  uf(
+                    context,
+                    'Choose a sound or silent in Android settings',
+                    'Android settings-ൽ ശബ്ദം അല്ലെങ്കിൽ silent തിരഞ്ഞെടുക്കുക',
+                  ),
+                ),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () async {
+                  try {
+                    await updateChannel.invokeMethod<void>(
+                      'openNotificationSoundSettings',
+                    );
+                  } catch (_) {
+                    if (context.mounted) {
+                      toast(
+                        context,
+                        uf(
+                          context,
+                          'Notification sound settings are unavailable on this device.',
+                          'ഈ ഉപകരണത്തിൽ notification sound settings ലഭ്യമല്ല.',
+                        ),
+                      );
+                    }
+                  }
+                },
+              ),
+            ),
+            Card(
+              child: ListTile(
+                minTileHeight: 64,
+                leading: const GrowthIcon(Icons.language),
+                title: Text(uf(context, 'Language', 'ഭാഷ')),
+                subtitle: Text(
+                  uf(
+                    context,
+                    'Choose your preferred language',
+                    'നിങ്ങളുടെ ഭാഷ തിരഞ്ഞെടുക്കുക',
+                  ),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xfff0e8ff),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: const Color(0xffd9c7fb)),
+                  ),
+                  child: DropdownButton<String>(
+                    underline: const SizedBox(),
+                    style: const TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 11,
+                      color: growthInk,
+                    ),
+                    icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                    value: Localizations.localeOf(context).languageCode,
+                    items: const [
+                      DropdownMenuItem(value: 'en', child: Text('English')),
+                      DropdownMenuItem(value: 'ml', child: Text('മലയാളം')),
+                    ],
+                    onChanged: (value) async {
+                      if (value != null &&
+                          await (widget.authorizeChange?.call() ??
+                              confirmSecurityPin(context))) {
+                        language.value = Locale(value);
+                      }
+                    },
+                  ),
+                ),
+              ),
+            ),
+            if (loading || busy) const LinearProgressIndicator(),
+            const SizedBox(height: 24),
+            Card(
+              color: const Color(0xffe8dcfb),
+              child: ListTile(
+                minTileHeight: 64,
+                leading: const Icon(
+                  Icons.verified_user_outlined,
+                  color: growthPurple,
+                ),
+                title: Text(
+                  uf(
+                    context,
+                    'Your data is safe and secure',
+                    'നിങ്ങളുടെ വിവരങ്ങൾ സുരക്ഷിതമാണ്',
+                  ),
+                ),
+                subtitle: Text(
+                  uf(
+                    context,
+                    'We value your privacy',
+                    'നിങ്ങളുടെ സ്വകാര്യത പ്രധാനമാണ്',
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     ),

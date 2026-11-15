@@ -35,6 +35,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(calls, ['openNotificationSettings']);
   });
+  testWidgets('sound preference opens the delivery notification channel', (
+    tester,
+  ) async {
+    final calls = <String>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(updateChannel, (call) async {
+          calls.add(call.method);
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(updateChannel, null),
+    );
+    await tester.pumpWidget(
+      MaterialApp(home: UserSettingsPage(enabledLoader: () async => true)),
+    );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Notification sound'));
+    await tester.tap(find.text('Notification sound'));
+    await tester.pumpAndSettle();
+    expect(calls, ['openNotificationSoundSettings']);
+  });
   tearDown(() => language.value = const Locale('en'));
   testWidgets(
     'settings disables and enables push, preserving state on failure',
@@ -45,7 +67,7 @@ void main() {
         MaterialApp(
           theme: growthTheme(),
           home: UserSettingsPage(
-          authorizeChange: () async => true,
+            authorizeChange: () async => true,
             enabledLoader: () async => true,
             pushUpdater: (value) async {
               if (fail) throw StateError('offline');
