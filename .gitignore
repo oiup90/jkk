@@ -23,3 +23,7 @@ firestore-debug.log
 
 # Isolated release configuration contract tests.
 test/gradle_client_config/.gradle/
+
+# Python integration-test caches.
+__pycache__/
+*.py[cod]
