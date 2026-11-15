@@ -20,3 +20,6 @@ firestore-debug.log
 .env.*
 *.p12
 *.pfx
+
+# Isolated release configuration contract tests.
+test/gradle_client_config/.gradle/

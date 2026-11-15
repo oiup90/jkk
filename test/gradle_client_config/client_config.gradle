@@ -1,0 +1,42 @@
+import groovy.json.JsonOutput
+
+// Dependency-free Gradle contract tests. Run via the repo Gradle wrapper with
+// -p test/gradle_client_config; the validation script is also used by the real Android app.
+apply from: '../../android/validate-client-config.gradle'
+def encoded = { List<String> pairs -> pairs.collect { it.bytes.encodeBase64().toString() }.join(',') }
+def publicKey = 'sb_publishable_syntheticpublickey'
+def jwt = { role -> 'header.' + JsonOutput.toJson([role: role]).bytes.encodeBase64().toString().replace('+','-').replace('/','_').replaceAll('=+$','') + '.signature' }
+def valid = ["SUPABASE_URL=https://example.supabase.co", "SUPABASE_PUBLISHABLE_KEY=$publicKey"]
+tasks.register('testClientConfiguration') {
+    doLast {
+        int count = 0
+        def accept = { pairs -> validateSupabaseDartDefines(encoded(pairs)); count++ }
+        def reject = { value ->
+            try {
+                validateSupabaseDartDefines(value)
+                throw new AssertionError('Unsafe configuration was accepted')
+            } catch (GradleException e) {
+                assert e.message.contains('--dart-define-from-file=config/production.json')
+                assert !e.message.contains(publicKey)
+                count++
+            }
+        }
+        accept(valid)
+        accept(['SUPABASE_URL=https://example.supabase.co/', "SUPABASE_PUBLISHABLE_KEY=${jwt('anon')}"])
+        accept(valid + ['ANOTHER_FLAG=value=with=equals'])
+        reject('')
+        reject('not-base64!')
+        reject('bm90LWEtcGFpcg==')
+        reject(encoded([valid[0]]))
+        reject(encoded([valid[1]]))
+        for (url in ['http://example.test','https://user@example.test','https://example.test/path','https://example.test/?x=1','https://example.test/#fragment','not-a-url']) {
+            reject(encoded(["SUPABASE_URL=$url",valid[1]]))
+        }
+        for (key in ['', 'placeholder', 'sb_secret_synthetic', jwt('service_role'), 'header.bad.signature']) {
+            reject(encoded([valid[0],"SUPABASE_PUBLISHABLE_KEY=$key"]))
+        }
+        reject(encoded(valid + ['SUPABASE_URL=https://another.test']))
+        reject(encoded(valid + ["SUPABASE_PUBLISHABLE_KEY=${jwt('service_role')}"]))
+        println "PASS: $count client configuration boundary cases"
+    }
+}

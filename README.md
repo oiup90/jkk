@@ -76,13 +76,25 @@ Existing paid claims remain marked as legacy self-reports and are not reversed.
 4. Copy the project URL and publishable key (or legacy anon key) from the project's API settings. These are client-side values. Never put the service-role key or database password in the app.
 5. Install Flutter 3.47.9, JDK 21 and the Android SDK, then run `flutter pub get` and build:
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:38bc30e3ffae6a6c634d87b2be22ccb891dffaec1f864293a62c2462b0ae6ef2 -->
+
+For this Freelan Space project, use the checked-in public client configuration. Android user release builds reject missing or unsafe configuration. See [Android release recovery](docs/ANDROID_RELEASE_BUILD.md) for replacing the affected build16 with version1.1.9+17. For another project, supply its own public configuration file.
+
 ```sh
-flutter build apk --release \
-  --dart-define=SUPABASE_URL=YOUR_PROJECT_URL \
-  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+flutter build apk --release --dart-define-from-file=config/production.json
 ```
 
-The app shows a setup screen if values are missing. For a distributable release configure `android/key.properties` with `storeFile` (absolute path), `storePassword`, `keyAlias` and `keyPassword` for a securely retained release keystore. Keep the keystore and passwords private and backed up; future updates require the same signing key. <!-- coderabbit-ai-generated:v1 -->
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cdf3790b66b8b62a19ec3bf70d716adbeec05a2420193ed0e111921511118131 -->
+
+Debug builds show a setup screen if values are missing; Android user release builds now fail before packaging instead.
+
+<!-- /coderabbit-ai-generated:v1 --> For a distributable release configure `android/key.properties` with `storeFile` (absolute path), `storePassword`, `keyAlias` and `keyPassword` for a securely retained release keystore. Keep the keystore and passwords private and backed up; future updates require the same signing key. <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:de61abf7b131aaf3ae5fc1ac0e48c9b4080ecd739f5954886f4d1ca672357792 -->
 
