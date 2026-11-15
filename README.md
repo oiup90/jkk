@@ -24,7 +24,15 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 
 <!-- coderabbit-ai-generated-section:v1:743638fbc433e0c881b7c60d62e876d92ae532f37d2fd7d0d2bf555e4cb689b6 -->
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:7e374a63d0ab436337c7c1e1e72fdeee95a367879add9060ed9d72ddc682aeee -->
+
+[One-command user APK and Windows admin builds (Malayalam)](docs/ONE_COMMAND_BUILDS.md)
+
 [Visual Studio setup and build guide (Malayalam)](docs/VISUAL_STUDIO_BUILD_GUIDE.md)
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 [Windows APK validator + Cloudflare Tunnel: complete setup guide (Malayalam)](docs/WINDOWS_APK_VALIDATOR_SETUP.md)
 

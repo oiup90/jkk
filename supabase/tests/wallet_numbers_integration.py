@@ -19,7 +19,9 @@ def new_wallet(_=None):
     uid = str(uuid.uuid4())
     return sql(f"insert into auth.users(id) values ('{uid}'); select set_config('request.jwt.claim.sub','{uid}',false); select public.initialize_wallet(); select wallet_number from public.wallets where id='{uid}';").splitlines()[-1]
 
-before = json.loads(sql("select json_agg(json_build_object('id',id,'balance',balance,'number',wallet_number)) from public.wallets")) or []
+# A fresh database must also exercise preservation, immutability and owner RLS.
+new_wallet()
+before = json.loads(sql("select coalesce(json_agg(json_build_object('id',id,'balance',balance,'number',wallet_number)), '[]'::json) from public.wallets"))
 with concurrent.futures.ThreadPoolExecutor(max_workers=12) as pool:
     numbers = list(pool.map(new_wallet, range(120)))
 assert len(numbers) == len(set(numbers))
