@@ -1,28 +1,41 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:growth_circle/push_notifications.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   test('cached FCM token enables push without registration events; refresh, denial and failed writes preserve opt-in', () async {
     SharedPreferences.setMockInitialValues({});
     final events = StreamController<String>.broadcast();
+    final foreground = StreamController<RemoteMessage>.broadcast(sync: true);
+    final displayed = <String>[];
+    void message() => foreground.add(
+      const RemoteMessage(
+        notification: RemoteNotification(title: 'Admin', body: 'Hello'),
+      ),
+    );
     final writes = <String>[];
     var allowed = true, fail = false, loads = 0;
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    final handler = server.listen((request) async {
-      final raw = await utf8.decoder.bind(request).join();
-      final body = raw.isEmpty
-          ? <String, dynamic>{}
-          : jsonDecode(raw) as Map<String, dynamic>;
-      request.response.headers.contentType = ContentType.json;
-      if (request.uri.path.endsWith('/token')) {
-        request.response.write(
-          jsonEncode({
+    final client = SupabaseClient(
+      'https://example.test',
+      'synthetic-public-key',
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
+      httpClient: MockClient((request) async {
+        final body = request.body.isEmpty
+            ? <String, dynamic>{}
+            : jsonDecode(request.body) as Map<String, dynamic>;
+        Object? response;
+        var status = 200;
+        if (request.url.path.endsWith('/token')) {
+          response = {
             'access_token': 'synthetic-session',
             'refresh_token': 'synthetic-refresh',
             'token_type': 'bearer',
@@ -35,26 +48,31 @@ void main() {
               'app_metadata': {},
               'user_metadata': {},
             },
-          }),
-        );
-      } else if (request.uri.path.endsWith('/register_push_token')) {
-        if (fail) {
-          request.response.statusCode = 500;
-          request.response.write('{"message":"offline"}');
-        } else {
-          writes.add(body['p_token'] as String);
-          request.response.write('null');
+          };
+        } else if (request.url.path.endsWith('/register_push_token')) {
+          if (fail) {
+            status = 500;
+            response = {'message': 'offline'};
+          } else {
+            writes.add(body['p_token'] as String);
+          }
         }
-      } else {
-        request.response.write('null');
-      }
-      await request.response.close();
-    });
-    final client = SupabaseClient(
-      'http://127.0.0.1:${server.port}',
-      'synthetic-public-key',
-      authOptions: const AuthClientOptions(autoRefreshToken: false),
+        return http.Response(
+          jsonEncode(response),
+          status,
+          headers: {'content-type': 'application/json'},
+          request: request,
+        );
+      }),
     );
+    const channel = MethodChannel('growth_circle/push_foreground');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          expect(call.method, 'show');
+          expect(call.arguments['title'], 'Admin');
+          displayed.add(call.arguments['body'] as String);
+          return null;
+        });
     final push = PushCoordinator.forTesting(
       initialize: () async {},
       permission: () async => allowed,
@@ -63,6 +81,7 @@ void main() {
         return 'synthetic-cached-fcm-token';
       },
       tokenChanges: events.stream,
+      foregroundMessages: foreground.stream,
     );
     try {
       await client.auth.signInWithPassword(
@@ -87,15 +106,28 @@ void main() {
       fail = false;
       expect(await push.enable(client), true);
       expect(writes, ['synthetic-cached-fcm-token']);
+      message();
+      expect(displayed, ['Hello']);
       expect(await push.isEnabled(client), true);
+      message();
+      expect(displayed, ['Hello', 'Hello']);
       fail = true;
-      await expectLater(push.isEnabled(client), throwsA(isA<PostgrestException>()));
+      await expectLater(
+        push.isEnabled(client),
+        throwsA(isA<PostgrestException>()),
+      );
       fail = false;
       await push.detach();
+      message();
+      expect(displayed, ['Hello', 'Hello']);
       await push.restore(client);
+      message();
+      expect(displayed, ['Hello', 'Hello', 'Hello']);
       expect(await push.isEnabled(client), true);
       allowed = false;
       expect(await push.isEnabled(client), false);
+      message();
+      expect(displayed, ['Hello', 'Hello', 'Hello']);
       allowed = true;
       expect(
         (await SharedPreferences.getInstance()).getBool(
@@ -125,25 +157,29 @@ void main() {
       expect(writes, isNot(contains('synthetic-token-after-update')));
       fail = false;
       await Future.wait([restored.restore(client), restored.restore(client)]);
-      expect(writes.where((v) => v == 'synthetic-token-after-update').length, 1);
+      expect(
+        writes.where((v) => v == 'synthetic-token-after-update').length,
+        1,
+      );
       allowed = false;
       final beforeDenied = writes.length;
       await restored.restore(client);
       expect(writes.length, beforeDenied);
       allowed = true;
       await (await SharedPreferences.getInstance()).setBool(
-        'push_opt_in_same-user', false,
+        'push_opt_in_same-user',
+        false,
       );
       await restored.restore(client);
       expect(writes.length, beforeDenied);
       await restored.stop(client);
-
     } finally {
       await push.stop(client);
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
+      await foreground.close();
       await events.close();
       await client.dispose();
-      await server.close(force: true);
-      await handler.cancel();
     }
   });
 }

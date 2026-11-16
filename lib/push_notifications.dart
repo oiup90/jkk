@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -46,14 +47,21 @@ class PushCoordinator {
     required Future<bool> Function() permission,
     required Future<String?> Function() tokenLoader,
     required Stream<String> tokenChanges,
+    Stream<RemoteMessage>? foregroundMessages,
   }) : _testInitialize = initialize,
        _testPermission = permission,
        _testTokenLoader = tokenLoader,
-       _testTokenChanges = tokenChanges;
+       _testTokenChanges = tokenChanges,
+       _testForegroundMessages = foregroundMessages;
   Future<void> Function()? _testInitialize;
   Future<bool> Function()? _testPermission;
   Future<String?> Function()? _testTokenLoader;
   Stream<String>? _testTokenChanges;
+  Stream<RemoteMessage>? _testForegroundMessages;
+  static const _foregroundChannel = MethodChannel(
+    'growth_circle/push_foreground',
+  );
+  StreamSubscription<RemoteMessage>? _foreground;
   static final instance = PushCoordinator._();
   StreamSubscription<String>? _refresh;
   String? _token;
@@ -77,7 +85,10 @@ class PushCoordinator {
     final granted = _testPermission != null
         ? await _testPermission!()
         : await _requestPermission();
-    if (!granted) return false;
+    if (!granted) {
+      await _stopForeground();
+      return false;
+    }
     await _register(client);
     if (client.auth.currentUser?.id != id) return false;
     final preferences = await SharedPreferences.getInstance();
@@ -94,8 +105,12 @@ class PushCoordinator {
     }
     await _initialize();
     final granted = _testPermission != null
-        ? await _testPermission!() : await _hasPermission();
-    if (!granted) return false;
+        ? await _testPermission!()
+        : await _hasPermission();
+    if (!granted) {
+      await _stopForeground();
+      return false;
+    }
     // Permission and saved preference alone do not prove server registration.
     await _register(client);
     return client.auth.currentUser?.id == id;
@@ -105,6 +120,7 @@ class PushCoordinator {
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('Sign in first.');
     ++_generation;
+    await _stopForeground();
     await _refresh?.cancel();
     _refresh = null;
     await _writes;
@@ -128,7 +144,8 @@ class PushCoordinator {
 
   Future<void> restore(SupabaseClient client) {
     // Resume and connectivity retries must not replace each other's listeners.
-    return _restoring ??= _restore(client).whenComplete(() => _restoring = null);
+    return _restoring ??= _restore(client)
+        .whenComplete(() => _restoring = null);
   }
 
   Future<void> _restore(SupabaseClient client) async {
@@ -138,13 +155,22 @@ class PushCoordinator {
       final id = client.auth.currentUser?.id;
       if (id == null) return;
       final preferences = await SharedPreferences.getInstance();
-      if (preferences.getBool('push_opt_in_$id') != true) return;
+      if (preferences.getBool('push_opt_in_$id') != true) {
+        await _stopForeground();
+        return;
+      }
       await _initialize();
       final granted = _testPermission != null
           ? await _testPermission!()
           : await _hasPermission();
-      if (generation != _generation || client.auth.currentUser?.id != id) return;
-      if (granted) await _register(client);
+      if (generation != _generation || client.auth.currentUser?.id != id) {
+        return;
+      }
+      if (granted) {
+        await _register(client);
+      } else {
+        await _stopForeground();
+      }
     } catch (_) {
       /* The rest of the app works when push is unavailable. */
     }
@@ -192,6 +218,10 @@ class PushCoordinator {
         throw StateError('No messaging token.');
       }
       await writeToken(token);
+      if (generation != _generation || client.auth.currentUser?.id != id) {
+        throw StateError('Registration cancelled.');
+      }
+      await _startForeground(client, id, generation);
     } catch (_) {
       if (generation == _generation) {
         ++_generation;
@@ -200,6 +230,43 @@ class PushCoordinator {
       }
       rethrow;
     }
+  }
+
+  Future<void> _stopForeground() async {
+    final subscription = _foreground;
+    _foreground = null;
+    await subscription?.cancel();
+  }
+
+  Future<void> _startForeground(
+    SupabaseClient client,
+    String id,
+    int generation,
+  ) async {
+    await _stopForeground();
+    if (generation != _generation || client.auth.currentUser?.id != id) return;
+    final stream =
+        _testForegroundMessages ??
+        (_testInitialize == null ? FirebaseMessaging.onMessage : null);
+    if (stream == null) return;
+    _foreground = stream.listen((message) {
+      if (generation != _generation || client.auth.currentUser?.id != id) {
+        return;
+      }
+      final notification = message.notification;
+      if (notification == null ||
+          (notification.title == null && notification.body == null)) {
+        return;
+      }
+      unawaited(
+        _foregroundChannel
+            .invokeMethod<void>('show', {
+              'title': notification.title ?? 'Freelan Space',
+              'body': notification.body ?? '',
+            })
+            .catchError((Object _) {}),
+      );
+    }, onError: (Object _) {});
   }
 
   Future<bool> _hasPermission() async {
@@ -218,6 +285,7 @@ class PushCoordinator {
     ++_generation;
     final subscription = _refresh;
     _refresh = null;
+    await _stopForeground();
     await subscription?.cancel();
   }
 
@@ -243,6 +311,7 @@ class PushCoordinator {
       }
     });
     _writes = cleanup.catchError((Object _) {});
+    await _stopForeground();
     await subscription?.cancel();
     await cleanup;
   }

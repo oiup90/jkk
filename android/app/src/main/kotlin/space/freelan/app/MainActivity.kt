@@ -1,5 +1,6 @@
 package space.freelan.app
 
+import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -7,6 +8,8 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -29,6 +32,7 @@ class MainActivity : FlutterActivity() {
         stopCoins()
         super.onDestroy()
     }
+    private var foregroundNotificationId = 0
     private var downloading = false
     @Suppress("DEPRECATION")
     private fun code(info: PackageInfo): Long = if (Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
@@ -69,6 +73,37 @@ class MainActivity : FlutterActivity() {
                 }
                 "stopCoinCount" -> { stopCoins(); result.success(null) }
                 else -> result.notImplemented()
+            }
+        }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "growth_circle/push_foreground").setMethodCallHandler { call, result ->
+            if (call.method != "show") {
+                result.notImplemented()
+            } else {
+                val title = call.argument<String>("title")?.take(80) ?: "Freelan Space"
+                val body = call.argument<String>("body")?.take(500) ?: ""
+                try {
+                    val manager = NotificationManagerCompat.from(this)
+                    if (manager.areNotificationsEnabled()) {
+                        val launch = Intent(this, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        }
+                        val pending = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                        val notification = NotificationCompat.Builder(this, "freelan_updates")
+                            .setSmallIcon(R.drawable.ic_growth_circle)
+                            .setContentTitle(title)
+                            .setContentText(body)
+                            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                            .setPriority(NotificationCompat.PRIORITY_HIGH)
+                            .setDefaults(NotificationCompat.DEFAULT_ALL)
+                            .setAutoCancel(true)
+                            .setContentIntent(pending)
+                            .build()
+                        manager.notify("freelan.foreground", ++foregroundNotificationId, notification)
+                    }
+                    result.success(null)
+                } catch (_: SecurityException) {
+                    result.error("permission", "Notification permission unavailable.", null)
+                }
             }
         }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "growth_circle/app_updates").setMethodCallHandler { call, result ->
