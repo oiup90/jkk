@@ -188,8 +188,8 @@ const labels = <String, List<String>>{
     'ഈ ഉപയോക്താവിന്റെ app access പുനഃസ്ഥാപിക്കണോ?',
   ],
   'blockNote': [
-    'Access to campaign and coin data will be blocked. Supabase sign-in itself remains available.',
-    'Campaign, coin വിവരങ്ങളിലേക്കുള്ള access തടയും. Supabase sign-in ലഭ്യമായി തുടരും.',
+    'Campaign and coin access will be blocked. Connected users with the updated app will be signed out.',
+    'Campaign, coin access തടയും. പുതുക്കിയ app-ൽ connected ആയ users sign out ആകും.',
   ],
   'cancel': ['Cancel', 'റദ്ദാക്കുക'],
   'confirm': ['Confirm', 'സ്ഥിരീകരിക്കുക'],

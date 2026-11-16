@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:growth_circle/brand_wordmark.dart';
 import 'package:growth_circle/main.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -52,6 +53,15 @@ Future<void> openSignup(WidgetTester tester, FakeAuth actions) async {
 }
 
 void main() {
+  testWidgets('blocked sign out explains the restriction on sign in', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(home: AuthScreen(actions: FakeAuth(), blockedNotice: true)),
+    );
+    expect(find.text(words['accountBlocked']![0]), findsOneWidget);
+  });
+
   testWidgets(
     'signup verifies six digits then requires explicit password login',
     (tester) async {
@@ -120,7 +130,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(MaterialApp(home: AuthScreen(actions: FakeAuth())));
-    expect(find.text('Freelan\nSpace'), findsOneWidget);
+    expect(find.byType(FreelanWordmark), findsOneWidget);
     final field = find.byKey(const Key('password'));
     expect(tester.widget<TextField>(field).obscureText, isTrue);
     await tester.tap(find.byTooltip('Show password'));
@@ -129,6 +139,30 @@ void main() {
     await tester.tap(find.byTooltip('Hide password'));
     await tester.pump();
     expect(tester.widget<TextField>(field).obscureText, isTrue);
+  });
+
+  testWidgets('wordmark and language control fit at large text size', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(320, 640));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(2)),
+          child: child!,
+        ),
+        home: AuthScreen(actions: FakeAuth()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(FreelanWordmark), findsOneWidget);
+    expect(find.bySemanticsLabel('Freelan Space'), findsOneWidget);
+    expect(find.text(words['language']![0]), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    semantics.dispose();
   });
 
   testWidgets(

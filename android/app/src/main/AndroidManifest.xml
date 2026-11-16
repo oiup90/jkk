@@ -9,7 +9,7 @@
         android:usesCleartextTraffic="false"
         android:label="Freelan Space"
         android:name=".FreelanApplication"
-        android:icon="@drawable/ic_growth_circle">
+        android:icon="@drawable/ic_freelan_launcher">
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="freelan_updates" />
         <provider android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates" android:exported="false"

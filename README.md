@@ -149,7 +149,19 @@ Build with the Supabase project URL and public key shown above. Before sharing t
 
 <!-- /coderabbit-ai-generated:v1 -->
 
-The Windows administrator app lists/searches accounts, shows coin balances, and blocks/restores app data access. It uses normal Supabase email/password authentication and the publishable/anon key; no service-role key is used or stored in the client. Blocking is enforced in database RLS and RPCs even for previously issued sessions; requests already in progress can finish before a block commits, and cached data may remain visible. Blocking app data does not ban the user from Supabase Auth itself.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:574f1f064021b2b79954e99a20f01c96d5e33fa6db54cf5ece2588fea1189ece -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:d7497ac201d9c80d65ba10dce3c8363651734699dfc3ec01cb1c611f588fb192 -->
+
+The Windows administrator app lists/searches accounts, shows coin balances, and blocks/restores app data access. It uses normal Supabase email/password authentication and the publishable/anon key; no service-role key is used or stored in the client. Blocking is enforced in database RLS and RPCs even for previously issued sessions; requests already in progress can finish before a block commits. After applying `supabase/migrations/20261116162613_account_block_realtime.sql`, updated user apps sign out when a block is received while connected, and recheck on startup, reconnection, resume and every 30 seconds while running. Offline or older clients may retain cached data until they reconnect or update. Supabase Auth sign-in itself remains available; a blocked user of the updated app is signed out again.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Apply migrations in order, including `supabase/migrations/20261107020000_admin_access.sql`, in the intended Supabase project. Then create a confirmed admin account through the existing app, and as the project owner run this in the Supabase SQL Editor after replacing the placeholder with that account's email:
 
