@@ -120,4 +120,28 @@ void main() {
       expect(find.textContaining('Checkout ലഭ്യമല്ല'), findsOneWidget);
     },
   );
+  testWidgets(
+    'plan capacity uses live rates and refreshes without changing prices',
+    (tester) async {
+      var rate = 4;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CoinPurchasePage(
+            source: FakePurchases(),
+            loadRates: () async => {'follow': rate, 'like': 2},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(ExpansionTile).first);
+      await tester.pumpAndSettle();
+      expect(find.text('Up to 25 follow tasks'), findsOneWidget);
+      expect(find.text('Up to 50 like tasks'), findsOneWidget);
+      rate = 5;
+      await tester.tap(find.byTooltip('Refresh'));
+      await tester.pumpAndSettle();
+      expect(find.text('Up to 20 follow tasks'), findsOneWidget);
+      expect(find.text('₹49'), findsOneWidget);
+    },
+  );
 }

@@ -12,10 +12,12 @@ class WalletBalance extends StatefulWidget {
     required this.balances,
     this.isMalayalam = false,
     this.onBuyCoins,
+    this.onTransfer,
   });
   final Stream<List<Map<String, dynamic>>> balances;
   final bool isMalayalam;
   final VoidCallback? onBuyCoins;
+  final VoidCallback? onTransfer;
   @override
   State<WalletBalance> createState() => _WalletBalanceState();
 }
@@ -199,9 +201,60 @@ class _WalletBalanceState extends State<WalletBalance>
                 ],
               ),
               if (walletNumber != null)
-                SelectableText(
-                  '${text('Wallet number', 'വാലറ്റ് നമ്പർ')}: $walletNumber',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                Row(
+                  children: [
+                    Flexible(
+                      child: SelectableText(
+                        '${text('Wallet number', 'വാലറ്റ് നമ്പർ')}: $walletNumber',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: text(
+                        'Copy wallet number',
+                        'വാലറ്റ് നമ്പർ പകർത്തുക',
+                      ),
+                      icon: const Icon(
+                        Icons.copy,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                      onPressed: () async {
+                        try {
+                          await Clipboard.setData(
+                            ClipboardData(text: walletNumber!),
+                          );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                text(
+                                  'Wallet number copied',
+                                  'വാലറ്റ് നമ്പർ പകർത്തി',
+                                ),
+                              ),
+                            ),
+                          );
+                        } on PlatformException {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  text(
+                                    'Unable to copy wallet number',
+                                    'വാലറ്റ് നമ്പർ പകർത്താനായില്ല',
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ],
                 ),
               const SizedBox(height: 4),
               AnimatedBuilder(
@@ -235,6 +288,13 @@ class _WalletBalanceState extends State<WalletBalance>
                   style: TextButton.styleFrom(foregroundColor: Colors.white),
                   icon: const Icon(Icons.add_circle_outline, size: 18),
                   label: Text(text('Buy coins', 'Coins വാങ്ങുക')),
+                ),
+              if (widget.onTransfer != null)
+                TextButton.icon(
+                  onPressed: widget.onTransfer,
+                  style: TextButton.styleFrom(foregroundColor: Colors.white),
+                  icon: const Icon(Icons.send_outlined, size: 18),
+                  label: Text(text('Transfer coins', 'Coins അയയ്ക്കുക')),
                 ),
               const SizedBox(height: 4),
               Tooltip(
