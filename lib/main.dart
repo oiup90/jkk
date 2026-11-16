@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'design.dart';
+import 'brand_wordmark.dart';
+import 'account_block_guard.dart';
 import 'earn_design.dart';
 import 'app_updates.dart';
 import 'evidence_image.dart';
@@ -837,6 +839,7 @@ class AuthGate extends StatefulWidget {
 class _AuthGateState extends State<AuthGate> {
   late final StreamSubscription<AuthState> subscription;
   bool recovery = false;
+  bool blockedSignOut = false;
   @override
   void initState() {
     super.initState();
@@ -845,6 +848,7 @@ class _AuthGateState extends State<AuthGate> {
         if (!mounted) return;
         setState(() {
           if (state.event == AuthChangeEvent.passwordRecovery) recovery = true;
+          if (state.event == AuthChangeEvent.signedIn) blockedSignOut = false;
           if (state.event == AuthChangeEvent.signedOut) {
             recovery = false;
             unawaited(PushCoordinator.instance.stop(db));
@@ -865,13 +869,26 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (recovery) {
-      return RecoveryScreen(onDone: () => setState(() => recovery = false));
-    }
     final user = db.auth.currentUser;
-    return user == null
-        ? const AuthScreen()
-        : AccountGate(key: ValueKey(user.id), user: user);
+    if (user == null) {
+      return recovery
+          ? RecoveryScreen(onDone: () => setState(() => recovery = false))
+          : AuthScreen(blockedNotice: blockedSignOut);
+    }
+    return AccountBlockGuard(
+      key: ValueKey(user.id),
+      events: () => accountBlockEvents(db, user.id),
+      readBlocked: () => accountIsBlocked(db, user.id),
+      isCurrentUser: () => db.auth.currentUser?.id == user.id,
+      signOut: () async {
+        if (!mounted || db.auth.currentUser?.id != user.id) return;
+        setState(() => blockedSignOut = true);
+        await db.auth.signOut();
+      },
+      child: recovery
+          ? RecoveryScreen(onDone: () => setState(() => recovery = false))
+          : AccountGate(key: ValueKey(user.id), user: user),
+    );
   }
 }
 
@@ -980,24 +997,9 @@ class _AccountGateState extends State<AccountGate> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     if (blocked) ...[
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/design/brand_logo.png',
-                            width: 48,
-                            height: 48,
-                            excludeFromSemantics: true,
-                          ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Freelan\nSpace',
-                            style: TextStyle(
-                              color: growthInk,
-                              height: 1,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                      const Align(
+                        alignment: Alignment.centerLeft,
+                        child: FreelanWordmark(),
                       ),
                       const SizedBox(height: 24),
                       const GrowthArt('blocked', height: 200),
@@ -1143,8 +1145,9 @@ class AuthActions {
 }
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, this.actions});
+  const AuthScreen({super.key, this.actions, this.blockedNotice = false});
   final AuthActions? actions;
+  final bool blockedNotice;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
 }
@@ -1302,21 +1305,13 @@ class _AuthScreenState extends State<AuthScreen> {
                 children: [
                   Row(
                     children: [
-                      Image.asset(
-                        'assets/design/brand_logo.png',
-                        width: 48,
-                        height: 48,
-                        excludeFromSemantics: true,
-                      ),
-                      const SizedBox(width: 6),
                       const Expanded(
-                        child: Text(
-                          'Freelan\nSpace',
-                          style: TextStyle(
-                            fontSize: 16,
-                            height: 1.05,
-                            fontWeight: FontWeight.w700,
-                            color: growthInk,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: FreelanWordmark(),
                           ),
                         ),
                       ),
@@ -1326,6 +1321,13 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                     ],
                   ),
+                  if (widget.blockedNotice) ...[
+                    const SizedBox(height: 18),
+                    Text(
+                      tr(context, 'accountBlocked'),
+                      style: const TextStyle(color: Color(0xffa23636)),
+                    ),
+                  ],
                   if (pendingEmail != null) ...[
                     const SizedBox(height: 18),
                     const GrowthArt('verify', height: 150),

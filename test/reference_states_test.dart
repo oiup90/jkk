@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:growth_circle/brand_wordmark.dart';
 import 'package:growth_circle/design.dart';
 import 'package:growth_circle/main.dart';
 import 'package:growth_circle/support_page.dart';
@@ -30,7 +31,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.byType(GrowthArt), findsOneWidget);
-    expect(find.text('Freelan\nSpace'), findsOneWidget);
+    expect(find.byType(FreelanWordmark), findsOneWidget);
     await tester.tap(find.text('Retry'));
     await tester.pumpAndSettle();
     expect(calls, 2);
