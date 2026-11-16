@@ -11,6 +11,8 @@ import 'personal_information.dart';
 import 'secure_auth_storage.dart';
 import 'referral_download.dart';
 import 'wallet_balance.dart';
+import 'wallet_transfer.dart';
+import 'legal_pages.dart';
 import 'coin_purchase.dart';
 
 import 'package:share_plus/share_plus.dart';
@@ -74,6 +76,8 @@ const words = <String, List<String>>{
   ],
   'adminAdjustment': ['Admin adjustment', 'Admin adjustment'],
   'support': ['Support', 'സഹായം'],
+  'transferSent': ['Coins sent', 'അയച്ച coins'],
+  'transferReceived': ['Coins received', 'ലഭിച്ച coins'],
   'reportCampaign': ['Report', 'റിപ്പോർട്ട്'],
   'email_otp_required': [
     'PIN setup requires a verified email account without a linked phone. Contact support to check your account.',
@@ -1510,6 +1514,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           height: 1.4,
                         ),
                       ),
+                      const LegalLinks(),
                     ],
                     const SizedBox(height: 24),
                     TextButton(
@@ -2105,10 +2110,20 @@ class _BalanceCardState extends State<BalanceCard> {
   Widget build(BuildContext context) => WalletBalance(
     key: ValueKey(widget.uid),
     balances: balances,
+    onTransfer: () => Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => WalletTransferPage(client: db)),
+    ),
     onBuyCoins: () => Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => CoinPurchasePage(
           source: SupabaseCoinPurchases(db),
+          loadRates: () async {
+            final rows = await db.from('coin_settings').select();
+            return {
+              for (final row in rows)
+                row['key'] as String: row['amount'] as int,
+            };
+          },
           isMalayalam: language.value.languageCode == 'ml',
         ),
       ),
@@ -3607,10 +3622,12 @@ class CreateCampaign extends StatefulWidget {
   const CreateCampaign({
     super.key,
     this.loadRates,
+    this.loadAccounts,
     this.controls,
     this.reserve,
   });
   final Future<List<Map<String, dynamic>>> Function()? loadRates;
+  final Future<List<String>> Function()? loadAccounts;
   final Stream<List<Map<String, dynamic>>>? controls;
   final Future<void> Function(String type, String link, int count, int reward)?
   reserve;
@@ -3623,6 +3640,21 @@ class _CreateCampaignState extends State<CreateCampaign> {
   final link = TextEditingController();
   final count = TextEditingController(text: '1');
   String type = 'follow';
+  String? selectedUsername;
+  late Future<List<String>> accounts = loadAccounts();
+  Future<List<String>> loadAccounts() async {
+    if (widget.loadAccounts != null) return widget.loadAccounts!();
+    final rows = await db
+        .from('instagram_accounts')
+        .select('username')
+        .eq('user_id', db.auth.currentUser!.id)
+        .order('created_at');
+    return [for (final row in rows) row['username'] as String];
+  }
+
+  String get campaignLink => type == 'follow'
+      ? 'https://www.instagram.com/$selectedUsername/'
+      : link.text.trim();
   bool busy = false;
   late Future<List<Map<String, dynamic>>> rates = loadRates();
   Future<List<Map<String, dynamic>>> loadRates() async =>
@@ -3640,23 +3672,24 @@ class _CreateCampaignState extends State<CreateCampaign> {
   }
 
   Future<void> submit(int reward) async {
-    if (!form.currentState!.validate()) return;
+    if (!form.currentState!.validate() || selectedUsername == null) return;
     setState(() => busy = true);
     try {
       if (widget.reserve != null) {
         await widget.reserve!(
           type,
-          link.text.trim(),
+          campaignLink,
           int.parse(count.text),
           reward,
         );
       } else {
         await db.rpc(
-          'create_campaign_at_rate',
+          'create_campaign_for_account',
           params: {
             'p_type': type,
             'p_reward': reward,
-            'p_link': link.text.trim(),
+            'p_link': campaignLink,
+            'p_username': selectedUsername,
             'p_count': int.parse(count.text),
           },
         );
@@ -3764,25 +3797,86 @@ class _CreateCampaignState extends State<CreateCampaign> {
                   ),
                   if (!enabled) Text(tr(context, 'actionDisabled')),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: link,
-                    keyboardType: TextInputType.url,
-                    decoration: InputDecoration(
-                      labelText: tr(context, 'link'),
-                      prefixIcon: const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: InstagramLogo(),
-                      ),
-                      isDense: true,
-                      hintText: tr(
-                        context,
-                        type == 'follow' ? 'profileHint' : 'postHint',
-                      ),
-                    ),
-                    validator: (v) => v == null || v.trim().isEmpty
-                        ? tr(context, 'required')
-                        : null,
+                  FutureBuilder<List<String>>(
+                    future: accounts,
+                    builder: (c, snapshot) {
+                      if (snapshot.hasError) {
+                        return TextButton(
+                          onPressed: busy
+                              ? null
+                              : () => setState(() => accounts = loadAccounts()),
+                          child: Text(tr(c, 'retry')),
+                        );
+                      }
+                      if (!snapshot.hasData) {
+                        return const LinearProgressIndicator();
+                      }
+                      if (snapshot.data!.isEmpty) {
+                        return Text(
+                          uf(
+                            c,
+                            'Add an Instagram account in Profile → Instagram accounts before creating a campaign.',
+                            'Campaign തുടങ്ങുന്നതിന് മുമ്പ് Profile → Instagram accounts-ൽ account ചേർക്കുക.',
+                          ),
+                        );
+                      }
+                      return DropdownButtonFormField<String>(
+                        initialValue: selectedUsername,
+                        isExpanded: true,
+                        decoration: InputDecoration(
+                          labelText: uf(
+                            c,
+                            'Instagram username',
+                            'Instagram username',
+                          ),
+                          prefixIcon: const Icon(Icons.alternate_email),
+                        ),
+                        items: [
+                          for (final username in snapshot.data!)
+                            DropdownMenuItem(
+                              value: username,
+                              child: Text('@$username'),
+                            ),
+                        ],
+                        onChanged: busy
+                            ? null
+                            : (value) =>
+                                  setState(() => selectedUsername = value),
+                        validator: (value) => value == null
+                            ? uf(
+                                c,
+                                'Choose an account from your Profile',
+                                'Profile-ലെ account തിരഞ്ഞെടുക്കുക',
+                              )
+                            : null,
+                      );
+                    },
                   ),
+                  if (type != 'follow') ...[
+                    TextFormField(
+                      controller: link,
+                      keyboardType: TextInputType.url,
+                      decoration: InputDecoration(
+                        labelText: uf(
+                          context,
+                          'Post or reel link',
+                          'Post / Reel link',
+                        ),
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: InstagramLogo(),
+                        ),
+                        isDense: true,
+                        hintText: tr(
+                          context,
+                          type == 'follow' ? 'profileHint' : 'postHint',
+                        ),
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? tr(context, 'required')
+                          : null,
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: count,
@@ -3843,7 +3937,9 @@ class _CreateCampaignState extends State<CreateCampaign> {
                   const Notice(),
                   const SizedBox(height: 14),
                   GrowthPrimaryButton(
-                    onPressed: busy || !enabled ? null : () => submit(reward),
+                    onPressed: busy || !enabled || selectedUsername == null
+                        ? null
+                        : () => submit(reward),
                     label: tr(context, 'submit'),
                     icon: Icons.arrow_forward,
                   ),
@@ -3997,6 +4093,8 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                         'referral' => 'referrals',
                         'admin_adjustment' => 'adminAdjustment',
                         'purchase' => 'purchaseReason',
+                        'transfer_sent' => 'transferSent',
+                        'transfer_received' => 'transferReceived',
                         _ => 'history',
                       };
                       return Card(
@@ -5031,6 +5129,7 @@ class ProfileLayout extends StatelessWidget {
                               ),
                             ),
                           ),
+                          const LegalLinks(),
                           ProfileMenuTile(
                             icon: Icons.lock_outline,
                             title: tr(context, 'releasePin'),
@@ -6331,6 +6430,7 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                 ),
               ),
             ),
+            const LegalLinks(),
             if (loading || busy) const LinearProgressIndicator(),
             const SizedBox(height: 24),
             Card(

@@ -1,0 +1,10 @@
+{
+  "generatedBy": "CodeRabbit",
+  "android/app/src/main/res/raw/coin_count.wav": {
+    "title": "Shaking coins in palm",
+    "artist": "ezwa",
+    "source": "https://commons.wikimedia.org/wiki/File:Shaking_coins_in_palm.ogg",
+    "license": "Public domain (PDSounds)",
+    "changes": "Trimmed from 0.5 seconds to a 1.2 second clip, faded in/out, converted to mono 22050 Hz PCM WAV."
+  }
+}

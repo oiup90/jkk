@@ -112,9 +112,11 @@ class CoinPurchasePage extends StatefulWidget {
     super.key,
     required this.source,
     this.isMalayalam = false,
+    this.loadRates,
   });
   final CoinPurchaseSource source;
   final bool isMalayalam;
+  final Future<Map<String, int>> Function()? loadRates;
   @override
   State<CoinPurchasePage> createState() => _CoinPurchasePageState();
 }
@@ -122,6 +124,7 @@ class CoinPurchasePage extends StatefulWidget {
 class _CoinPurchasePageState extends State<CoinPurchasePage>
     with WidgetsBindingObserver {
   List<CoinPlan> plans = [];
+  Map<String, int> rates = {};
   List<CoinOrder> orders = [];
   bool busy = true;
   String? message;
@@ -149,9 +152,16 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
     try {
       final nextPlans = await widget.source.plans();
       final nextOrders = await widget.source.pending();
+      Map<String, int> nextRates = {};
+      try {
+        nextRates = await widget.loadRates?.call() ?? {};
+      } catch (_) {
+        /* Prices still come from the server; estimates may be unavailable. */
+      }
       if (!mounted) return;
       setState(() {
         plans = nextPlans;
+        rates = nextRates;
         orders = nextOrders;
         message = null;
       });
@@ -285,14 +295,58 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
           ),
         for (final plan in plans)
           Card(
-            child: ListTile(
+            child: ExpansionTile(
               leading: const Icon(Icons.monetization_on_outlined),
               title: Text('${plan.coins} ${text('coins', 'കോയിനുകൾ')}'),
               subtitle: Text(plan.price),
-              trailing: FilledButton(
-                onPressed: busy ? null : () => buy(plan),
-                child: Text(text('Buy', 'വാങ്ങുക')),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.expand_more),
+                  FilledButton(
+                    onPressed: busy ? null : () => buy(plan),
+                    child: Text(text('Buy', 'വാങ്ങുക')),
+                  ),
+                ],
               ),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final action in [
+                        'follow',
+                        'like',
+                        'comment',
+                        'share',
+                      ])
+                        if ((rates[action] ?? 0) > 0)
+                          Text(
+                            '${text('Up to', 'പരമാവധി')} ${plan.coins ~/ rates[action]!} ${switch (action) {
+                              'follow' => text('follow tasks', 'follow tasks'),
+                              'like' => text('like tasks', 'like tasks'),
+                              'comment' => text('comment tasks', 'comment tasks'),
+                              _ => text('share tasks', 'share tasks'),
+                            }}',
+                          ),
+                      Text(
+                        text(
+                          'Use coins across campaigns. Counts are alternatives, not combined; rates may change. Maximum 100 tasks per campaign. No guaranteed results.',
+                          'Coins വിവിധ campaigns-ൽ ഉപയോഗിക്കാം. ഓരോ task count-ഉം വേറിട്ട കണക്കാണ്; നിരക്കുകൾ മാറാം. ഒരു campaign-ൽ പരമാവധി 100 tasks. ഫലം ഉറപ്പില്ല.',
+                        ),
+                      ),
+                      if (rates.isEmpty)
+                        Text(
+                          text(
+                            'Task estimates unavailable. Refresh to retry.',
+                            'Task കണക്ക് ലഭ്യമല്ല. Refresh ചെയ്യുക.',
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         if (!busy && plans.isEmpty)

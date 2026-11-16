@@ -109,6 +109,7 @@ void main() {
         MaterialApp(
           theme: growthTheme(),
           home: CreateCampaign(
+            loadAccounts: () async => ['example'],
             loadRates: () async {
               loads++;
               return [
@@ -122,7 +123,7 @@ void main() {
               calls++;
               expect(
                 [type, link, count, rate],
-                ['follow', 'https://instagram.com/example/', 3, 4],
+                ['follow', 'https://www.instagram.com/example/', 3, 4],
               );
               reward = 5;
               throw StateError('rate changed');
@@ -131,11 +132,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.enterText(
-        find.byType(TextFormField).at(0),
-        'https://instagram.com/example/',
-      );
-      await tester.enterText(find.byType(TextFormField).at(1), '3');
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('@example').last);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).last, '3');
       await tester.pumpAndSettle();
       expect(find.text('Total cost: 12 coins'), findsOneWidget);
       await tester.ensureVisible(

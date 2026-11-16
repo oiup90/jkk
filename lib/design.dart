@@ -395,7 +395,7 @@ class GrowthNavigation extends StatelessWidget {
                     child: Container(
                       height: 46,
                       decoration: BoxDecoration(
-                        gradient: selected == i && i != 1
+                        gradient: selected == i
                             ? const LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
@@ -413,17 +413,13 @@ class GrowthNavigation extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: selected == i && i == 1
-                                  ? const Color(0xffd6bcff)
-                                  : Colors.transparent,
+                              color: Colors.transparent,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Icon(
                               selected == i ? active[i] : icons[i],
                               size: 21,
-                              color: selected == i
-                                  ? (i == 1 ? growthPurple : Colors.white)
-                                  : growthInk,
+                              color: selected == i ? Colors.white : growthInk,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -435,9 +431,7 @@ class GrowthNavigation extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: selected == i
-                                    ? (i == 1 ? growthPurple : Colors.white)
-                                    : growthInk,
+                                color: selected == i ? Colors.white : growthInk,
                               ),
                             ),
                           ),

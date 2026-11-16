@@ -66,7 +66,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('No support tickets yet.'), findsOneWidget);
+    expect(find.text('Chat with support'), findsOneWidget);
     await tester.tap(find.byTooltip('Refresh'));
     await tester.pumpAndSettle();
     expect(loads, 2);
