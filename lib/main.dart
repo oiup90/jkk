@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'design.dart';
+import 'earn_design.dart';
 import 'app_updates.dart';
 import 'evidence_image.dart';
 import 'support_page.dart';
@@ -1749,7 +1750,14 @@ class TaskTypePicker extends StatelessWidget {
                   color: selected == type ? Colors.white : growthPurple,
                 ),
           selectedColor: growthPurple,
-          checkmarkColor: Colors.white,
+          backgroundColor: Colors.white,
+          showCheckmark: false,
+          side: BorderSide(
+            color: selected == type ? growthPurple : const Color(0xffe5daef),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           selected: selected == type,
           onSelected: (_) => onSelected(type),
         ),
@@ -2938,25 +2946,14 @@ class _TaskListState extends State<TaskList> {
           return AppListView(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
             children: [
-              GrowthHero(
+              EarnHero(
                 title: tr(context, 'earnTitle'),
-                minHeight: 132,
                 subtitle: tr(context, 'earnDesc'),
-                icon: Icons.emoji_events_outlined,
-                background: 'earn_hero_reference',
-                action: TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: growthPurple,
-                    minimumSize: const Size(0, 28),
-                    textStyle: const TextStyle(fontSize: 10),
-                  ),
-                  onPressed: () => setState(() {
-                    selectedType = 'all';
-                    savedOnly = false;
-                  }),
-                  child: Text(uf(context, 'Start earning', 'നേടിത്തുടങ്ങുക')),
-                ),
+                actionLabel: uf(context, 'Start earning', 'നേടിത്തുടങ്ങുക'),
+                onAction: () => setState(() {
+                  selectedType = 'all';
+                  savedOnly = false;
+                }),
               ),
               const SizedBox(height: 16),
               const Notice(),
@@ -2981,10 +2978,7 @@ class _TaskListState extends State<TaskList> {
                 ),
               ),
               if (history.isNotEmpty) ...[
-                Text(
-                  tr(context, 'mySubmissions'),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                EarnSectionHeader(title: tr(context, 'mySubmissions')),
                 for (final entry in history.take(10))
                   Card(
                     child: ListTile(
@@ -3014,6 +3008,11 @@ class _TaskListState extends State<TaskList> {
                   ),
                 const SizedBox(height: 12),
               ],
+              EarnSectionHeader(
+                title: uf(context, 'Tasks', 'Task-ുകൾ'),
+                count: filteredTasks.length,
+              ),
+              const SizedBox(height: 10),
               TaskTypePicker(
                 selected: selectedType,
                 onSelected: (value) => setState(() => selectedType = value),
@@ -3060,186 +3059,136 @@ class _TaskListState extends State<TaskList> {
                   builder: (context) {
                     final status = byCampaign[task['id']]?['status'];
                     final enabled = controls[task['type']] == true;
-                    return Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  child: Icon(actionIcon(task['type'])),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    tr(context, task['type']),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 17,
+                    return EarnTaskCard(
+                      icon: actionIcon(task['type'] as String),
+                      title: tr(context, task['type']),
+                      reward:
+                          '+${task['reward_per_task'] ?? 1} ${tr(context, 'coins')}',
+                      link: task['link'] as String,
+                      saved: saved.contains(task['id']),
+                      saveTooltip: tr(
+                        context,
+                        saved.contains(task['id']) ? 'unsaveTask' : 'saveTask',
+                      ),
+                      onSave: savedLoading || saving.contains(task['id'])
+                          ? null
+                          : () => toggleSaved(task['id'] as String),
+                      status:
+                          status == 'pending' ||
+                              status == 'approved' ||
+                              status == 'legacy'
+                          ? SubmissionStatus(
+                              claim: byCampaign[task['id']]!,
+                              presence: presence,
+                            )
+                          : null,
+                      disabledMessage: !enabled
+                          ? tr(context, 'actionDisabled')
+                          : null,
+                      actions: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          OutlinedButton(
+                            onPressed: enabled
+                                ? () => openInstagram(context, task['link'])
+                                : null,
+                            child: Text(tr(context, 'open')),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              final controller = TextEditingController();
+                              final reason = await showDialog<String>(
+                                context: context,
+                                builder: (c) => AlertDialog(
+                                  title: Text(tr(c, 'reportCampaign')),
+                                  content: TextField(
+                                    controller: controller,
+                                    maxLength: 1000,
+                                    maxLines: 3,
+                                    decoration: InputDecoration(
+                                      labelText: supportText(
+                                        c,
+                                        'Reason',
+                                        'കാരണം',
+                                      ),
                                     ),
                                   ),
-                                ),
-                                Chip(
-                                  label: Text(
-                                    '+${task['reward_per_task'] ?? 1} ${tr(context, 'coins')}',
-                                  ),
-                                ),
-                                IconButton(
-                                  tooltip: tr(
-                                    context,
-                                    saved.contains(task['id'])
-                                        ? 'unsaveTask'
-                                        : 'saveTask',
-                                  ),
-                                  onPressed:
-                                      savedLoading ||
-                                          saving.contains(task['id'])
-                                      ? null
-                                      : () => toggleSaved(task['id'] as String),
-                                  icon: Icon(
-                                    saved.contains(task['id'])
-                                        ? Icons.bookmark
-                                        : Icons.bookmark_border,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              task['link'],
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 12),
-                            if (status == 'pending' ||
-                                status == 'approved' ||
-                                status == 'legacy')
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: SubmissionStatus(
-                                  claim: byCampaign[task['id']]!,
-                                  presence: presence,
-                                ),
-                              ),
-                            if (!enabled) Text(tr(context, 'actionDisabled')),
-                            Wrap(
-                              spacing: 8,
-                              children: [
-                                OutlinedButton(
-                                  onPressed: enabled
-                                      ? () =>
-                                            openInstagram(context, task['link'])
-                                      : null,
-                                  child: Text(tr(context, 'open')),
-                                ),
-                                TextButton(
-                                  onPressed: () async {
-                                    final controller = TextEditingController();
-                                    final reason = await showDialog<String>(
-                                      context: context,
-                                      builder: (c) => AlertDialog(
-                                        title: Text(tr(c, 'reportCampaign')),
-                                        content: TextField(
-                                          controller: controller,
-                                          maxLength: 1000,
-                                          maxLines: 3,
-                                          decoration: InputDecoration(
-                                            labelText: supportText(
-                                              c,
-                                              'Reason',
-                                              'കാരണം',
-                                            ),
-                                          ),
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () => Navigator.pop(c),
-                                            child: Text(tr(c, 'cancel')),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () {
-                                              if (controller.text
-                                                  .trim()
-                                                  .isNotEmpty) {
-                                                Navigator.pop(
-                                                  c,
-                                                  controller.text.trim(),
-                                                );
-                                              }
-                                            },
-                                            child: Text(
-                                              supportText(
-                                                c,
-                                                'Send',
-                                                'അയയ്ക്കുക',
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(c),
+                                      child: Text(tr(c, 'cancel')),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () {
+                                        if (controller.text.trim().isNotEmpty) {
+                                          Navigator.pop(
+                                            c,
+                                            controller.text.trim(),
+                                          );
+                                        }
+                                      },
+                                      child: Text(
+                                        supportText(c, 'Send', 'അയയ്ക്കുക'),
                                       ),
-                                    );
-                                    controller.dispose();
-                                    if (reason == null || !context.mounted) {
-                                      return;
-                                    }
-                                    try {
-                                      await db.rpc(
-                                        'report_campaign',
-                                        params: {
-                                          'p_campaign': task['id'],
-                                          'p_reason': reason,
-                                        },
-                                      );
-                                      if (context.mounted) {
-                                        toast(
-                                          context,
-                                          supportText(
-                                            context,
-                                            'Report sent.',
-                                            'റിപ്പോർട്ട് അയച്ചു.',
-                                          ),
-                                        );
-                                      }
-                                    } catch (_) {
-                                      if (context.mounted) {
-                                        toast(
-                                          context,
-                                          supportText(
-                                            context,
-                                            'Unable to send report.',
-                                            'റിപ്പോർട്ട് അയയ്ക്കാനായില്ല.',
-                                          ),
-                                        );
-                                      }
-                                    }
+                                    ),
+                                  ],
+                                ),
+                              );
+                              controller.dispose();
+                              if (reason == null || !context.mounted) {
+                                return;
+                              }
+                              try {
+                                await db.rpc(
+                                  'report_campaign',
+                                  params: {
+                                    'p_campaign': task['id'],
+                                    'p_reason': reason,
                                   },
-                                  child: Text(tr(context, 'reportCampaign')),
-                                ),
-                                if (status == 'pending')
-                                  TextButton(
-                                    onPressed: () =>
-                                        withdraw(context, task['id'] as String),
-                                    child: Text(tr(context, 'withdraw')),
-                                  ),
-                                FilledButton(
-                                  onPressed:
-                                      !enabled ||
-                                          status == 'pending' ||
-                                          status == 'approved' ||
-                                          status == 'legacy'
-                                      ? null
-                                      : () => claim(
-                                          context,
-                                          task['id'] as String,
-                                        ),
-                                  child: Text(tr(context, 'submitProof')),
-                                ),
-                              ],
+                                );
+                                if (context.mounted) {
+                                  toast(
+                                    context,
+                                    supportText(
+                                      context,
+                                      'Report sent.',
+                                      'റിപ്പോർട്ട് അയച്ചു.',
+                                    ),
+                                  );
+                                }
+                              } catch (_) {
+                                if (context.mounted) {
+                                  toast(
+                                    context,
+                                    supportText(
+                                      context,
+                                      'Unable to send report.',
+                                      'റിപ്പോർട്ട് അയയ്ക്കാനായില്ല.',
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            child: Text(tr(context, 'reportCampaign')),
+                          ),
+                          if (status == 'pending')
+                            TextButton(
+                              onPressed: () =>
+                                  withdraw(context, task['id'] as String),
+                              child: Text(tr(context, 'withdraw')),
                             ),
-                          ],
-                        ),
+                          FilledButton(
+                            onPressed:
+                                !enabled ||
+                                    status == 'pending' ||
+                                    status == 'approved' ||
+                                    status == 'legacy'
+                                ? null
+                                : () => claim(context, task['id'] as String),
+                            child: Text(tr(context, 'submitProof')),
+                          ),
+                        ],
                       ),
                     );
                   },

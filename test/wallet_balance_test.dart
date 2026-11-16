@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:growth_circle/main.dart' show growthTheme;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/wallet_balance.dart';
 
@@ -110,4 +112,93 @@ void main() {
     expect(sounds.last, 'stopCoinCount');
     await tester.pumpWidget(const SizedBox());
   });
+  for (final locale in ['en', 'ml']) {
+    for (final scale in [1.0, 1.5, 2.0]) {
+      testWidgets(
+        'wallet actions and copy work at narrow width in $locale at $scale',
+        (tester) async {
+          tester.view.physicalSize = const Size(320, 640);
+          tester.view.devicePixelRatio = 1;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          String? copied;
+          var buy = false, transfer = false;
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+                if (call.method == 'Clipboard.setData') {
+                  copied = (call.arguments as Map)['text'] as String?;
+                }
+                return null;
+              });
+          addTearDown(
+            () => TestDefaultBinaryMessengerBinding
+                .instance
+                .defaultBinaryMessenger
+                .setMockMethodCallHandler(SystemChannels.platform, null),
+          );
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: growthTheme(),
+              locale: Locale(locale),
+              supportedLocales: const [Locale('en'), Locale('ml')],
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context)
+                    .copyWith(textScaler: TextScaler.linear(scale)),
+                child: child!,
+              ),
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: WalletBalance(
+                      balances: Stream.value([
+                        {'balance': 2147483647, 'wallet_number': '1234567890'},
+                      ]),
+                      isMalayalam: locale == 'ml',
+                      onBuyCoins: () => buy = true,
+                      onTransfer: () => transfer = true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.textContaining('2147483647'), findsNothing);
+          await tester.tap(
+            find.byTooltip(
+              locale == 'en' ? 'Check balance' : 'Balance പരിശോധിക്കുക',
+            ),
+          );
+          await tester.pumpAndSettle();
+          expect(find.textContaining('2147483647'), findsOneWidget);
+          final copy = find.byTooltip(
+            locale == 'en' ? 'Copy wallet number' : 'വാലറ്റ് നമ്പർ പകർത്തുക',
+          );
+          await tester.ensureVisible(copy);
+          await tester.tap(copy);
+          await tester.pump();
+          expect(copied, '1234567890');
+          await tester.pumpAndSettle();
+          await tester.pump(const Duration(seconds: 5));
+          await tester.pumpAndSettle();
+          final buyButton = find.text(
+            locale == 'en' ? 'Buy coins' : 'Coins വാങ്ങുക',
+          );
+          final transferButton = find.text(
+            locale == 'en' ? 'Transfer coins' : 'Coins അയയ്ക്കുക',
+          );
+          await tester.ensureVisible(buyButton);
+          await tester.tap(buyButton);
+          await tester.ensureVisible(transferButton);
+          await tester.tap(transferButton);
+          expect(buy, isTrue);
+          expect(transfer, isTrue);
+          expect(tester.takeException(), isNull);
+          await tester.pumpWidget(const SizedBox.shrink());
+        },
+      );
+    }
+  }
 }
