@@ -50,10 +50,11 @@ class _WalletTransferPageState extends State<WalletTransferPage> {
   }
 
   Future<void> restore() async {
+    // Capture the owner before preferences can yield to a session change.
+    final key = storageKey;
     try {
-      final saved = (await SharedPreferences.getInstance()).getString(
-        storageKey,
-      );
+      final saved = (await SharedPreferences.getInstance()).getString(key);
+      if (!mounted || !sameSession) return;
       if (saved != null) {
         final value = Map<String, dynamic>.from(jsonDecode(saved) as Map);
         if (value['request'] is! String ||

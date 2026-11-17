@@ -44,6 +44,7 @@ class SupabaseCoinPurchases implements CoinPurchaseSource {
         .select()
         .eq('active', true)
         .order('amount_paise');
+    checkSession();
     return [
       for (final row in rows)
         CoinPlan(
@@ -64,6 +65,7 @@ class SupabaseCoinPurchases implements CoinPurchaseSource {
         .eq('status', 'pending')
         .order('created_at')
         .limit(100);
+    checkSession();
     return [
       for (final row in rows)
         CoinOrder(

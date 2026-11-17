@@ -6370,6 +6370,7 @@ class UserSettingsPage extends StatefulWidget {
 class _UserSettingsPageState extends State<UserSettingsPage>
     with WidgetsBindingObserver {
   bool enabled = false, loading = true, busy = false;
+  int loadGeneration = 0;
   @override
   void initState() {
     super.initState();
@@ -6389,18 +6390,19 @@ class _UserSettingsPageState extends State<UserSettingsPage>
   }
 
   Future<void> load() async {
+    final request = ++loadGeneration;
     try {
       final value =
           await (widget.enabledLoader?.call() ??
               PushCoordinator.instance.isEnabled(db));
-      if (mounted) {
+      if (mounted && request == loadGeneration) {
         setState(() {
           enabled = value;
           loading = false;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && request == loadGeneration) {
         setState(() => loading = false);
         toast(context, tr(context, 'error'));
       }
@@ -6408,11 +6410,14 @@ class _UserSettingsPageState extends State<UserSettingsPage>
   }
 
   Future<void> changePush(bool value) async {
+    if (busy) return;
     if (!await (widget.authorizeChange?.call() ??
         confirmSecurityPin(context))) {
       return;
     }
-    if (!mounted) return;
+    if (!mounted || busy) return;
+    // A prior permission read must not overwrite this explicit change.
+    loadGeneration++;
     setState(() => busy = true);
     try {
       if (widget.pushUpdater != null) {
