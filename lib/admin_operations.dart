@@ -1,3 +1,5 @@
+import 'admin_destination.dart';
+
 import 'dart:async';
 
 import 'admin_design.dart';
@@ -475,7 +477,17 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       'notes': op(context, 'Admin notes', 'Admin notes'),
       'security': op(context, 'Security', 'സുരക്ഷ'),
     };
-    return Scaffold(
+    return AdminDestinationScaffold(
+      destination: switch (page) {
+        'tickets' => AdminDestination.tickets,
+        'inbox' => AdminDestination.inbox,
+        'reports' => AdminDestination.campaignReports,
+        'coins' => AdminDestination.adjustments,
+        'alerts' => AdminDestination.alertSettings,
+        'trends' => AdminDestination.trends,
+        'notes' => AdminDestination.notes,
+        _ => AdminDestination.security,
+      },
       appBar: AdminPageBar(
         title: op(context, 'Admin operations', 'Admin പ്രവർത്തനങ്ങൾ'),
         icon: Icons.settings,

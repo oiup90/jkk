@@ -1,3 +1,5 @@
+import 'admin_destination.dart';
+
 import 'package:flutter/material.dart';
 
 const adminAccent = Color(0xff4d16d5);
@@ -218,6 +220,21 @@ class AdminPageBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(desktop ? 190 : kToolbarHeight);
   @override
   Widget build(BuildContext context) => AppBar(
+    flexibleSpace: AdminDestinationCanvas(
+      destination: switch (icon) {
+        Icons.rocket_launch => AdminDestination.releases,
+        Icons.dashboard => AdminDestination.overview,
+        Icons.history => AdminDestination.activity,
+        Icons.bar_chart => AdminDestination.reports,
+        Icons.notifications => AdminDestination.alerts,
+        Icons.admin_panel_settings => AdminDestination.roles,
+        Icons.tune => AdminDestination.actions,
+        Icons.toll_outlined => AdminDestination.coins,
+        Icons.campaign_outlined => AdminDestination.campaigns,
+        _ => AdminDestination.submissions,
+      },
+      child: const SizedBox.expand(),
+    ),
     toolbarHeight: preferredSize.height,
     titleSpacing: desktop ? 24 : null,
     title: desktop

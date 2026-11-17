@@ -57,9 +57,9 @@ Deno.serve(createHandler({
   publish: async ({userId, name, downloadUrl, data}: {userId: string; name: string; downloadUrl: string; data: Record<string, unknown>}) => {
     // Recheck the editor's current session after the potentially slow upload/copy.
     await runStage('publish_rpc', async () => {
-      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/publish_r2_app_release_with_referral`, {
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/publish_r2_app_release_scoped`, {
         method: 'POST', headers: {apikey: serviceKey, authorization: `Bearer ${serviceKey}`, 'content-type': 'application/json'},
-        body: JSON.stringify({p_user_id: userId, p_version_code: data.versionCode, p_version_name: data.versionName, p_path: name, p_sha256: data.sha256, p_size: data.size, p_notes: data.notes, p_url: downloadUrl}), signal: AbortSignal.timeout(15000),
+        body: JSON.stringify({p_user_id: userId, p_version_code: data.versionCode, p_version_name: data.versionName, p_path: name, p_sha256: data.sha256, p_size: data.size, p_notes: data.notes, p_url: downloadUrl, p_target_user: data.targetUser ?? null}), signal: AbortSignal.timeout(15000),
       });
       if (!response.ok) throw new StageFailure('publish_rpc', response.status);
     });

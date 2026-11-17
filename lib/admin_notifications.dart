@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'admin_destination.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -10,7 +12,14 @@ String _t(BuildContext context, String en, String ml) =>
 abstract class AdminNotificationGateway {
   Future<List<Map<String, dynamic>>> search(String query, int offset);
   Future<Map<String, dynamic>> pushReadiness(String? target);
-  Future<int> send(String requestId, String? target, String title, String body, {bool inApp = true, bool push = true});
+  Future<int> send(
+    String requestId,
+    String? target,
+    String title,
+    String body, {
+    bool inApp = true,
+    bool push = true,
+  });
 }
 
 class SupabaseAdminNotificationGateway implements AdminNotificationGateway {
@@ -24,15 +33,20 @@ class SupabaseAdminNotificationGateway implements AdminNotificationGateway {
       ) as List).map((row) => Map<String, dynamic>.from(row as Map)).toList();
   @override
   Future<Map<String, dynamic>> pushReadiness(String? target) async =>
-      Map<String, dynamic>.from(await client.rpc('admin_push_readiness',
-        params: {'p_target_user': target}) as Map);
+      Map<String, dynamic>.from(
+        await client.rpc(
+          'admin_push_readiness',
+          params: {'p_target_user': target},
+        ) as Map,
+      );
   @override
   Future<int> send(
     String requestId,
     String? target,
     String title,
     String body, {
-    bool inApp = true, bool push = true,
+    bool inApp = true,
+    bool push = true,
   }) async => await client.rpc(
     'admin_send_notification_v2',
     params: {
@@ -40,7 +54,8 @@ class SupabaseAdminNotificationGateway implements AdminNotificationGateway {
       'p_target_user': target,
       'p_title': title,
       'p_body': body,
-      'p_in_app': inApp, 'p_push': push,
+      'p_in_app': inApp,
+      'p_push': push,
     },
   ) as int;
 }
@@ -53,6 +68,39 @@ String _requestId() {
   final hex = bytes.map((x) => x.toRadixString(16).padLeft(2, '0')).join();
   return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
+
+class AdminMessageTemplate {
+  const AdminMessageTemplate(this.name, this.title, this.body);
+  final String name, title, body;
+}
+
+const adminMessageTemplates = [
+  AdminMessageTemplate(
+    'Welcome',
+    'Welcome to Freelan Space',
+    'Explore tasks, manage your campaigns and discover your wallet in the app.',
+  ),
+  AdminMessageTemplate(
+    'App update',
+    'A new app update is available',
+    'Open Settings → App updates to check the latest version and see what is new.',
+  ),
+  AdminMessageTemplate(
+    'Maintenance',
+    'Scheduled maintenance',
+    'We are planning maintenance on [date] from [start time] to [end time] [timezone]. Some features may be unavailable during this time.',
+  ),
+  AdminMessageTemplate(
+    'Campaign reminder',
+    'Check your campaigns',
+    'Open Campaigns to review your campaign progress and any submissions waiting for your review.',
+  ),
+  AdminMessageTemplate(
+    'Support follow-up',
+    'Your support conversation',
+    'Open Support in your profile to check the latest messages in your conversation.',
+  ),
+];
 
 class AdminSendNotificationPage extends StatefulWidget {
   const AdminSendNotificationPage({
@@ -74,6 +122,7 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
   bool allUsers = false, loading = false, sending = false;
   bool inApp = true, push = true;
   int offset = 0;
+  AdminMessageTemplate? messageTemplate;
   String search = '';
   List<Map<String, dynamic>> users = [];
   Map<String, dynamic>? selected;
@@ -121,16 +170,18 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
 
   Future<void> send() async {
     final heading = title.text.trim(), message = body.text.trim();
-    if ((!inApp && !push) || !widget.canEdit ||
+    if ((!inApp && !push) ||
+        !widget.canEdit ||
         (!allUsers && selected == null) ||
         heading.isEmpty ||
         message.isEmpty ||
+        RegExp(r'\[[^\]]+\]').hasMatch('$heading $message') ||
         heading.runes.length > 80 ||
         message.runes.length > 500) {
       setState(
         () => error = _t(
           context,
-          'Choose a recipient and enter a title and message.',
+          'Choose a recipient, enter a title and message, and replace any [placeholders].',
           'Recipient തിരഞ്ഞെടുത്ത് title-ഉം message-ഉം നൽകുക.',
         ),
       );
@@ -140,14 +191,22 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
     if (push) {
       setState(() => sending = true);
       try {
-        readiness = await widget.gateway.pushReadiness(allUsers ? null : selected!['id'] as String);
+        readiness = await widget.gateway.pushReadiness(
+          allUsers ? null : selected!['id'] as String,
+        );
       } catch (_) {
-        if (mounted) setState(() => error = 'Could not check push registrations. Retry.');
+        if (mounted) {
+          setState(() => error = 'Could not check push registrations. Retry.');
+        }
         return;
-      } finally { if (mounted) setState(() => sending = false); }
+      } finally {
+        if (mounted) setState(() => sending = false);
+      }
       if (!mounted) return;
       if ((readiness['devices'] as num) == 0 && !inApp) {
-        setState(() => error = 'No push-enabled devices for this audience. Ask users to sign in and enable Push notifications in Settings.');
+        setState(
+          () => error = 'No push-enabled devices for this audience. Ask users to sign in and enable Push notifications in Settings.',
+        );
         return;
       }
     }
@@ -162,7 +221,9 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
         ),
         content: Text(
           _t(context, 'Send to $destination?', '$destination-ന് അയയ്ക്കണോ?') +
-              (readiness == null ? '' : '\nPush registered: ${readiness['users_with_devices']} users, ${readiness['devices']} devices. Other users will not receive push.'),
+              (readiness == null
+                  ? ''
+                  : '\nPush registered: ${readiness['users_with_devices']} users, ${readiness['devices']} devices. Other users will not receive push.'),
         ),
         actions: [
           TextButton(
@@ -192,7 +253,9 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
         requestId!,
         target,
         heading,
-        message, inApp: inApp, push: push,
+        message,
+        inApp: inApp,
+        push: push,
       );
       if (!mounted) return;
       setState(() {
@@ -228,7 +291,8 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.notifications,
     appBar: AppBar(
       title: Text(_t(context, 'Send notification', 'Notification അയയ്ക്കുക')),
     ),
@@ -245,10 +309,20 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
                 'ഒരു user-നെയോ എല്ലാ active users-നെയോ തിരഞ്ഞെടുക്കുക. Push enable ചെയ്ത devices-ലാണ് notification ലഭിക്കുക.',
               ),
             ),
-            CheckboxListTile(title: const Text('In-app notification'), value: inApp,
-              onChanged: sending || !widget.canEdit ? null : (v) => setState(() => inApp = v!)),
-            CheckboxListTile(title: const Text('Push notification'), value: push,
-              onChanged: sending || !widget.canEdit ? null : (v) => setState(() => push = v!)),
+            CheckboxListTile(
+              title: const Text('In-app notification'),
+              value: inApp,
+              onChanged: sending || !widget.canEdit
+                  ? null
+                  : (v) => setState(() => inApp = v!),
+            ),
+            CheckboxListTile(
+              title: const Text('Push notification'),
+              value: push,
+              onChanged: sending || !widget.canEdit
+                  ? null
+                  : (v) => setState(() => push = v!),
+            ),
             SwitchListTile(
               title: Text(_t(context, 'All users', 'എല്ലാ users')),
               value: allUsers,
@@ -334,6 +408,51 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
                 ],
               ),
             ],
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xffe7f2f7),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Message templates',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<AdminMessageTemplate>(
+                    key: const Key('notification_template'),
+                    isExpanded: true,
+                    initialValue: messageTemplate,
+                    hint: const Text('Choose a template'),
+                    items: [
+                      for (final template in adminMessageTemplates)
+                        DropdownMenuItem(
+                          value: template,
+                          child: Text(template.name),
+                        ),
+                    ],
+                    onChanged: !widget.canEdit || sending
+                        ? null
+                        : (value) {
+                            if (value == null) return;
+                            setState(() {
+                              messageTemplate = value;
+                              title.text = value.title;
+                              body.text = value.body;
+                            });
+                          },
+                  ),
+                  const Text(
+                    'Templates replace the title and message. Edit the text and fill in any [placeholders] before sending.',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             TextField(
               key: const Key('notification_title'),
               controller: title,

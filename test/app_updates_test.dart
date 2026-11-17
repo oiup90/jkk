@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,143 @@ Map<String, dynamic> release(int code) => {
   'notes': 'New features',
 };
 void main() {
+  testWidgets(
+    'release notes render lists and bold text without losing plain text',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: AppUpdateView(
+                versionLoader: () async => 7,
+                releaseLoader: () => Stream.value([
+                  {
+                    ...release(8),
+                    'notes': '* **Wallet Number:** Recipient name\n\n- **Payment:** New receipts\nPlain note with **unclosed\n1. Restart app',
+                  },
+                ]),
+                installer: (_) async => 'installer_opened',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text("What's new"), findsOneWidget);
+      final textWidgets = tester.widgetList<Text>(find.byType(Text));
+      final notes = textWidgets.where((item) => item.textSpan != null).toList();
+      expect(
+        notes.map((item) => item.textSpan!.toPlainText()),
+        containsAll([
+          'Wallet Number: Recipient name',
+          'Payment: New receipts',
+          'Plain note with **unclosed',
+          '1. Restart app',
+        ]),
+      );
+      final wallet = notes.firstWhere(
+        (item) =>
+            item.textSpan!.toPlainText() == 'Wallet Number: Recipient name',
+      );
+      final spans = (wallet.textSpan as TextSpan).children!;
+      expect((spans.first as TextSpan).style!.fontWeight, FontWeight.w700);
+      expect(find.text('Update app'), findsOneWidget);
+    },
+  );
+
+  for (final locale in ['en', 'ml']) {
+    testWidgets(
+      'mandatory update actions stay reachable with long notes in $locale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 640);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        var installs = 0;
+        final longNotes = List.generate(
+          12,
+          (i) => '* **Feature $i:** A longer description for this release.',
+        ).join('\n\n');
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: Locale(locale),
+            supportedLocales: const [Locale('en'), Locale('ml')],
+            localizationsDelegates: GlobalMaterialLocalizations.delegates,
+            builder: (context, child) => MediaQuery(
+              data: MediaQuery.of(context)
+                  .copyWith(textScaler: const TextScaler.linear(1.5)),
+              child: AppUpdateGate(
+                signedIn: true,
+                versionLoader: () async => 7,
+                releaseLoader: () => Stream.value([
+                  {...release(8), 'notes': longNotes},
+                ]),
+                installer: (_) async {
+                  installs++;
+                  return 'installer_opened';
+                },
+                child: child!,
+              ),
+            ),
+            home: const Scaffold(body: Text('Home access')),
+          ),
+        );
+        await tester.pumpAndSettle();
+        final update = find.text(
+          locale == 'en' ? 'Update app' : 'App update ചെയ്യുക',
+        );
+        await tester.ensureVisible(update);
+        await tester.pumpAndSettle();
+        await tester.tap(update);
+        await tester.pumpAndSettle();
+        expect(installs, 1);
+        final check = find.text(
+          locale == 'en' ? 'Check again' : 'വീണ്ടും പരിശോധിക്കുക',
+        );
+        await tester.ensureVisible(check);
+        await tester.pumpAndSettle();
+        expect(tester.getRect(check).bottom, lessThanOrEqualTo(640));
+        expect(find.text('Home access'), findsNothing);
+        expect(tester.takeException(), isNull);
+        await tester.pumpWidget(const SizedBox());
+      },
+    );
+  }
+
+  testWidgets('update action shows progress and prevents duplicate installs', (
+    tester,
+  ) async {
+    final download = Completer<String?>();
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: AppUpdateView(
+              versionLoader: () async => 7,
+              releaseLoader: () => Stream.value([release(8)]),
+              installer: (_) {
+                calls++;
+                return download.future;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Update app'));
+    await tester.pump();
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Downloading & verifying…'),
+    );
+    expect(button.onPressed, isNull);
+    expect(calls, 1);
+    download.complete('installer_opened');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Complete installation'), findsOneWidget);
+  });
+
   testWidgets(
     'mandatory gate covers pushed pages, retains lock on errors and cancelled install, unlocks only on installed version',
     (tester) async {
