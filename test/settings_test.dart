@@ -5,6 +5,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
 
 void main() {
+  testWidgets('cancelled security check keeps push enabled', (tester) async {
+    var updates = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UserSettingsPage(
+          authorizeChange: () async => false,
+          enabledLoader: () async => true,
+          pushUpdater: (_) async {
+            updates++;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
+    expect(updates, 0);
+  });
   testWidgets('permission denial offers Android notification settings', (
     tester,
   ) async {

@@ -5,6 +5,7 @@ import 'design.dart';
 import 'brand_wordmark.dart';
 import 'account_block_guard.dart';
 import 'earn_design.dart';
+import 'user_page_design.dart';
 import 'app_updates.dart';
 import 'evidence_image.dart';
 import 'support_page.dart';
@@ -52,6 +53,15 @@ Future<void> main() async {
 
 const words = <String, List<String>>{
   'savedTasks': ['Saved tasks', 'Save ചെയ്ത tasks'],
+  'emptySavedTasks': [
+    'No saved tasks match.',
+    'Save ചെയ്ത tasks ഈ filter-ൽ ഇല്ല.',
+  ],
+  'emptyFilteredTasksHelp': [
+    'Try all tasks or change your filters.',
+    'എല്ലാ tasks-ഉം കാണുക അല്ലെങ്കിൽ filter മാറ്റുക.',
+  ],
+  'showAllTasks': ['Show all tasks', 'എല്ലാ tasks-ഉം കാണുക'],
   'saveTask': ['Save task', 'Task save ചെയ്യുക'],
   'unsaveTask': ['Remove saved task', 'Save ചെയ്ത task ഒഴിവാക്കുക'],
   'viewHistory': ['View all submissions', 'എല്ലാ submissions-ഉം കാണുക'],
@@ -2164,85 +2174,50 @@ class Dashboard extends StatelessWidget {
       Text(
         tr(context, 'welcome'),
         style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w700,
+          fontSize: 19,
+          height: 1.25,
+          fontWeight: FontWeight.w800,
           color: growthInk,
         ),
       ),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          width: 42,
-          height: 3,
-          margin: const EdgeInsets.only(top: 5),
-          decoration: BoxDecoration(
-            color: growthPurple,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-      ),
-      const SizedBox(height: 10),
+      const SizedBox(height: 6),
       Text(
         tr(context, 'homeDesc'),
-        style: const TextStyle(fontSize: 11, color: Color(0xff635b80)),
+        style: const TextStyle(
+          fontSize: 11,
+          height: 1.5,
+          color: Color(0xff6d6580),
+        ),
       ),
-      const SizedBox(height: 14),
-      for (final type in ['like', 'comment', 'share', 'follow'])
-        Card(
-          child: ListTile(
-            visualDensity: const VisualDensity(vertical: -3),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-            minTileHeight: 48,
-            horizontalTitleGap: 10,
-            leading: Image.asset(
-              'assets/design/${type}_badge.png',
-              width: 42,
-              height: 42,
-              excludeFromSemantics: true,
-            ),
-            title: Text(
-              tr(context, type),
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
-            subtitle: Text(switch (type) {
-              'like' => uf(
-                context,
-                'Like an Instagram post',
-                'Instagram post like ചെയ്യുക',
-              ),
-              'comment' => uf(
-                context,
-                'Leave a thoughtful comment',
-                'ഒരു comment നൽകുക',
-              ),
-              'share' => uf(
-                context,
-                'Share a post with friends',
-                'Post സുഹൃത്തുക്കളുമായി share ചെയ്യുക',
-              ),
-              _ => uf(
-                context,
-                'Follow an Instagram page',
-                'Instagram page follow ചെയ്യുക',
-              ),
-            }),
-            trailing: const Icon(Icons.chevron_right, color: growthPurple),
-            onTap: () {
-              if (onBrowseType != null) {
-                onBrowseType!(type);
-              } else {
-                onBrowse();
-              }
-            },
+      const SizedBox(height: 16),
+      for (final pair in [
+        ['like', 'comment'],
+        ['share', 'follow'],
+      ]) ...[
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var index = 0; index < pair.length; index++) ...[
+                if (index > 0) const SizedBox(width: 10),
+                Expanded(child: taskTile(context, pair[index])),
+              ],
+            ],
           ),
         ),
+        const SizedBox(height: 10),
+      ],
       const SizedBox(height: 14),
-      Notice(),
+      const Notice(refined: true),
       const SizedBox(height: 12),
-      const GrowthArt('home_reference', height: 178),
       Column(
         children: [
-          Card(
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xffe9e2f2)),
+            ),
             child: ProfileMenuTile(
               icon: Icons.explore_outlined,
               title: tr(context, 'browse'),
@@ -2254,7 +2229,13 @@ class Dashboard extends StatelessWidget {
               onTap: onBrowse,
             ),
           ),
-          Card(
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: const Color(0xffe9e2f2)),
+            ),
             child: ProfileMenuTile(
               icon: Icons.campaign_outlined,
               title: tr(context, 'create'),
@@ -2270,36 +2251,106 @@ class Dashboard extends StatelessWidget {
       ),
     ],
   );
+
+  Widget taskTile(BuildContext context, String type) => DashboardTaskTile(
+    icon: actionIcon(type),
+    title: tr(context, type),
+    subtitle: switch (type) {
+      'like' => uf(
+        context,
+        'Like an Instagram post',
+        'Instagram post like ചെയ്യുക',
+      ),
+      'comment' => uf(
+        context,
+        'Leave a thoughtful comment',
+        'ഒരു comment നൽകുക',
+      ),
+      'share' => uf(
+        context,
+        'Share a post with friends',
+        'Post സുഹൃത്തുക്കളുമായി share ചെയ്യുക',
+      ),
+      _ => uf(
+        context,
+        'Follow an Instagram page',
+        'Instagram page follow ചെയ്യുക',
+      ),
+    },
+    accent: switch (type) {
+      'like' => const Color(0xffc34f82),
+      'comment' => const Color(0xff6d49ad),
+      'share' => const Color(0xff426bb4),
+      _ => const Color(0xff7650bf),
+    },
+    onTap: () {
+      if (onBrowseType != null) {
+        onBrowseType!(type);
+      } else {
+        onBrowse();
+      }
+    },
+  );
 }
 
 class Notice extends StatelessWidget {
-  const Notice({super.key});
+  const Notice({super.key, this.refined = false});
+  final bool refined;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: const Color(0xfff1eefb),
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const Icon(Icons.info, color: growthPurple, size: 24),
-        Container(
-          width: 1,
-          height: 28,
-          margin: const EdgeInsets.symmetric(horizontal: 10),
-          color: const Color(0xffb99cdd),
-        ),
-        Expanded(
-          child: Text(
-            tr(context, 'disclaimer'),
-            style: const TextStyle(fontSize: 10, color: growthInk),
+  Widget build(BuildContext context) => refined
+      ? Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: const Color(0xffeee8f8),
+            borderRadius: BorderRadius.circular(18),
           ),
-        ),
-      ],
-    ),
-  );
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                color: growthPurple,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  tr(context, 'disclaimer'),
+                  style: const TextStyle(
+                    fontSize: 11,
+                    height: 1.45,
+                    color: growthInk,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        )
+      : Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xfff1eefb),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Icon(Icons.info, color: growthPurple, size: 24),
+              Container(
+                width: 1,
+                height: 28,
+                margin: const EdgeInsets.symmetric(horizontal: 10),
+                color: const Color(0xffb99cdd),
+              ),
+              Expanded(
+                child: Text(
+                  tr(context, 'disclaimer'),
+                  style: const TextStyle(fontSize: 10, color: growthInk),
+                ),
+              ),
+            ],
+          ),
+        );
 }
 
 IconData actionIcon(String type) => switch (type) {
@@ -2958,7 +3009,7 @@ class _TaskListState extends State<TaskList> {
                 }),
               ),
               const SizedBox(height: 16),
-              const Notice(),
+              const Notice(refined: true),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
@@ -2972,8 +3023,11 @@ class _TaskListState extends State<TaskList> {
                   icon: const Icon(Icons.history),
                   label: Text(tr(context, 'viewHistory')),
                   style: OutlinedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: growthPurple,
+                    minimumSize: const Size(0, 48),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(26),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     side: const BorderSide(color: Color(0xffc8b2eb)),
                   ),
@@ -3023,8 +3077,15 @@ class _TaskListState extends State<TaskList> {
                 alignment: Alignment.centerLeft,
                 child: FilterChip(
                   visualDensity: VisualDensity.compact,
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  materialTapTargetSize: MaterialTapTargetSize.padded,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                  backgroundColor: Colors.white,
+                  selectedColor: const Color(0xffeee5fb),
+                  showCheckmark: false,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  side: const BorderSide(color: Color(0xffe5daef)),
                   avatar: const Icon(
                     Icons.bookmark_border,
                     size: 16,
@@ -3044,17 +3105,29 @@ class _TaskListState extends State<TaskList> {
                 ),
               const SizedBox(height: 12),
               if (filteredTasks.isEmpty)
-                GrowthEmpty(
-                  art: 'earn_reference',
+                EarnEmptyState(
                   title: tr(
                     context,
-                    selectedType == 'all' ? 'emptyTasks' : 'noFilteredTasks',
+                    savedOnly
+                        ? 'emptySavedTasks'
+                        : selectedType == 'all'
+                        ? 'emptyTasks'
+                        : 'noFilteredTasks',
                   ),
-                  subtitle: uf(
-                    context,
-                    'Check back later for new tasks.',
-                    'പുതിയ tasks പിന്നീട് പരിശോധിക്കുക.',
-                  ),
+                  subtitle: savedOnly || selectedType != 'all'
+                      ? tr(context, 'emptyFilteredTasksHelp')
+                      : uf(
+                          context,
+                          'Check back later for new tasks.',
+                          'പുതിയ tasks പിന്നീട് പരിശോധിക്കുക.',
+                        ),
+                  actionLabel: tr(context, 'showAllTasks'),
+                  onAction: savedOnly || selectedType != 'all'
+                      ? () => setState(() {
+                          selectedType = 'all';
+                          savedOnly = false;
+                        })
+                      : null,
                 ),
               for (final task in filteredTasks)
                 Builder(
@@ -4794,110 +4867,135 @@ class ProfileLayout extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(14, 0, 14, 20),
                   children: [
-                    Center(
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: const Color(0xffc5a8fa),
-                                width: 3,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: growthPurple.withValues(alpha: .12),
-                                  blurRadius: 12,
-                                ),
-                              ],
-                            ),
-                            child: CircleAvatar(
-                              radius: 36,
-                              backgroundColor: const Color(0xffc5f64b),
-                              backgroundImage: info?.photo == null
-                                  ? null
-                                  : MemoryImage(info!.photo!),
-                              child: info?.photo != null
-                                  ? null
-                                  : Text(
-                                      profileInitials(name),
-                                      style: const TextStyle(
-                                        fontSize: 27,
-                                        fontWeight: FontWeight.w800,
-                                        color: Color(0xff171a13),
-                                      ),
-                                    ),
-                            ),
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xff352052), Color(0xff65418f)],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xff392061)
+                                .withValues(alpha: .18),
+                            blurRadius: 18,
+                            offset: const Offset(0, 7),
                           ),
-                          Positioned(
-                            right: -6,
-                            bottom: -4,
-                            child: IconButton.filled(
-                              constraints: const BoxConstraints.tightFor(
-                                width: 32,
-                                height: 32,
+                        ],
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: const Color(0xffd8bdf7),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 31,
+                                  backgroundColor: const Color(0xffe4d4f5),
+                                  backgroundImage: info?.photo == null
+                                      ? null
+                                      : MemoryImage(info!.photo!),
+                                  child: info?.photo != null
+                                      ? null
+                                      : Text(
+                                          profileInitials(name),
+                                          style: const TextStyle(
+                                            fontSize: 23,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xff392457),
+                                          ),
+                                        ),
+                                ),
                               ),
-                              padding: EdgeInsets.zero,
-                              tooltip: uf(
-                                context,
-                                'Edit profile',
-                                'Profile മാറ്റുക',
+                              Positioned(
+                                right: 0,
+                                bottom: 0,
+                                child: IconButton.filled(
+                                  constraints: const BoxConstraints.tightFor(
+                                    width: 48,
+                                    height: 48,
+                                  ),
+                                  padding: EdgeInsets.zero,
+                                  tooltip: uf(
+                                    context,
+                                    'Edit profile',
+                                    'Profile മാറ്റുക',
+                                  ),
+                                  onPressed: onPersonalInfo,
+                                  icon: const Icon(Icons.edit, size: 16),
+                                ),
                               ),
-                              onPressed: onPersonalInfo,
-                              icon: const Icon(Icons.edit, size: 16),
+                            ],
+                          ),
+                          const SizedBox(width: 18),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  name,
+                                  style: const TextStyle(
+                                    fontSize: 17,
+                                    height: 1.2,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                if (profileName(user) != null &&
+                                    user.email != null) ...[
+                                  const SizedBox(height: 5),
+                                  Text(
+                                    user.email!,
+                                    style: const TextStyle(
+                                      color: Color(0xffeee3f9),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                                if (info?.publicUserId != null) ...[
+                                  const SizedBox(height: 7),
+                                  SelectableText(
+                                    'User ID: ${info!.publicUserId}',
+                                    style: const TextStyle(
+                                      color: Color(0xfff4dcad),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                                if (joined != null) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    joined,
+                                    style: const TextStyle(
+                                      color: Color(0xffeee3f9),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      name,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xff17171b),
-                      ),
-                    ),
-                    if (profileName(user) != null && user.email != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        user.email!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xff62647a),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                    if (info?.publicUserId != null) ...[
-                      const SizedBox(height: 6),
-                      SelectableText(
-                        'User ID: ${info!.publicUserId}',
-                        style: const TextStyle(fontSize: 10),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                    if (joined != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        joined,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xff62647a),
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
                     const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xffe9e2f2)),
                       ),
                       child: Row(
                         children: [
@@ -4949,12 +5047,6 @@ class ProfileLayout extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: growthGradient,
                         borderRadius: BorderRadius.circular(18),
-                        image: const DecorationImage(
-                          image: AssetImage(
-                            'assets/design/referral_background.png',
-                          ),
-                          fit: BoxFit.cover,
-                        ),
                       ),
                       child: Material(
                         color: Colors.transparent,
@@ -5017,7 +5109,8 @@ class ProfileLayout extends StatelessWidget {
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xffe9e2f2)),
                       ),
                       padding: const EdgeInsets.fromLTRB(8, 14, 8, 6),
                       child: Column(
@@ -5080,7 +5173,6 @@ class ProfileLayout extends StatelessWidget {
                               ),
                             ),
                           ),
-                          const LegalLinks(),
                           ProfileMenuTile(
                             icon: Icons.lock_outline,
                             title: tr(context, 'releasePin'),
@@ -5092,6 +5184,7 @@ class ProfileLayout extends StatelessWidget {
                                   ),
                             onTap: onPin,
                           ),
+                          const LegalLinks(),
                         ],
                       ),
                     ),
@@ -5160,13 +5253,12 @@ class ProfileMenuTile extends StatelessWidget {
       enabled: onTap != null,
       onTap: onTap,
       dense: true,
-      minTileHeight: 40,
-      visualDensity: const VisualDensity(vertical: -3),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10),
-      horizontalTitleGap: 10,
+      minTileHeight: 56,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      horizontalTitleGap: 12,
       leading: Container(
-        width: 30,
-        height: 30,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: const Color(0xffeee6ff),
           borderRadius: BorderRadius.circular(11),
