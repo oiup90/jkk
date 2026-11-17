@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -263,7 +265,8 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
     final joined = created == null
         ? '—'
         : MaterialLocalizations.of(context).formatFullDate(created);
-    return Scaffold(
+    return UserPageScaffold(
+      identity: UserPageIdentity.personalInfo,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -597,7 +600,8 @@ class _EmailChangePageState extends State<EmailChangePage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.changeEmail,
     appBar: AppBar(title: Text(_t(context, 'Change email', 'Email മാറ്റുക'))),
     body: Center(
       child: ConstrainedBox(
@@ -605,6 +609,63 @@ class _EmailChangePageState extends State<EmailChangePage> {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xffe8f1ff),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xffc9dafa)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.mark_email_read_outlined,
+                        color: Color(0xff315db1),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _t(context, 'Email verification', 'Email പരിശോധന'),
+                          style: const TextStyle(
+                            color: Color(0xff223f79),
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${step + 1} / 3',
+                        style: const TextStyle(
+                          color: Color(0xff315db1),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      for (var i = 0; i < 3; i++)
+                        Expanded(
+                          child: Container(
+                            height: 4,
+                            margin: EdgeInsets.only(right: i == 2 ? 0 : 5),
+                            decoration: BoxDecoration(
+                              color: i <= step
+                                  ? const Color(0xff315db1)
+                                  : const Color(0xffc4d4f3),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
             Text(
               step == 0
                   ? _t(

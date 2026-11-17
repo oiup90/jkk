@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
@@ -304,7 +306,8 @@ class _WalletTransferPageState extends State<WalletTransferPage> {
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: !busy,
-    child: Scaffold(
+    child: UserPageScaffold(
+      identity: UserPageIdentity.transfer,
       appBar: AppBar(title: Text(text('Transfer coins', 'Coins അയയ്ക്കുക'))),
       body: Center(
         child: ConstrainedBox(
@@ -621,7 +624,8 @@ class _PaymentProcessingPageState extends State<_PaymentProcessingPage>
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: false,
-    child: Scaffold(
+    child: UserPageScaffold(
+      identity: UserPageIdentity.processing,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -742,7 +746,12 @@ class _PaymentResultPage extends StatelessWidget {
     final formattedDate = date == null
         ? null
         : '${MaterialLocalizations.of(context).formatFullDate(date)} · ${MaterialLocalizations.of(context).formatTimeOfDay(TimeOfDay.fromDateTime(date))}';
-    return Scaffold(
+    return UserPageScaffold(
+      identity: unknown
+          ? UserPageIdentity.resultUnknown
+          : success
+          ? UserPageIdentity.resultSuccess
+          : UserPageIdentity.resultFailure,
       appBar: AppBar(title: Text(text('Payment details', 'Payment വിവരങ്ങൾ'))),
       body: Center(
         child: ConstrainedBox(

@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'package:flutter/material.dart';
 
 import 'support_page.dart';
@@ -59,7 +61,8 @@ class LegalPage extends StatelessWidget {
               'Settings/Profile വഴി notifications, saved login, Instagram usernames എന്നിവ നിയന്ത്രിക്കാം. Data access, correction, deletion, privacy ചോദ്യങ്ങൾക്ക് Profile-ലെ Support ഉപയോഗിക്കുക. ആവശ്യമായ വിവരങ്ങൾ മാത്രം നൽകുക. Password/Security PIN chat-ൽ അയയ്ക്കരുത്.',
             ),
           };
-    return Scaffold(
+    return UserPageScaffold(
+      identity: terms ? UserPageIdentity.terms : UserPageIdentity.privacy,
       appBar: AppBar(
         title: Text(
           terms
@@ -73,15 +76,48 @@ class LegalPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              for (final section in sections.entries) ...[
-                Text(
-                  section.key,
-                  style: Theme.of(context).textTheme.titleMedium,
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: terms
+                        ? const Color(0xffffefd8)
+                        : const Color(0xffe1eff6),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    terms ? Icons.article_outlined : Icons.privacy_tip_outlined,
+                    color: terms
+                        ? const Color(0xff926018)
+                        : const Color(0xff326b7e),
+                    size: 30,
+                  ),
                 ),
-                const SizedBox(height: 8),
-                SelectableText(section.value),
-                const SizedBox(height: 24),
-              ],
+              ),
+              const SizedBox(height: 18),
+              for (final (index, section) in sections.entries.indexed)
+                Card(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${(index + 1).toString().padLeft(2, '0')}  ${section.key}',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 10),
+                        SelectableText(section.value),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

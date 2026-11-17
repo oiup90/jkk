@@ -130,3 +130,13 @@ test('logging failures preserve the uncertain-publication response after a faile
   assert.equal(calls.length, 1);
   assert.equal(calls[0][0], 'copy');
 });
+
+test('targeted publication preserves the recipient and rejects malformed audiences', async () => {
+  const {handler, calls} = fixture();
+  for (const targetUser of ['', 'not-a-uuid', [], 42]) {
+    assert.equal((await handler(request({...metadata, targetUser}))).status, 400);
+  }
+  assert.equal(calls.length, 0);
+  assert.equal((await handler(request({...metadata, targetUser: id}))).status, 200);
+  assert.equal(calls.find(c => c[0] === 'publish')[1].data.targetUser, id);
+});

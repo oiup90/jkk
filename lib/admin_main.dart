@@ -1,3 +1,5 @@
+import 'admin_destination.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -6,7 +8,9 @@ import 'admin_operations.dart';
 import 'admin_app_releases.dart';
 import 'admin_notifications.dart';
 import 'admin_login_tools.dart';
+
 import 'package:flutter/services.dart';
+
 import 'admin_design.dart';
 
 import 'package:flutter/material.dart';
@@ -559,31 +563,66 @@ class _AdminAppState extends State<AdminApp> with WidgetsBindingObserver {
     });
     activity();
   }
+
   Future<void> sessionSettings(BuildContext context) async {
     var minutes = idleMinutes;
     var background = lockOnBackground;
-    final saved = await showDialog<bool>(context: context, builder: (context) => StatefulBuilder(
-      builder: (context, change) => AlertDialog(
-        title: const Text('Session settings'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          DropdownButton<int>(value: minutes, items: const [
-            DropdownMenuItem(value: 0, child: Text('Sign out manually')),
-            DropdownMenuItem(value: 10, child: Text('After 10 idle minutes')),
-            DropdownMenuItem(value: 30, child: Text('After 30 idle minutes')),
-            DropdownMenuItem(value: 60, child: Text('After 60 idle minutes')),
-          ], onChanged: (value) => change(() => minutes = value!)),
-          CheckboxListTile(title: const Text('Sign out when minimized'), value: background,
-            onChanged: (value) => change(() => background = value!)),
-        ]),
-        actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save'))],
-      )));
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, change) => AlertDialog(
+          title: const Text('Session settings'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButton<int>(
+                value: minutes,
+                items: const [
+                  DropdownMenuItem(value: 0, child: Text('Sign out manually')),
+                  DropdownMenuItem(
+                    value: 10,
+                    child: Text('After 10 idle minutes'),
+                  ),
+                  DropdownMenuItem(
+                    value: 30,
+                    child: Text('After 30 idle minutes'),
+                  ),
+                  DropdownMenuItem(
+                    value: 60,
+                    child: Text('After 60 idle minutes'),
+                  ),
+                ],
+                onChanged: (value) => change(() => minutes = value!),
+              ),
+              CheckboxListTile(
+                title: const Text('Sign out when minimized'),
+                value: background,
+                onChanged: (value) => change(() => background = value!),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
     if (saved != true || !mounted) return;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('admin_idle_minutes', minutes);
     await prefs.setBool('admin_lock_background', background);
     if (!mounted) return;
-    setState(() { idleMinutes = minutes; lockOnBackground = background; });
+    setState(() {
+      idleMinutes = minutes;
+      lockOnBackground = background;
+    });
     activity();
   }
 
@@ -614,12 +653,15 @@ class _AdminAppState extends State<AdminApp> with WidgetsBindingObserver {
   void activity() {
     if (!authorized) return;
     idle?.cancel();
-    if (idleMinutes > 0) idle = Timer(Duration(minutes: idleMinutes), () => unawaited(logout()));
+    if (idleMinutes > 0) {
+      idle = Timer(Duration(minutes: idleMinutes), () => unawaited(logout()));
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (authorized && lockOnBackground &&
+    if (authorized &&
+        lockOnBackground &&
         (state == AppLifecycleState.hidden ||
             state == AppLifecycleState.paused)) {
       unawaited(logout());
@@ -961,7 +1003,9 @@ class _AdminSetupState extends State<AdminSetup> {
       await prefs.setString('admin_project_url', projectUrl);
       await prefs.setString('admin_public_key', publicKey);
       final gateway = SupabaseAdminGateway(
-        SupabaseClient(projectUrl, publicKey), projectUrl: projectUrl, publicKey: publicKey,
+        SupabaseClient(projectUrl, publicKey),
+        projectUrl: projectUrl,
+        publicKey: publicKey,
       );
       if (mounted) {
         widget.onConnect(gateway);
@@ -1060,7 +1104,8 @@ class AdminFrame extends StatelessWidget {
         ),
       ),
     );
-    return Scaffold(
+    return AdminDestinationScaffold(
+      destination: isSetup ? AdminDestination.setup : AdminDestination.signIn,
       appBar: AppBar(
         title: const AdminBrand(),
         actions: [
@@ -1159,36 +1204,54 @@ class _AdminSignInState extends State<AdminSignIn> {
   bool remember = true;
   AdminSavedLogin? get savedLogin {
     final gateway = widget.gateway;
-    return gateway is SupabaseAdminGateway && gateway.projectUrl != null ? AdminSavedLogin(gateway.projectUrl!) : null;
+    return gateway is SupabaseAdminGateway && gateway.projectUrl != null
+        ? AdminSavedLogin(gateway.projectUrl!)
+        : null;
   }
+
   @override
   void initState() {
     super.initState();
     unawaited(loadSaved());
   }
+
   Future<void> loadSaved() async {
     try {
       final value = await savedLogin?.load();
       if (mounted) setState(() => saved = value);
     } catch (_) {
-      if (mounted) setState(() => error = 'Windows secure storage is unavailable. Saved login could not be loaded.');
+      if (mounted) {
+        setState(
+          () => error = 'Windows secure storage is unavailable. Saved login could not be loaded.',
+        );
+      }
     }
   }
+
   Future<void> recoverPassword() async {
     final gateway = widget.gateway;
     if (gateway is! SupabaseAdminGateway) return;
     final key = gateway.publicKey;
     final project = gateway.projectUrl;
     if (key == null || project == null || !mounted) return;
-    final result = await showDialog<bool>(context: context, barrierDismissible: false,
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
       builder: (_) => AdminPasswordRecovery(
         savedLogin: savedLogin!,
-        createClient: () => SupabaseClient(project, key,
-          authOptions: const AuthClientOptions(autoRefreshToken: false)),
-      ));
+        createClient: () => SupabaseClient(
+          project,
+          key,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      ),
+    );
     if (result == true && mounted) {
       password.clear();
-      setState(() { saved = null; error = 'Password changed. Sign in with your new password.'; });
+      setState(() {
+        saved = null;
+        error = 'Password changed. Sign in with your new password.';
+      });
     }
   }
 
@@ -1227,8 +1290,13 @@ class _AdminSignInState extends State<AdminSignIn> {
           }
         } catch (_) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Signed in, but Windows could not save the login securely.')));
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Signed in, but Windows could not save the login securely.',
+                ),
+              ),
+            );
           }
         }
         if (!mounted) return;
@@ -1291,7 +1359,8 @@ class _AdminSignInState extends State<AdminSignIn> {
           key: const Key('admin_email'),
           controller: email,
           onTap: () {
-            if (saved != null && (email.text.isEmpty || email.text == saved!['email'])) {
+            if (saved != null &&
+                (email.text.isEmpty || email.text == saved!['email'])) {
               email.text = saved!['email']!;
               password.text = saved!['password']!;
             }
@@ -1326,17 +1395,33 @@ class _AdminSignInState extends State<AdminSignIn> {
             ),
           ),
         ),
-        CheckboxListTile(contentPadding: EdgeInsets.zero, value: remember,
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          value: remember,
           title: const Text('Save login securely on this Windows account'),
-          onChanged: busy ? null : (value) => setState(() => remember = value!)),
-        if (saved != null) TextButton(onPressed: busy ? null : () async {
-          try {
-            await savedLogin?.forget();
-            password.clear();
-            if (mounted) setState(() => saved = null);
-          } catch (_) { if (mounted) setState(() => error = 'Could not remove saved login.'); }
-        }, child: const Text('Forget saved login')),
-        TextButton(onPressed: busy ? null : recoverPassword, child: const Text('Forgot password?')),
+          onChanged: busy ? null : (value) => setState(() => remember = value!),
+        ),
+        if (saved != null)
+          TextButton(
+            onPressed: busy
+                ? null
+                : () async {
+                    try {
+                      await savedLogin?.forget();
+                      password.clear();
+                      if (mounted) setState(() => saved = null);
+                    } catch (_) {
+                      if (mounted) {
+                        setState(() => error = 'Could not remove saved login.');
+                      }
+                    }
+                  },
+            child: const Text('Forget saved login'),
+          ),
+        TextButton(
+          onPressed: busy ? null : recoverPassword,
+          child: const Text('Forgot password?'),
+        ),
         const SizedBox(height: 16),
         if (error != null)
           Padding(
@@ -1480,7 +1565,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.dashboard,
     appBar: widget.embedded
         ? null
         : AppBar(
@@ -1803,9 +1889,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                           ),
                                           child: DataTable(
                                             columns: [
-                                              const DataColumn(label: Text('Name')),
-                                              const DataColumn(label: Text('Email')),
-                                              const DataColumn(label: Text('User ID (8 digits)')),
+                                              const DataColumn(
+                                                label: Text('Name'),
+                                              ),
+                                              const DataColumn(
+                                                label: Text('Email'),
+                                              ),
+                                              const DataColumn(
+                                                label: Text(
+                                                  'User ID (8 digits)',
+                                                ),
+                                              ),
                                               DataColumn(
                                                 label: Text(
                                                   at(context, 'joined'),
@@ -1837,9 +1931,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                               for (final user in users)
                                                 DataRow(
                                                   cells: [
-                                                    DataCell(AdminCopyField(label: 'Name', value: user.name)),
-                                                    DataCell(AdminCopyField(label: 'Email', value: user.email)),
-                                                    DataCell(AdminCopyField(label: 'User ID', value: user.publicId ?? '—')),
+                                                    DataCell(
+                                                      AdminCopyField(
+                                                        label: 'Name',
+                                                        value: user.name,
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      AdminCopyField(
+                                                        label: 'Email',
+                                                        value: user.email,
+                                                      ),
+                                                    ),
+                                                    DataCell(
+                                                      AdminCopyField(
+                                                        label: 'User ID',
+                                                        value:
+                                                            user.publicId ??
+                                                            '—',
+                                                      ),
+                                                    ),
                                                     DataCell(
                                                       Text(
                                                         user.joined.length >= 10
@@ -2052,7 +2163,10 @@ class AdminUserCard extends StatelessWidget {
                   children: [
                     AdminCopyField(label: 'Name', value: user.name),
                     AdminCopyField(label: 'Email', value: user.email),
-                    AdminCopyField(label: 'User ID', value: user.publicId ?? '—'),
+                    AdminCopyField(
+                      label: 'User ID',
+                      value: user.publicId ?? '—',
+                    ),
                     const SizedBox(height: 6),
                     Text(
                       '${at(context, 'coins')}: ${user.coins ?? '—'}  ·  ${at(context, 'joined')}: $joined',
@@ -2161,7 +2275,8 @@ class _AdminActionControlsState extends State<AdminActionControls> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.actions,
     appBar: AdminPageBar(
       title: at(context, 'actionControls'),
       icon: Icons.tune,
@@ -2268,7 +2383,8 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
     result = widget.gateway.campaigns(type, status, offset, pageSize);
   });
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.campaigns,
     appBar: AdminPageBar(
       title: at(context, 'campaigns'),
       icon: Icons.campaign,
@@ -2598,7 +2714,8 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.submissions,
     appBar: AdminPageBar(
       title: at(context, 'submissions'),
       icon: Icons.fact_check,
@@ -2968,7 +3085,8 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.coins,
     appBar: AdminPageBar(
       title: at(context, 'coinSettings'),
       icon: Icons.toll,
@@ -3207,7 +3325,14 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
       'alerts' => at(context, 'alerts'),
       _ => at(context, 'roles'),
     };
-    return Scaffold(
+    return AdminDestinationScaffold(
+      destination: switch (widget.page) {
+        'overview' => AdminDestination.overview,
+        'activity' => AdminDestination.activity,
+        'reports' => AdminDestination.reports,
+        'alerts' => AdminDestination.alerts,
+        _ => AdminDestination.roles,
+      },
       appBar: AdminPageBar(
         title: title,
         desktop: MediaQuery.sizeOf(context).width >= 1100,
@@ -3470,7 +3595,8 @@ class AdminUserDetails extends StatelessWidget {
   final AdminWorkspaceGateway gateway;
   final AdminUser user;
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.userDetails,
     appBar: AppBar(title: Text(user.name.isEmpty ? user.email : user.name)),
     body: FutureBuilder<Map<String, dynamic>>(
       future: gateway.userDetails(user.id),
@@ -3616,7 +3742,8 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
     ),
     'walletControls' => AdminOperationsPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
-      canEdit: role == 'editor', initialPage: 'coins',
+      canEdit: role == 'editor',
+      initialPage: 'coins',
     ),
     'operations' => AdminOperationsPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
@@ -3659,7 +3786,8 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
         ('operations', Icons.settings_outlined),
       ],
     ];
-    return Scaffold(
+    return AdminDestinationScaffold(
+      destination: AdminDestination.desktop,
       body: Row(
         children: [
           SizedBox(
@@ -3897,12 +4025,23 @@ class AdminCopyField extends StatelessWidget {
   const AdminCopyField({super.key, required this.label, required this.value});
   final String label, value;
   @override
-  Widget build(BuildContext context) => Row(mainAxisSize: MainAxisSize.min, children: [
-    Flexible(child: SelectableText(value.isEmpty ? '—' : value)),
-    IconButton(tooltip: 'Copy $label', icon: const Icon(Icons.copy, size: 16),
-      onPressed: value.isEmpty || value == '—' ? null : () async {
-        await Clipboard.setData(ClipboardData(text: value));
-        if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$label copied')));
-      }),
-  ]);
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Flexible(child: SelectableText(value.isEmpty ? '—' : value)),
+      IconButton(
+        tooltip: 'Copy $label',
+        icon: const Icon(Icons.copy, size: 16),
+        onPressed: value.isEmpty || value == '—'
+            ? null
+            : () async {
+                await Clipboard.setData(ClipboardData(text: value));
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text('$label copied')));
+                }
+              },
+      ),
+    ],
+  );
 }

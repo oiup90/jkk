@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -828,7 +830,8 @@ class GrowthApp extends StatelessWidget {
 class SetupScreen extends StatelessWidget {
   const SetupScreen({super.key});
   @override
-  Widget build(BuildContext context) => const Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.setup,
     body: Center(
       child: Padding(
         padding: EdgeInsets.all(24),
@@ -938,23 +941,70 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.recovery,
     appBar: AppBar(title: Text(tr(context, 'newPassword'))),
-    body: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          TextField(
-            controller: password,
-            obscureText: true,
-            decoration: InputDecoration(labelText: tr(context, 'newPassword')),
+    body: Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: CircleAvatar(
+                  radius: 32,
+                  backgroundColor: Color(0xffe6d8ff),
+                  child: Icon(
+                    Icons.lock_reset_rounded,
+                    size: 32,
+                    color: growthPurple,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                tr(context, 'newPassword'),
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(color: growthInk, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                uf(
+                  context,
+                  'Choose a password with at least 6 characters.',
+                  'കുറഞ്ഞത് 6 അക്ഷരങ്ങളുള്ള password തിരഞ്ഞെടുക്കുക.',
+                ),
+              ),
+              const SizedBox(height: 24),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: password,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: tr(context, 'newPassword'),
+                          prefixIcon: const Icon(Icons.lock_outline),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      FilledButton(
+                        onPressed: busy ? null : save,
+                        child: Text(tr(context, 'updatePassword')),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: busy ? null : save,
-            child: Text(tr(context, 'updatePassword')),
-          ),
-        ],
+        ),
       ),
     ),
   );
@@ -994,7 +1044,8 @@ class _AccountGateState extends State<AccountGate> {
             (snapshot.error! as PostgrestException).message.contains(
               'Account access is blocked',
             );
-        return Scaffold(
+        return UserPageScaffold(
+          identity: blocked ? UserPageIdentity.blocked : UserPageIdentity.setup,
           body: SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -1086,7 +1137,10 @@ class _AccountGateState extends State<AccountGate> {
         );
       }
       if (snapshot.connectionState != ConnectionState.done) {
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        return UserPageScaffold(
+          identity: UserPageIdentity.setup,
+          body: Center(child: CircularProgressIndicator()),
+        );
       }
       return HomeShell(user: widget.user);
     },
@@ -1302,7 +1356,12 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return UserPageScaffold(
+      identity: pendingEmail != null
+          ? UserPageIdentity.verification
+          : registering
+          ? UserPageIdentity.signUp
+          : UserPageIdentity.signIn,
       body: SafeArea(
         child: Align(
           alignment: Alignment.topCenter,
@@ -1931,7 +1990,8 @@ class NotificationsPage extends StatelessWidget {
   final Stream<List<Map<String, dynamic>>> stream;
   final Future<void> Function(String id) markRead;
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.notifications,
     appBar: AppBar(
       title: Text(tr(context, 'notifications')),
       actions: [
@@ -1975,11 +2035,30 @@ class NotificationsPage extends StatelessWidget {
               ),
             for (final item in items)
               Card(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(18),
+                  side: BorderSide(
+                    color: item['read_at'] == null
+                        ? const Color(0xffc8a9f7)
+                        : const Color(0xffece6f4),
+                  ),
+                ),
                 child: ListTile(
-                  leading: Icon(
-                    item['kind'] == 'coins_received'
-                        ? Icons.toll_outlined
-                        : Icons.fact_check_outlined,
+                  leading: CircleAvatar(
+                    radius: 19,
+                    backgroundColor: item['kind'] == 'coins_received'
+                        ? const Color(0xffffefd5)
+                        : const Color(0xffeee6fd),
+                    child: Icon(
+                      item['kind'] == 'coins_received'
+                          ? Icons.toll_outlined
+                          : Icons.fact_check_outlined,
+                      color: item['kind'] == 'coins_received'
+                          ? const Color(0xff966013)
+                          : growthPurple,
+                      size: 20,
+                    ),
                   ),
                   onTap: item['kind'] == 'app_update'
                       ? () => Navigator.push(
@@ -2152,7 +2231,13 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
       ),
     ];
     final labels = ['home', 'earn', 'campaigns', 'profile'];
-    return Scaffold(
+    return UserPageScaffold(
+      identity: switch (selected) {
+        0 => UserPageIdentity.home,
+        1 => UserPageIdentity.earn,
+        2 => UserPageIdentity.campaigns,
+        _ => UserPageIdentity.profile,
+      },
       appBar: selected == 3
           ? null
           : UserPageHeader(
@@ -2747,7 +2832,8 @@ class _ClaimReviewDialogState extends State<ClaimReviewDialog> {
                     onPressed: () => showDialog<void>(
                       context: context,
                       builder: (context) => Dialog.fullscreen(
-                        child: Scaffold(
+                        child: UserPageScaffold(
+                          identity: UserPageIdentity.evidence,
                           appBar: AppBar(
                             title: Text(tr(context, 'reviewTitle')),
                           ),
@@ -3830,7 +3916,8 @@ class _CreateCampaignState extends State<CreateCampaign> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.createCampaign,
     appBar: AppBar(
       title: Text(tr(context, 'create')),
       toolbarHeight: 118,
@@ -4112,7 +4199,8 @@ class CoinHistoryPage extends StatefulWidget {
 class _CoinHistoryPageState extends State<CoinHistoryPage> {
   String filter = 'all';
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.coinHistory,
     appBar: AppBar(title: Text(tr(context, 'history'))),
     body: AppListView(
       padding: const EdgeInsets.all(20),
@@ -4218,6 +4306,20 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                       };
                       return Card(
                         child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: amount > 0
+                                ? const Color(0xffe2f3e9)
+                                : const Color(0xffffece2),
+                            child: Icon(
+                              amount > 0
+                                  ? Icons.south_west_rounded
+                                  : Icons.north_east_rounded,
+                              color: amount > 0
+                                  ? const Color(0xff268258)
+                                  : const Color(0xffa85a38),
+                              size: 19,
+                            ),
+                          ),
                           title: Text(tr(context, reason)),
                           subtitle: data['reference_id'] is String
                               ? SelectableText(
@@ -5476,7 +5578,10 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: widget.accounts
+        ? UserPageIdentity.instagramAccounts
+        : UserPageIdentity.referrals,
     appBar: AppBar(
       toolbarHeight: 80,
       title: Column(
@@ -6362,7 +6467,8 @@ class _UserSettingsPageState extends State<UserSettingsPage>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.settings,
     appBar: AppBar(
       toolbarHeight: 112,
       title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),

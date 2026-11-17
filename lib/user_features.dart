@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -90,7 +92,8 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.submissionHistory,
     appBar: AppBar(
       title: Text(uf(context, 'Submission history', 'Submission ചരിത്രം')),
       actions: [
@@ -106,8 +109,14 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
         constraints: const BoxConstraints(maxWidth: 700),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
+            Container(
+              margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .86),
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: const Color(0xffe4dcf2)),
+              ),
               child: Column(
                 children: [
                   TextField(
@@ -133,36 +142,48 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
                     runSpacing: 8,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      DropdownButton<String>(
-                        value: status,
-                        hint: Text(
-                          uf(context, 'All statuses', 'എല്ലാ നിലകളും'),
-                        ),
-                        items: [
-                          DropdownMenuItem<String>(
-                            value: null,
-                            child: Text(
-                              uf(context, 'All statuses', 'എല്ലാ നിലകളും'),
-                            ),
+                      SizedBox(
+                        width: double.infinity,
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          value: status,
+                          hint: Text(
+                            uf(context, 'All statuses', 'എല്ലാ നിലകളും'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          for (final v in [
-                            'pending',
-                            'approved',
-                            'rejected',
-                            'withdrawn',
-                            'cancelled',
-                            'legacy',
-                          ])
-                            DropdownMenuItem(
-                              value: v,
-                              child: Text(submissionStatus(context, v)),
+                          items: [
+                            DropdownMenuItem<String>(
+                              value: null,
+                              child: Text(
+                                uf(context, 'All statuses', 'എല്ലാ നിലകളും'),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                        ],
-                        onChanged: (v) => setState(() {
-                          status = v;
-                          offset = 0;
-                          load();
-                        }),
+                            for (final v in [
+                              'pending',
+                              'approved',
+                              'rejected',
+                              'withdrawn',
+                              'cancelled',
+                              'legacy',
+                            ])
+                              DropdownMenuItem(
+                                value: v,
+                                child: Text(
+                                  submissionStatus(context, v),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                          ],
+                          onChanged: (v) => setState(() {
+                            status = v;
+                            offset = 0;
+                            load();
+                          }),
+                        ),
                       ),
                       OutlinedButton.icon(
                         onPressed: chooseDates,
@@ -241,8 +262,8 @@ class _SubmissionHistoryPageState extends State<SubmissionHistoryPage> {
                                 },
                               ),
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
+                      Wrap(
+                        alignment: WrapAlignment.end,
                         children: [
                           TextButton(
                             onPressed: offset > 0
@@ -311,7 +332,8 @@ class UserHelpPage extends StatelessWidget {
         'Administrators-നെ ബന്ധപ്പെടാൻ Profile-ലെ Support തുറക്കുക.',
       ),
     };
-    return Scaffold(
+    return UserPageScaffold(
+      identity: UserPageIdentity.help,
       appBar: AppBar(
         title: Text(uf(context, 'Help & guide', 'സഹായവും മാർഗ്ഗനിർദ്ദേശവും')),
       ),

@@ -1,4 +1,10 @@
+import 'admin_destination.dart';
+
 import 'dart:io';
+
+import 'admin_release_audience.dart';
+import 'admin_release_activity.dart';
+import 'admin_notifications.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:file_selector/file_selector.dart';
@@ -28,6 +34,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
       name = TextEditingController(),
       notes = TextEditingController();
   XFile? apk;
+  Map<String, dynamic>? recipient;
   bool busy = false;
   int referralRevision = 0;
   String? error;
@@ -97,13 +104,17 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
       );
       return;
     }
+    if (recipient != null && recipient!['id'] == null) {
+      setState(() => error = 'Select a release recipient.');
+      return;
+    }
     final file = apk!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
         title: const Text('Publish app update?'),
         content: Text(
-          'Version $versionName (build $version) will be offered to all users. Use the same signing key as the installed app.',
+          'Version $versionName (build $version) will be offered to ${recipient == null ? 'all active users' : recipient!['email']}. Use the same signing key as the installed app.',
         ),
         actions: [
           TextButton(
@@ -170,6 +181,7 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
           'versionCode': version,
           'versionName': versionName,
           'notes': releaseNotes,
+          'targetUser': recipient?['id'],
         },
       );
       if (mounted) {
@@ -268,6 +280,12 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
                     notesField,
                   ],
                   const SizedBox(height: 8),
+                  AdminReleaseAudience(
+                    gateway: SupabaseAdminNotificationGateway(widget.client),
+                    enabled: !busy,
+                    onChanged: (value) => setState(() => recipient = value),
+                  ),
+                  const SizedBox(height: 12),
                   if (wide)
                     Row(
                       children: [
@@ -292,7 +310,8 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => AdminDestinationScaffold(
+    destination: AdminDestination.releases,
     appBar: AdminPageBar(
       title: 'App releases',
       icon: Icons.rocket_launch,
@@ -334,7 +353,10 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
               canEdit: widget.canEdit,
             ),
             if (widget.canEdit)
-              releaseForm(MediaQuery.sizeOf(context).width >= 1100),
+              LayoutBuilder(
+                builder: (context, constraints) =>
+                    releaseForm(constraints.maxWidth >= 1050),
+              ),
             if (error != null)
               Padding(
                 padding: const EdgeInsets.all(12),
@@ -372,8 +394,20 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
                           title: Text(
                             '${row['version_name']} · build ${row['version_code']}',
                           ),
-                          subtitle: Text(
-                            '${row['notes']}\n${row['created_at']}',
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                row['target_user_id'] == null
+                                    ? 'All active users'
+                                    : 'Specific user · ${row['target_user_id']}',
+                              ),
+                              Text('${row['notes']}\n${row['created_at']}'),
+                              AdminReleaseActivity(
+                                client: widget.client,
+                                releaseId: row['id'] as String,
+                              ),
+                            ],
                           ),
                         ),
                       ),

@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -157,6 +159,16 @@ class _AppUpdateGateState extends State<AppUpdateGate>
       if (!mounted || request != generation) return;
       if (version == null) throw StateError('Installed version unavailable');
       installed = version;
+      // A report is sent only after reading the installed Android build. The
+      // installer opening or download finishing is not installation evidence.
+      if (widget.versionLoader == null) {
+        unawaited(
+          client
+              .rpc('report_app_version', params: {'p_version_code': version})
+              .then<void>((_) {})
+              .catchError((Object _) {}),
+        );
+      }
       final stream =
           widget.releaseLoader?.call() ??
           client
@@ -239,7 +251,8 @@ class _AppUpdateGateState extends State<AppUpdateGate>
           Positioned.fill(
             child: Material(
               color: const Color(0xfff6f3ff),
-              child: GrowthBackdrop(
+              child: UserPageCanvas(
+                identity: UserPageIdentity.mandatoryUpdate,
                 child: SafeArea(
                   child: Align(
                     alignment: Alignment.topCenter,
@@ -250,37 +263,8 @@ class _AppUpdateGateState extends State<AppUpdateGate>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    supportText(
-                                      context,
-                                      'Update required',
-                                      'App update ചെയ്യണം',
-                                    ),
-                                    style: const TextStyle(
-                                      fontSize: 28,
-                                      fontWeight: FontWeight.bold,
-                                      color: growthInk,
-                                    ),
-                                  ),
-                                ),
-                                const GrowthArt(
-                                  'mandatory_reference',
-                                  height: 145,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              supportText(
-                                context,
-                                'Install the latest version to continue using Freelan Space.',
-                                'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
-                              ),
-                            ),
-                            const SizedBox(height: 18),
+                            const _RequiredUpdateHeader(),
+                            const SizedBox(height: 16),
                             AppUpdateView(
                               key: ValueKey(latest!.versionCode),
                               client: widget.client,
@@ -313,6 +297,14 @@ class _AppUpdateGateState extends State<AppUpdateGate>
                             const SizedBox(height: 12),
                             OutlinedButton.icon(
                               onPressed: refresh,
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor: const Color(0xfff8f3ff),
+                                foregroundColor: growthPurple,
+                                side: const BorderSide(
+                                  color: Color(0xffd8c9ec),
+                                ),
+                                minimumSize: const Size.fromHeight(48),
+                              ),
                               icon: const Icon(Icons.refresh),
                               label: Text(
                                 supportText(
@@ -336,10 +328,180 @@ class _AppUpdateGateState extends State<AppUpdateGate>
   }
 }
 
+class _RequiredUpdateHeader extends StatelessWidget {
+  const _RequiredUpdateHeader();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Color(0xff311758), Color(0xff6b35bd)],
+      ),
+      borderRadius: BorderRadius.circular(26),
+      boxShadow: [
+        BoxShadow(
+          color: growthPurple.withValues(alpha: .18),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    ),
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final copy = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .15),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: Text(
+                supportText(context, 'NEW RELEASE', 'പുതിയ പതിപ്പ്'),
+                style: const TextStyle(
+                  color: Color(0xffeee2ff),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              supportText(context, 'Update required', 'App update ചെയ്യണം'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 25,
+                height: 1.15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              supportText(
+                context,
+                'Install the latest version to continue using Freelan Space.',
+                'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
+              ),
+              style: const TextStyle(color: Color(0xffeee2ff), height: 1.4),
+            ),
+          ],
+        );
+        if (constraints.maxWidth < 290 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.25) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              copy,
+              const Align(
+                alignment: Alignment.centerRight,
+                child: GrowthArt('mandatory_reference', height: 90),
+              ),
+            ],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: copy),
+            const SizedBox(width: 8),
+            const SizedBox(
+              width: 108,
+              child: GrowthArt('mandatory_reference', height: 120),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+}
+
+/// Release notes are plain text with optional list markers and bold spans.
+class _ReleaseNotes extends StatelessWidget {
+  const _ReleaseNotes({required this.notes});
+  final String notes;
+
+  List<InlineSpan> _spans(String text) {
+    final parts = <InlineSpan>[];
+    var start = 0;
+    for (final match in RegExp(r'\*\*(.+?)\*\*').allMatches(text)) {
+      if (match.start > start) {
+        parts.add(TextSpan(text: text.substring(start, match.start)));
+      }
+      parts.add(
+        TextSpan(
+          text: match.group(1),
+          style: const TextStyle(fontWeight: FontWeight.w700, color: growthInk),
+        ),
+      );
+      start = match.end;
+    }
+    if (start < text.length) parts.add(TextSpan(text: text.substring(start)));
+    return parts;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = notes
+        .replaceAll('\r\n', '\n')
+        .replaceAll('\r', '\n')
+        .split('\n');
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final line in lines)
+          if (line.trim().isEmpty)
+            const SizedBox(height: 8)
+          else
+            Builder(
+              builder: (context) {
+                final marker = RegExp(r'^\s*[-*•]\s+').firstMatch(line);
+                final content = marker == null
+                    ? line
+                    : line.substring(marker.end);
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (marker != null) ...[
+                        const Padding(
+                          padding: EdgeInsets.only(top: 6),
+                          child: Icon(
+                            Icons.circle,
+                            size: 7,
+                            color: growthPurple,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                      ],
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(children: _spans(content)),
+                          style: const TextStyle(
+                            color: Color(0xff554a67),
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+      ],
+    );
+  }
+}
+
 class AppUpdatePage extends StatelessWidget {
   const AppUpdatePage({super.key});
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.updates,
     appBar: AppBar(
       title: Text(supportText(context, 'App updates', 'App updates')),
     ),
@@ -610,8 +772,13 @@ class _AppUpdateViewState extends State<AppUpdateView>
           }
           final release = latest;
           return Card(
+            elevation: 2,
+            shadowColor: growthPurple.withValues(alpha: .12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,
@@ -623,31 +790,15 @@ class _AppUpdateViewState extends State<AppUpdateView>
                       Expanded(
                         child: Text(
                           '${supportText(context, 'App update available', 'പുതിയ app update ലഭ്യമാണ്')} · ${release.versionName}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: growthInk,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (!widget.compact && release.notes.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      margin: const EdgeInsets.only(left: 54),
-                      padding: const EdgeInsets.only(left: 12),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          left: BorderSide(color: growthPurple, width: 3),
-                        ),
-                      ),
-                      child: Text(
-                        release.notes,
-                        style: const TextStyle(
-                          fontStyle: FontStyle.italic,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 18),
                   GrowthPrimaryButton(
                     onPressed: busy ? null : () => install(release),
                     icon: Icons.download,
@@ -669,6 +820,21 @@ class _AppUpdateViewState extends State<AppUpdateView>
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(message!),
                     ),
+                  if (!widget.compact && release.notes.trim().isNotEmpty) ...[
+                    const SizedBox(height: 20),
+                    const Divider(height: 1),
+                    const SizedBox(height: 18),
+                    Text(
+                      supportText(context, "What's new", 'പുതിയ വിശേഷങ്ങൾ'),
+                      style: const TextStyle(
+                        color: growthInk,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _ReleaseNotes(notes: release.notes),
+                  ],
                 ],
               ),
             ),

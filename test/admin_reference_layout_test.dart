@@ -124,7 +124,21 @@ void main() {
             ),
           );
           await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            find.text('No releases published yet.'),
+            240,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
           expect(find.text('No releases published yet.'), findsOneWidget);
+          if (canEdit) {
+            await tester.scrollUntilVisible(
+              find.text('Publish update'),
+              -240,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await tester.pumpAndSettle();
+          }
           expect(
             find.text('Publish update'),
             canEdit ? findsOneWidget : findsNothing,

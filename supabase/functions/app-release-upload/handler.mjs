@@ -47,6 +47,7 @@ export function createHandler({authorize, signUpload, copyUpload, publish, publi
       const prefix = `staging/${userId}/`;
       const file = typeof data.key === 'string' && data.key.startsWith(prefix) ? data.key.slice(prefix.length) : '';
       if (!file.endsWith('.apk') || !uuid.test(file.slice(0, -4)) || !Number.isSafeInteger(data.versionCode) || data.versionCode < 1 || data.versionCode > 2100000000 || typeof data.versionName !== 'string' || data.versionName.trim().length < 1 || data.versionName.length > 60 || typeof data.notes !== 'string' || data.notes.length > 4000 || typeof data.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(data.sha256)) return json(400, {error: 'invalid_request'});
+      if (data.targetUser != null && (typeof data.targetUser !== 'string' || !uuid.test(data.targetUser))) return json(400, {error: 'invalid_request'});
       const base = await runStage('public_base', () => {
         const url = new URL(publicBase);
         if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) throw new Error('invalid public base');

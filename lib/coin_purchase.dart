@@ -1,3 +1,5 @@
+import 'user_page_canvas.dart';
+
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -258,7 +260,8 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.purchase,
     appBar: AppBar(
       title: Text(text('Buy coins', 'Coins വാങ്ങുക')),
       actions: [
@@ -272,17 +275,42 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          text('Choose a coin plan', 'Coin plan തിരഞ്ഞെടുക്കുക'),
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          text(
-            'Pay securely with Instamojo. Coins are added after payment is verified. Return to this page to check your payment.',
-            'Instamojo വഴി പണം അടയ്ക്കാം. Payment സ്ഥിരീകരിച്ചശേഷം coins ചേർക്കും. Payment പരിശോധിക്കാൻ ഈ പേജിൽ മടങ്ങിവരുക.',
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xff3c2457), Color(0xff8151a4)],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.toll_rounded,
+                color: Color(0xffffdc91),
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                text('Choose a coin plan', 'Coin plan തിരഞ്ഞെടുക്കുക'),
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                text(
+                  'Pay securely with Instamojo. Coins are added after payment is verified. Return to this page to check your payment.',
+                  'Instamojo വഴി പണം അടയ്ക്കാം. Payment സ്ഥിരീകരിച്ചശേഷം coins ചേർക്കും. Payment പരിശോധിക്കാൻ ഈ പേജിൽ മടങ്ങിവരുക.',
+                ),
+                style: const TextStyle(color: Color(0xfff4eafa), height: 1.4),
+              ),
+            ],
           ),
         ),
+        const SizedBox(height: 12),
         if (busy)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
@@ -293,10 +321,62 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Semantics(liveRegion: true, child: Text(message!)),
           ),
+        if (orders.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text(
+            text('Pending payments', 'Pending payments'),
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          for (final order in orders)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${order.coins} ${text('coins', 'കോയിനുകൾ')} · ${CoinPlan('', 0, order.amountPaise).price}',
+                    ),
+                    Text(
+                      '${text('Order', 'Order')}: ${order.id}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        FilledButton(
+                          onPressed: busy ? null : () => verifyAll(order),
+                          child: Text(
+                            text('Check payment', 'Payment പരിശോധിക്കുക'),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: busy ? null : () => reopen(order),
+                          child: Text(
+                            text('Open checkout', 'Checkout തുറക്കുക'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
         for (final plan in plans)
           Card(
+            margin: const EdgeInsets.symmetric(vertical: 6),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             child: ExpansionTile(
-              leading: const Icon(Icons.monetization_on_outlined),
+              leading: const CircleAvatar(
+                backgroundColor: Color(0xffffefce),
+                child: Icon(
+                  Icons.monetization_on_outlined,
+                  color: Color(0xff9a6517),
+                ),
+              ),
               title: Text('${plan.coins} ${text('coins', 'കോയിനുകൾ')}'),
               subtitle: Text(plan.price),
               trailing: Row(
@@ -356,48 +436,6 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
               'Coin plans ഇപ്പോൾ ലഭ്യമല്ല.',
             ),
           ),
-        if (orders.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          Text(
-            text('Pending payments', 'Pending payments'),
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          for (final order in orders)
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${order.coins} ${text('coins', 'കോയിനുകൾ')} · ${CoinPlan('', 0, order.amountPaise).price}',
-                    ),
-                    Text(
-                      '${text('Order', 'Order')}: ${order.id}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      children: [
-                        FilledButton(
-                          onPressed: busy ? null : () => verifyAll(order),
-                          child: Text(
-                            text('Check payment', 'Payment പരിശോധിക്കുക'),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: busy ? null : () => reopen(order),
-                          child: Text(
-                            text('Open checkout', 'Checkout തുറക്കുക'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
       ],
     ),
   );

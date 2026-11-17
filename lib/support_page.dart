@@ -1,3 +1,6 @@
+import 'admin_destination.dart';
+import 'user_page_canvas.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -110,7 +113,8 @@ class _SupportPageState extends State<SupportPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.support,
     appBar: AppBar(
       title: Text(supportText(context, 'Support', 'സഹായം')),
       actions: [
@@ -166,7 +170,15 @@ class _SupportPageState extends State<SupportPage> {
           itemBuilder: (c, i) {
             final r = rows[i] as Map;
             return Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: ListTile(
+                leading: const CircleAvatar(
+                  backgroundColor: Color(0xffe9e1fa),
+                  child: Icon(Icons.forum_outlined, color: growthPurple),
+                ),
                 title: Text('${r['subject']}'),
                 subtitle: Text('${r['status']} · ${r['updated_at']}'),
                 trailing: const Icon(Icons.chevron_right),
@@ -291,7 +303,9 @@ class _SupportConversationState extends State<SupportConversation>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.conversation,
+    enabled: !widget.admin,
     appBar: AppBar(
       title: Text(widget.subject),
       actions: [
@@ -302,123 +316,134 @@ class _SupportConversationState extends State<SupportConversation>
         ),
       ],
     ),
-    body: Column(
-      children: [
-        Expanded(
-          child: FutureBuilder<List<dynamic>>(
-            future: data,
-            builder: (c, s) {
-              if (s.connectionState != ConnectionState.done && !s.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (s.hasError) {
-                return Center(
-                  child: Text(
-                    supportText(
-                      c,
-                      'Unable to load messages.',
-                      'സന്ദേശങ്ങൾ ലഭ്യമല്ല.',
-                    ),
-                  ),
-                );
-              }
-              final messages = s.data ?? [];
-              return ListView.builder(
-                reverse: true,
-                padding: const EdgeInsets.all(16),
-                itemCount: messages.length,
-                itemBuilder: (c, index) {
-                  final item = messages[messages.length - 1 - index];
-                  final mine = (item['is_admin'] == true) == widget.admin;
-                  final timestamp = DateTime.tryParse('${item['created_at']}')
-                      ?.toLocal();
-                  return Align(
-                    alignment: mine
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      constraints: BoxConstraints(
-                        maxWidth: MediaQuery.sizeOf(c).width * .78,
-                      ),
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: mine ? growthPurple : const Color(0xffeee6ff),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            mine
-                                ? supportText(c, 'You', 'നിങ്ങൾ')
-                                : supportText(c, 'Support', 'സഹായം'),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: mine ? Colors.white70 : growthPurple,
-                            ),
-                          ),
-                          SelectableText(
-                            '${item['body']}',
-                            style: TextStyle(
-                              color: mine ? Colors.white : growthInk,
-                            ),
-                          ),
-                          if (timestamp != null)
-                            Text(
-                              '${timestamp.day}/${timestamp.month}/${timestamp.year} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: mine ? Colors.white70 : Colors.black54,
-                              ),
-                            ),
-                        ],
+    body: AdminDestinationCanvas(
+      destination: AdminDestination.conversation,
+      enabled: widget.admin,
+      child: Column(
+        children: [
+          Expanded(
+            child: FutureBuilder<List<dynamic>>(
+              future: data,
+              builder: (c, s) {
+                if (s.connectionState != ConnectionState.done && !s.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (s.hasError) {
+                  return Center(
+                    child: Text(
+                      supportText(
+                        c,
+                        'Unable to load messages.',
+                        'സന്ദേശങ്ങൾ ലഭ്യമല്ല.',
                       ),
                     ),
                   );
-                },
-              );
-            },
-          ),
-        ),
-        if (!widget.open)
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text(
-              supportText(
-                context,
-                'This chat is closed. Start a new chat for more help.',
-                'ഈ chat അവസാനിച്ചു. കൂടുതൽ സഹായത്തിന് പുതിയ chat തുടങ്ങുക.',
-              ),
+                }
+                final messages = s.data ?? [];
+                return ListView.builder(
+                  reverse: true,
+                  padding: const EdgeInsets.all(16),
+                  itemCount: messages.length,
+                  itemBuilder: (c, index) {
+                    final item = messages[messages.length - 1 - index];
+                    final mine = (item['is_admin'] == true) == widget.admin;
+                    final timestamp = DateTime.tryParse('${item['created_at']}')
+                        ?.toLocal();
+                    return Align(
+                      alignment: mine
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.sizeOf(c).width * .78,
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 5),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: mine ? growthPurple : const Color(0xffeee6ff),
+                          borderRadius: widget.admin
+                              ? BorderRadius.circular(18)
+                              : BorderRadius.only(
+                                  topLeft: const Radius.circular(20),
+                                  topRight: const Radius.circular(20),
+                                  bottomLeft: Radius.circular(mine ? 20 : 5),
+                                  bottomRight: Radius.circular(mine ? 5 : 20),
+                                ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              mine
+                                  ? supportText(c, 'You', 'നിങ്ങൾ')
+                                  : supportText(c, 'Support', 'സഹായം'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: mine ? Colors.white70 : growthPurple,
+                              ),
+                            ),
+                            SelectableText(
+                              '${item['body']}',
+                              style: TextStyle(
+                                color: mine ? Colors.white : growthInk,
+                              ),
+                            ),
+                            if (timestamp != null)
+                              Text(
+                                '${timestamp.day}/${timestamp.month}/${timestamp.year} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: mine ? Colors.white70 : Colors.black54,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ),
-        if (widget.open)
-          SafeArea(
-            top: false,
-            child: Padding(
+          if (!widget.open)
+            Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: message,
-                      maxLength: 2000,
-                      decoration: InputDecoration(
-                        labelText: supportText(context, 'Reply', 'മറുപടി'),
-                        counterText: '',
+              child: Text(
+                supportText(
+                  context,
+                  'This chat is closed. Start a new chat for more help.',
+                  'ഈ chat അവസാനിച്ചു. കൂടുതൽ സഹായത്തിന് പുതിയ chat തുടങ്ങുക.',
+                ),
+              ),
+            ),
+          if (widget.open)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: message,
+                        maxLength: 2000,
+                        decoration: InputDecoration(
+                          labelText: supportText(context, 'Reply', 'മറുപടി'),
+                          counterText: '',
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: busy ? null : send,
-                    child: Text(supportText(context, 'Send', 'അയയ്ക്കുക')),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: busy ? null : send,
+                      child: Text(supportText(context, 'Send', 'അയയ്ക്കുക')),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     ),
   );
 }
