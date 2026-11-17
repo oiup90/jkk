@@ -275,14 +275,17 @@ class _SupportConversationState extends State<SupportConversation>
 
   Future<void> send() async {
     if (busy || message.text.trim().isEmpty) return;
+    final draft = message.text;
     setState(() => busy = true);
     try {
       await widget.client.rpc(
         'support_reply',
-        params: {'p_ticket': widget.id, 'p_body': message.text.trim()},
+        params: {'p_ticket': widget.id, 'p_body': draft.trim()},
       );
-      message.clear();
-      if (mounted) setState(load);
+      if (!mounted) return;
+      // Keep any new reply typed while the previous message was sending.
+      if (message.text == draft) message.clear();
+      setState(load);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

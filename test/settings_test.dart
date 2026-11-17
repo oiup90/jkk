@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:growth_circle/app_updates.dart';
 import 'package:growth_circle/push_notifications.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +7,34 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
 
 void main() {
+  testWidgets('late permission read cannot undo an explicit push change', (
+    tester,
+  ) async {
+    final stale = Completer<bool>();
+    var reads = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: UserSettingsPage(
+          authorizeChange: () async => true,
+          enabledLoader: () => ++reads == 1 ? Future.value(true) : stale.future,
+          pushUpdater: (_) async {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    expect(reads, 2);
+    await tester.tap(find.byType(Switch));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    stale.complete(true);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('cancelled security check keeps push enabled', (tester) async {
     var updates = 0;
     await tester.pumpWidget(

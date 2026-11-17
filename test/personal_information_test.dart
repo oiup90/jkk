@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -56,22 +57,72 @@ class FakePersonalGateway implements PersonalInformationGateway {
 }
 
 void main() {
-  test('profile photo decoder rejects more than 5 MB before decoding', () async {
-    final oversized = Uint8List(maxProfilePhotoBytes + 1);
-    await expectLater(
-      decodeProfilePhoto(base64Encode(oversized)),
-      throwsFormatException,
-    );
-  });
+  testWidgets(
+    'photo picker completion after leaving cannot authorize or save',
+    (tester) async {
+      final api = FakePersonalGateway();
+      final selection = Completer<XFile?>();
+      var authorizations = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: PersonalInformationPage(
+            user: user,
+            publicId: '12345678',
+            gateway: api,
+            authorizeChange: () async {
+              authorizations++;
+              return true;
+            },
+            picker: () => selection.future,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Change photo'));
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      selection.complete(XFile.fromData(base64Decode(png), name: 'photo.png'));
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      await tester.pumpAndSettle();
+      expect(authorizations, 0);
+      expect(api.photo, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 
-  testWidgets('cancelled Security PIN prevents a profile photo write', (tester) async {
+  test(
+    'profile photo decoder rejects more than 5 MB before decoding',
+    () async {
+      final oversized = Uint8List(maxProfilePhotoBytes + 1);
+      await expectLater(
+        decodeProfilePhoto(base64Encode(oversized)),
+        throwsFormatException,
+      );
+    },
+  );
+
+  testWidgets('cancelled Security PIN prevents a profile photo write', (
+    tester,
+  ) async {
     final api = FakePersonalGateway();
     var confirmations = 0;
-    await tester.pumpWidget(MaterialApp(home: PersonalInformationPage(
-      user: user, publicId: '12345678', gateway: api,
-      authorizeChange: () async { confirmations++; return false; },
-      picker: () async => XFile.fromData(base64Decode(png), name: 'photo.png'),
-    )));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: PersonalInformationPage(
+          user: user,
+          publicId: '12345678',
+          gateway: api,
+          authorizeChange: () async {
+            confirmations++;
+            return false;
+          },
+          picker: () async =>
+              XFile.fromData(base64Decode(png), name: 'photo.png'),
+        ),
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Change photo'));
     await tester.runAsync(() async {

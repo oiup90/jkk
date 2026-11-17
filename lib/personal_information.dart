@@ -23,11 +23,20 @@ abstract class PersonalInformationGateway {
 }
 
 class SupabasePersonalInformationGateway implements PersonalInformationGateway {
-  const SupabasePersonalInformationGateway(this.client, this.newOtpClient);
+  SupabasePersonalInformationGateway(this.client, this.newOtpClient);
+  // Bind on first use so callers may construct the gateway before sign-in.
+  late final String? owner = client.auth.currentUser?.id;
+  void checkSession() {
+    if (owner == null || client.auth.currentUser?.id != owner) {
+      throw const AuthException('Session changed. Sign in again.');
+    }
+  }
+
   final SupabaseClient client;
   final SupabaseClient Function() newOtpClient;
   @override
   Future<void> saveName(String name) async {
+    checkSession();
     final value = name.trim();
     if (value.isEmpty || value.length > 80) {
       throw const FormatException('Invalid name');
@@ -37,13 +46,18 @@ class SupabasePersonalInformationGateway implements PersonalInformationGateway {
 
   @override
   Future<Uint8List?> loadPhoto() async {
+    checkSession();
     final photo = await client.rpc('profile_photo');
+    checkSession();
     if (photo == null) return null;
-    return decodeProfilePhoto(photo as String);
+    final bytes = await decodeProfilePhoto(photo as String);
+    checkSession();
+    return bytes;
   }
 
   @override
   Future<void> savePhoto(Uint8List data, String mime) async {
+    checkSession();
     await client.rpc(
       'set_profile_photo',
       params: {'p_mime': mime, 'p_data': base64Encode(data)},
@@ -52,11 +66,13 @@ class SupabasePersonalInformationGateway implements PersonalInformationGateway {
 
   @override
   Future<void> requestEmailChange(String email) async {
+    checkSession();
     await client.auth.updateUser(UserAttributes(email: email));
   }
 
   @override
   Future<void> verifyOldEmail(String code) async {
+    checkSession();
     final current = client.auth.currentUser;
     if (current?.email == null) throw const AuthException('Sign in first.');
     final isolated = newOtpClient();
@@ -79,6 +95,7 @@ class SupabasePersonalInformationGateway implements PersonalInformationGateway {
 
   @override
   Future<void> verifyNewEmail(String email, String code) async {
+    checkSession();
     final id = client.auth.currentUser?.id;
     if (id == null) throw const AuthException('Sign in first.');
     final isolated = newOtpClient();
@@ -175,15 +192,17 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                 source: ImageSource.gallery,
                 requestFullMetadata: false,
               ));
-      if (file == null) return;
+      if (!mounted || file == null) return;
       if (await file.length() > maxProfilePhotoBytes) {
         throw const FormatException('Image too large');
       }
       final bytes = await file.readAsBytes();
       await validateEvidenceImage(bytes, maxBytes: maxProfilePhotoBytes);
+      if (!mounted) return;
       if (widget.authorizeChange != null && !await widget.authorizeChange!()) {
         return;
       }
+      if (!mounted) return;
       final mime = bytes[0] == 0x89 ? 'image/png' : 'image/jpeg';
       await widget.gateway.savePhoto(bytes, mime);
       if (mounted) setState(() => photo = bytes);
