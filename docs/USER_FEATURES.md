@@ -82,7 +82,13 @@ For isolated local verification, apply all migrations to a disposable PostgreSQL
 
 ## Android push registration compatibility
 
-Settings registers the current FCM token directly and listens for token refreshes. The HTTP v1 worker requires this token; firebase_messaging 17.0.1 onRegistered supplies an Installation ID and is not used as its replacement. The getToken/onTokenRefresh compatibility API remains deliberately in use despite its deprecation. Opt-in is saved only after a successful authenticated register_push_token RPC. Permission denial leaves the switch off and offers Open settings; after allowing notifications, return and turn the switch on again. Settings reloads effective permission on resume. Cached-token, backend-failure, refresh and permission handling are covered with synthetic tests; actual device delivery remains a separate acceptance check.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:78c36b0d26ccca7db5658b4550567457ffe7a4bf26e9486aba1495d423e3c62f -->
+
+Settings registers the current FCM token directly and listens for token refreshes. The HTTP v1 worker requires this token; firebase_messaging 17.0.1 onRegistered supplies an Installation ID and is not used as its replacement. The getToken/onTokenRefresh compatibility API remains deliberately in use despite its deprecation. Opt-in is saved only after a successful authenticated register_push_token RPC. Permission denial leaves the switch off and offers Open settings; after allowing notifications, return and turn the switch on again. Settings reloads effective permission on resume. Cached-token, backend-failure, refresh and permission handling are covered with synthetic tests; actual device delivery remains a separate acceptance check. To turn push off, the signed-in device removes its FCM token from the server before saving the off preference; if that removal fails, the setting stays enabled for retry. Previously sent messages may still arrive.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 
 <!-- /coderabbit-ai-generated:v1 -->

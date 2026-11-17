@@ -66,6 +66,8 @@ class PushCoordinator {
   StreamSubscription<String>? _refresh;
   String? _token;
   int _generation = 0;
+  bool _disabling = false;
+  Completer<void>? _disableDone;
   Future<void> _writes = Future.value();
   Future<void> _initialize() async {
     if (_testInitialize != null) return _testInitialize!();
@@ -79,6 +81,7 @@ class PushCoordinator {
   }
 
   Future<bool> enable(SupabaseClient client) async {
+    if (_disabling) throw StateError('Push disable in progress.');
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('Sign in first.');
     await _initialize();
@@ -90,13 +93,21 @@ class PushCoordinator {
       return false;
     }
     await _register(client);
-    if (client.auth.currentUser?.id != id) return false;
+    final generation = _generation;
+    if (_disabling || client.auth.currentUser?.id != id) return false;
     final preferences = await SharedPreferences.getInstance();
+    if (_disabling ||
+        generation != _generation ||
+        client.auth.currentUser?.id != id) {
+      return false;
+    }
     await preferences.setBool('push_opt_in_$id', true);
     return true;
   }
 
   Future<bool> isEnabled(SupabaseClient client) async {
+    final pending = _disableDone;
+    if (pending != null) await pending.future;
     final id = client.auth.currentUser?.id;
     if (id == null) return false;
     if ((await SharedPreferences.getInstance()).getBool('push_opt_in_$id') !=
@@ -119,25 +130,43 @@ class PushCoordinator {
   Future<void> disable(SupabaseClient client) async {
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('Sign in first.');
+    if (_disabling) throw StateError('Push disable in progress.');
+    _disabling = true;
+    final done = Completer<void>();
+    _disableDone = done;
     ++_generation;
-    await _stopForeground();
-    await _refresh?.cancel();
-    _refresh = null;
-    await _writes;
-    // Retain the token for retry if server cleanup fails.
-    final token = _token;
-    if (token != null) {
+    try {
+      await _stopForeground();
+      final subscription = _refresh;
+      _refresh = null;
+      await subscription?.cancel();
+      await _writes;
+      // Recover the FCM token after a process restart before declaring success.
+      var token = _token;
+      if (token == null) {
+        await _initialize();
+        token =
+            await (_testTokenLoader?.call() ??
+                    FirebaseMessaging.instance.getToken())
+                .timeout(const Duration(seconds: 20));
+      }
+      if (token == null || token.isEmpty) {
+        throw StateError('Cannot determine the messaging token.');
+      }
+      if (client.auth.currentUser?.id != id) {
+        throw StateError('Account changed.');
+      }
       await client.rpc('unregister_push_token', params: {'p_token': token});
+      _token = null;
+      await (await SharedPreferences.getInstance()).setBool(
+        'push_opt_in_$id',
+        false,
+      );
+    } finally {
+      _disabling = false;
+      _disableDone = null;
+      done.complete();
     }
-    if (pushConfigured) {
-      await _initialize();
-      await FirebaseMessaging.instance.unregister();
-    }
-    _token = null;
-    await (await SharedPreferences.getInstance()).setBool(
-      'push_opt_in_$id',
-      false,
-    );
   }
 
   Future<void>? _restoring;
@@ -149,7 +178,7 @@ class PushCoordinator {
   }
 
   Future<void> _restore(SupabaseClient client) async {
-    if (!pushConfigured && _testInitialize == null) return;
+    if (_disabling || (!pushConfigured && _testInitialize == null)) return;
     final generation = _generation;
     try {
       final id = client.auth.currentUser?.id;
@@ -163,7 +192,9 @@ class PushCoordinator {
       final granted = _testPermission != null
           ? await _testPermission!()
           : await _hasPermission();
-      if (generation != _generation || client.auth.currentUser?.id != id) {
+      if (_disabling ||
+          generation != _generation ||
+          client.auth.currentUser?.id != id) {
         return;
       }
       if (granted) {
@@ -177,6 +208,7 @@ class PushCoordinator {
   }
 
   Future<void> _register(SupabaseClient client) async {
+    if (_disabling) throw StateError('Push disable in progress.');
     final id = client.auth.currentUser?.id;
     if (id == null) throw StateError('Sign in first.');
     final generation = ++_generation;
@@ -184,7 +216,9 @@ class PushCoordinator {
     if (generation != _generation) throw StateError('Registration cancelled.');
     Future<void> writeToken(String value) {
       final write = _writes.then((_) async {
-        if (generation != _generation || client.auth.currentUser?.id != id) {
+        if (_disabling ||
+            generation != _generation ||
+            client.auth.currentUser?.id != id) {
           throw StateError('Registration cancelled.');
         }
         if (value.isEmpty) throw StateError('No messaging token.');
