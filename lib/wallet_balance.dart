@@ -11,11 +11,13 @@ class WalletBalance extends StatefulWidget {
     this.isMalayalam = false,
     this.onBuyCoins,
     this.onTransfer,
+    this.onHistory,
   });
   final Stream<List<Map<String, dynamic>>> balances;
   final bool isMalayalam;
   final VoidCallback? onBuyCoins;
   final VoidCallback? onTransfer;
+  final VoidCallback? onHistory;
   @override
   State<WalletBalance> createState() => _WalletBalanceState();
 }
@@ -62,7 +64,7 @@ class _WalletBalanceState extends State<WalletBalance>
               ? number
               : null;
         });
-        if (revealed && balance != null) animate(playSound: wasPending);
+        if (revealed && balance != null) animate(reset: wasPending);
         if (balance == null) {
           counter.stop();
           unawaited(sound(false));
@@ -105,23 +107,23 @@ class _WalletBalanceState extends State<WalletBalance>
     }
   }
 
-  void animate({required bool playSound}) {
+  void animate({required bool reset}) {
     final next = balance!;
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
-    from = playSound ? 0 : (from + (target - from) * counter.value).round();
+    from = reset ? 0 : (from + (target - from) * counter.value).round();
     target = next;
     if (reduceMotion || from == target) {
       counter.value = 1;
       return;
     }
     counter.forward(from: 0);
-    if (playSound) unawaited(sound(true));
   }
 
   void toggle() {
     setState(() => revealed = !revealed);
-    if (revealed && balance != null) {
-      animate(playSound: true);
+    if (revealed) {
+      unawaited(sound(true));
+      if (balance != null) animate(reset: true);
     } else {
       counter.stop();
       unawaited(sound(false));
@@ -400,7 +402,8 @@ class _WalletBalanceState extends State<WalletBalance>
                     ),
                   ],
                   if (widget.onBuyCoins != null ||
-                      widget.onTransfer != null) ...[
+                      widget.onTransfer != null ||
+                      widget.onHistory != null) ...[
                     const SizedBox(height: 8),
                     Container(height: 1, color: const Color(0x55d8bde8)),
                     const SizedBox(height: 12),
@@ -444,6 +447,19 @@ class _WalletBalanceState extends State<WalletBalance>
                         );
                       },
                     ),
+                    if (widget.onHistory != null) ...[
+                      if (widget.onBuyCoins != null ||
+                          widget.onTransfer != null)
+                        const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _WalletActionButton(
+                          icon: Icons.history,
+                          label: text('Coin history', 'Coin ചരിത്രം'),
+                          onPressed: widget.onHistory!,
+                        ),
+                      ),
+                    ],
                   ],
                 ],
               ),

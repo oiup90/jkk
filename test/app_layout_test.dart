@@ -6,6 +6,154 @@ import 'package:growth_circle/design.dart';
 
 void main() {
   tearDown(() => language.value = const Locale('en'));
+  testWidgets('home wallet opens history with transaction references', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: Scaffold(
+          body: Dashboard(
+            uid: 'sample',
+            onBrowse: () {},
+            onCreate: () {},
+            balanceStream: Stream.value([
+              {'balance': 20},
+            ]),
+            historyStream: Stream.value([
+              {
+                'amount': 10,
+                'reason': 'welcome',
+                'createdAt': '2026-01-03',
+                'reference_id': 'RG0000000001',
+              },
+              {
+                'amount': 5,
+                'reason': 'referral',
+                'createdAt': '2026-01-02',
+                'reference_id': 'RF0000000002',
+              },
+              {
+                'amount': -2,
+                'reason': 'transfer_sent',
+                'createdAt': '2026-01-01',
+                'reference_id': '100000000000',
+              },
+            ]),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Coin history'));
+    await tester.pumpAndSettle();
+    expect(find.text('Reference ID: RG0000000001'), findsOneWidget);
+    expect(find.text('Reference ID: RF0000000002'), findsOneWidget);
+    expect(find.text('Reference ID: 100000000000'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+  for (final locale in ['en', 'ml']) {
+    testWidgets(
+      'page header actions keep their position and style in $locale',
+      (tester) async {
+        tester.view.physicalSize = const Size(320, 720);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        var opened = 0;
+        Rect? bellRect, settingsRect;
+        for (final page in ['home', 'earn', 'campaigns', 'profile']) {
+          final profile = page == 'profile';
+          final header = UserPageHeader(
+            title: words[page]![locale == 'ml' ? 1 : 0],
+            subtitle: page == 'campaigns' ? 'Campaign description' : null,
+            notifications: Stream.value([
+              <String, dynamic>{'read_at': null},
+            ]),
+            onNotifications: () => opened++,
+            onSignOut: profile ? () {} : null,
+            primary: !profile,
+          );
+          await tester.pumpWidget(
+            MaterialApp(
+              locale: Locale(locale),
+              supportedLocales: const [Locale('en'), Locale('ml')],
+              localizationsDelegates: GlobalMaterialLocalizations.delegates,
+              theme: growthTheme(),
+              builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  padding: const EdgeInsets.only(top: 24),
+                  textScaler: const TextScaler.linear(1.5),
+                ),
+                child: child!,
+              ),
+              home: Scaffold(
+                appBar: profile ? null : header,
+                body: profile
+                    ? SafeArea(child: Column(children: [header]))
+                    : const SizedBox(),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final bell = find.byTooltip(
+            words['notifications']![locale == 'ml' ? 1 : 0],
+          );
+          final settings = find.byTooltip(
+            profile
+                ? words['profileSettings']![locale == 'ml' ? 1 : 0]
+                : (locale == 'en' ? 'Settings' : 'ക്രമീകരണങ്ങൾ'),
+          );
+          final currentBell = tester.getRect(bell);
+          final currentSettings = tester.getRect(settings);
+          bellRect ??= currentBell;
+          settingsRect ??= currentSettings;
+          expect(currentBell, bellRect, reason: page);
+          expect(currentSettings, settingsRect, reason: page);
+          expect(currentBell.size, const Size(48, 48));
+          expect(currentSettings.size, const Size(48, 48));
+          final bellButton = tester.widget<IconButton>(
+            find
+                .ancestor(
+                  of: find.byIcon(Icons.notifications_none_outlined),
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          );
+          final settingsButton = tester.widget<IconButton>(
+            find
+                .ancestor(
+                  of: find.byIcon(Icons.settings_outlined),
+                  matching: find.byType(IconButton),
+                )
+                .first,
+          );
+          expect(
+            bellButton.style!.backgroundColor!.resolve({}),
+            const Color(0xffeee4ff),
+          );
+          expect(
+            settingsButton.style!.backgroundColor!.resolve({}),
+            const Color(0xffeee4ff),
+          );
+          expect(bellButton.style!.foregroundColor!.resolve({}), growthPurple);
+          expect(settingsButton.style!.foregroundColor!.resolve({}), growthInk);
+          expect(
+            tester.widget<Badge>(find.byType(Badge)).isLabelVisible,
+            isTrue,
+          );
+          await tester.tap(bell);
+          expect(tester.takeException(), isNull);
+        }
+        expect(opened, 4);
+      },
+    );
+  }
+
   testWidgets('all task categories share one row at reference phone width', (
     tester,
   ) async {
