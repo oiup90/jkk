@@ -20,6 +20,7 @@ HISTORICAL = {
     'profile_integration.py', 'action_controls_integration.py',
 }
 UPGRADE_TEST = 'random_identifiers_push_integration.py'
+HISTORY_UPGRADE_TEST = 'wallet_history_upgrade_integration.py'
 
 
 def main():
@@ -76,12 +77,14 @@ def main():
         suites = [p for p in suites if p.name not in HISTORICAL and p.name != Path(__file__).name]
         failures = []
         for index, suite in enumerate(suites):
-            db = create(str(index), None if suite.name == UPGRADE_TEST else template)
-            if suite.name == UPGRADE_TEST:
+            db = create(str(index), None if suite.name in (UPGRADE_TEST, HISTORY_UPGRADE_TEST) else template)
+            if suite.name in (UPGRADE_TEST, HISTORY_UPGRADE_TEST):
                 bootstrap(db)
                 for migration in MIGRATIONS:
-                    if migration.name.startswith('20261111143302_'):
+                    if suite.name == UPGRADE_TEST and migration.name.startswith('20261111143302_'):
                         seed_upgrade(db)
+                    if suite.name == HISTORY_UPGRADE_TEST and migration.name.startswith('20261117040236_'):
+                        sql(db, (TESTS / 'wallet_history_upgrade_fixture.sql').read_text())
                     sql(db, migration.read_text())
             print(f'RUN: {suite.name}', flush=True)
             result = subprocess.run([sys.executable, str(suite), db], env=env, cwd=ROOT)

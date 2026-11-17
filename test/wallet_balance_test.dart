@@ -23,7 +23,7 @@ void main() {
         .setMockMethodCallHandler(channel, null);
   });
   testWidgets(
-    'pending balance stays hidden then counts real coins with sound',
+    'checking a pending balance plays sound immediately and counts real coins',
     (tester) async {
       final stream = StreamController<List<Map<String, dynamic>>>();
       addTearDown(stream.close);
@@ -34,6 +34,7 @@ void main() {
       );
       await tester.tap(find.byTooltip('Check balance'));
       await tester.pump();
+      expect(sounds.where((s) => s == 'playCoinCount').length, 1);
       expect(find.textContaining('Loading'), findsNothing);
       expect(find.text('0 Coins'), findsNothing);
       stream.add([
@@ -58,6 +59,36 @@ void main() {
       await tester.pumpWidget(const SizedBox());
     },
   );
+  testWidgets('zero balance with reduced motion plays on each check', (
+    tester,
+  ) async {
+    final stream = StreamController<List<Map<String, dynamic>>>();
+    addTearDown(stream.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(disableAnimations: true),
+          child: child!,
+        ),
+        home: Scaffold(body: WalletBalance(balances: stream.stream)),
+      ),
+    );
+    stream.add([
+      {'balance': 0},
+    ]);
+    await tester.pump();
+    await tester.tap(find.byTooltip('Check balance'));
+    await tester.pump();
+    expect(find.text('0 Coins'), findsOneWidget);
+    expect(sounds.where((s) => s == 'playCoinCount').length, 1);
+    await tester.tap(find.byTooltip('Hide balance'));
+    await tester.pump();
+    expect(sounds.last, 'stopCoinCount');
+    await tester.tap(find.byTooltip('Check balance'));
+    await tester.pump();
+    expect(sounds.where((s) => s == 'playCoinCount').length, 2);
+    await tester.pumpWidget(const SizedBox());
+  });
   testWidgets(
     'changing wallet streams clears the previous identifier and balance',
     (tester) async {

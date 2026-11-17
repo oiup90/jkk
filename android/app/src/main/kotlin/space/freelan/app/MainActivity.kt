@@ -61,7 +61,7 @@ class MainActivity : FlutterActivity() {
                     stopCoins()
                     try {
                         coinPlayer = android.media.MediaPlayer.create(this, R.raw.coin_count)?.apply {
-                            setVolume(0.35f, 0.35f)
+                            setVolume(0.7f, 0.7f)
                             setOnCompletionListener { stopCoins() }
                             start()
                         }

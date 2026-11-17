@@ -194,7 +194,6 @@ void main() {
                 onPersonalInfo: () => personal++,
                 onAccounts: () => accounts++,
                 onReferrals: () {},
-                onHistory: () {},
                 onPin: () => pin++,
                 onSignOut: () {},
                 onLanguage: () {},
@@ -206,14 +205,16 @@ void main() {
         expect(find.text('Alexandra Marie Longname'), findsOneWidget);
         expect(find.text('alexandra.longname@example.test'), findsOneWidget);
         expect(find.text('User ID: 12345678'), findsOneWidget);
-        final edit = find.byTooltip(
-          locale == 'en' ? 'Edit profile' : 'Profile മാറ്റുക',
+        final personalInfo = find.text(
+          locale == 'en' ? 'Personal information' : 'വ്യക്തിഗത വിവരങ്ങൾ',
         );
-        final editSize = tester.getSize(edit);
-        expect(editSize.width, greaterThanOrEqualTo(48));
-        expect(editSize.height, greaterThanOrEqualTo(48));
-        // The whole target must be inside the avatar Stack for hit testing.
-        await tester.tapAt(tester.getTopLeft(edit) + const Offset(2, 2));
+        await tester.scrollUntilVisible(
+          personalInfo,
+          180,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(personalInfo);
         expect(personal, 1);
         final account = find.text(
           words['instagramAccounts']![locale == 'ml' ? 1 : 0],

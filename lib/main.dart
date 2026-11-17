@@ -1798,9 +1798,11 @@ class NotificationsButton extends StatelessWidget {
     super.key,
     required this.stream,
     required this.onPressed,
+    this.style,
   });
   final Stream<List<Map<String, dynamic>>> stream;
   final VoidCallback onPressed;
+  final ButtonStyle? style;
   @override
   Widget build(BuildContext context) =>
       StreamBuilder<List<Map<String, dynamic>>>(
@@ -1808,6 +1810,7 @@ class NotificationsButton extends StatelessWidget {
         builder: (context, snapshot) => IconButton(
           tooltip: tr(context, 'notifications'),
           onPressed: onPressed,
+          style: style,
           icon: Badge(
             isLabelVisible:
                 snapshot.data?.any((item) => item['read_at'] == null) ?? false,
@@ -1815,6 +1818,108 @@ class NotificationsButton extends StatelessWidget {
           ),
         ),
       );
+}
+
+class UserPageHeader extends StatelessWidget implements PreferredSizeWidget {
+  const UserPageHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.notifications,
+    this.onNotifications,
+    this.onSignOut,
+    this.primary = true,
+  });
+
+  final String title;
+  final String? subtitle;
+  final Stream<List<Map<String, dynamic>>>? notifications;
+  final VoidCallback? onNotifications;
+  final VoidCallback? onSignOut;
+  final bool primary;
+
+  @override
+  Size get preferredSize => const Size.fromHeight(72);
+
+  @override
+  Widget build(BuildContext context) {
+    ButtonStyle actionStyle(Color foreground) => IconButton.styleFrom(
+      backgroundColor: const Color(0xffeee4ff),
+      foregroundColor: foreground,
+      fixedSize: const Size(48, 48),
+      iconSize: 24,
+      padding: EdgeInsets.zero,
+      shape: const CircleBorder(),
+    );
+
+    void openSettings() => Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => const UserSettingsPage()),
+    );
+
+    return AppBar(
+      primary: primary,
+      toolbarHeight: preferredSize.height,
+      title: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          if (subtitle != null)
+            Text(
+              subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.normal,
+              ),
+            ),
+        ],
+      ),
+      actionsPadding: const EdgeInsets.only(right: 16),
+      actions: [
+        if (onNotifications != null && notifications != null) ...[
+          NotificationsButton(
+            stream: notifications!,
+            onPressed: onNotifications!,
+            style: actionStyle(growthPurple),
+          ),
+          const SizedBox(width: 8),
+        ],
+        if (onSignOut == null)
+          IconButton(
+            tooltip: uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'),
+            style: actionStyle(growthInk),
+            icon: const Icon(Icons.settings_outlined),
+            onPressed: openSettings,
+          )
+        else
+          PopupMenuButton<String>(
+            tooltip: tr(context, 'profileSettings'),
+            style: actionStyle(growthInk),
+            icon: const Icon(Icons.settings_outlined),
+            onSelected: (value) {
+              if (value == 'settings') {
+                openSettings();
+              } else if (value == 'signout') {
+                onSignOut!();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'settings',
+                child: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),
+              ),
+              PopupMenuItem(
+                value: 'signout',
+                child: Text(tr(context, 'signout')),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
 }
 
 class NotificationsPage extends StatelessWidget {
@@ -2050,47 +2155,17 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     return Scaffold(
       appBar: selected == 3
           ? null
-          : AppBar(
-              toolbarHeight: selected == 2
-                  ? 90
-                  : selected == 1
-                  ? 68
-                  : 56,
-              title: selected == 2
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(tr(context, 'campaigns')),
-                        Text(
-                          uf(
-                            context,
-                            'Create and manage your campaigns with ease.',
-                            'നിങ്ങളുടെ campaigns നിയന്ത്രിക്കുക.',
-                          ),
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.normal,
-                          ),
-                        ),
-                      ],
+          : UserPageHeader(
+              title: tr(context, labels[selected]),
+              subtitle: selected == 2
+                  ? uf(
+                      context,
+                      'Create and manage your campaigns with ease.',
+                      'നിങ്ങളുടെ campaigns നിയന്ത്രിക്കുക.',
                     )
-                  : Text(tr(context, labels[selected])),
-              actions: [
-                NotificationsButton(
-                  stream: notifications,
-                  onPressed: openNotifications,
-                ),
-                IconButton(
-                  tooltip: uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'),
-                  icon: const Icon(Icons.settings_outlined),
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute<void>(
-                      builder: (_) => const UserSettingsPage(),
-                    ),
-                  ),
-                ),
-              ],
+                  : null,
+              notifications: notifications,
+              onNotifications: openNotifications,
             ),
       body: SafeArea(child: pages[selected]),
       bottomNavigationBar: GrowthNavigation(
@@ -2103,9 +2178,15 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 }
 
 class BalanceCard extends StatefulWidget {
-  const BalanceCard({super.key, required this.uid, this.balanceStream});
+  const BalanceCard({
+    super.key,
+    required this.uid,
+    this.balanceStream,
+    this.historyStream,
+  });
   final String uid;
   final Stream<List<Map<String, dynamic>>>? balanceStream;
+  final Stream<List<Map<String, dynamic>>>? historyStream;
   @override
   State<BalanceCard> createState() => _BalanceCardState();
 }
@@ -2130,6 +2211,14 @@ class _BalanceCardState extends State<BalanceCard> {
   Widget build(BuildContext context) => WalletBalance(
     key: ValueKey(widget.uid),
     balances: balances,
+    onHistory: () => Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => CoinHistoryPage(
+          uid: widget.uid,
+          historyStream: widget.historyStream,
+        ),
+      ),
+    ),
     onTransfer: () => Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => WalletTransferPage(client: db)),
     ),
@@ -2159,9 +2248,11 @@ class Dashboard extends StatelessWidget {
     required this.onCreate,
     required this.uid,
     this.balanceStream,
+    this.historyStream,
     this.onBrowseType,
   });
   final Stream<List<Map<String, dynamic>>>? balanceStream;
+  final Stream<List<Map<String, dynamic>>>? historyStream;
   final ValueChanged<String>? onBrowseType;
   final VoidCallback onBrowse, onCreate;
   final String uid;
@@ -2169,7 +2260,11 @@ class Dashboard extends StatelessWidget {
   Widget build(BuildContext context) => AppListView(
     padding: const EdgeInsets.fromLTRB(14, 4, 14, 16),
     children: [
-      BalanceCard(uid: uid, balanceStream: balanceStream),
+      BalanceCard(
+        uid: uid,
+        balanceStream: balanceStream,
+        historyStream: historyStream,
+      ),
       const SizedBox(height: 20),
       Text(
         tr(context, 'welcome'),
@@ -4124,6 +4219,11 @@ class _CoinHistoryPageState extends State<CoinHistoryPage> {
                       return Card(
                         child: ListTile(
                           title: Text(tr(context, reason)),
+                          subtitle: data['reference_id'] is String
+                              ? SelectableText(
+                                  '${uf(context, 'Reference ID', 'Reference ID')}: ${data['reference_id']}',
+                                )
+                              : null,
                           trailing: Text(
                             '${amount > 0 ? '+' : ''}$amount',
                             style: TextStyle(
@@ -4749,15 +4849,6 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
               },
         onAccounts: () => openDetails(true),
         onReferrals: () => openDetails(false),
-        onHistory: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(
-            builder: (_) => CoinHistoryPage(
-              uid: widget.user.id,
-              historyStream: gateway.history(widget.user.id),
-            ),
-          ),
-        ),
         onPin: details.hasData ? () => openPin(details.data!.pinSet) : null,
         onSignOut: signOut,
         onLanguage: toggleLanguage,
@@ -4780,7 +4871,6 @@ class ProfileLayout extends StatelessWidget {
     required this.onPersonalInfo,
     required this.onAccounts,
     required this.onReferrals,
-    required this.onHistory,
     required this.onPin,
     required this.onSignOut,
     required this.onLanguage,
@@ -4794,12 +4884,7 @@ class ProfileLayout extends StatelessWidget {
   final int? balance;
   final bool loading, error;
   final VoidCallback? onPersonalInfo;
-  final VoidCallback onRetry,
-      onAccounts,
-      onReferrals,
-      onHistory,
-      onSignOut,
-      onLanguage;
+  final VoidCallback onRetry, onAccounts, onReferrals, onSignOut, onLanguage;
   final VoidCallback? onPin;
   @override
   Widget build(BuildContext context) {
@@ -4812,53 +4897,12 @@ class ProfileLayout extends StatelessWidget {
       color: Colors.transparent,
       child: Column(
         children: [
-          Container(
-            color: Colors.transparent,
-            padding: const EdgeInsets.fromLTRB(20, 8, 12, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    tr(context, 'profile'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (onNotifications != null && notifications != null)
-                  NotificationsButton(
-                    stream: notifications!,
-                    onPressed: onNotifications!,
-                  ),
-                PopupMenuButton<String>(
-                  tooltip: tr(context, 'profileSettings'),
-                  icon: const Icon(Icons.settings_outlined),
-                  onSelected: (value) {
-                    if (value == 'settings') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute<void>(
-                          builder: (_) => const UserSettingsPage(),
-                        ),
-                      );
-                    } else if (value == 'signout') {
-                      onSignOut();
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'settings',
-                      child: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),
-                    ),
-                    PopupMenuItem(
-                      value: 'signout',
-                      child: Text(tr(context, 'signout')),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          UserPageHeader(
+            primary: false,
+            title: tr(context, 'profile'),
+            notifications: notifications,
+            onNotifications: onNotifications,
+            onSignOut: onSignOut,
           ),
           Expanded(
             child: Center(
@@ -4888,55 +4932,32 @@ class ProfileLayout extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(3),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: const Color(0xffd8bdf7),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 31,
-                                  backgroundColor: const Color(0xffe4d4f5),
-                                  backgroundImage: info?.photo == null
-                                      ? null
-                                      : MemoryImage(info!.photo!),
-                                  child: info?.photo != null
-                                      ? null
-                                      : Text(
-                                          profileInitials(name),
-                                          style: const TextStyle(
-                                            fontSize: 23,
-                                            fontWeight: FontWeight.w800,
-                                            color: Color(0xff392457),
-                                          ),
-                                        ),
-                                ),
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: const Color(0xffd8bdf7),
+                                width: 2,
                               ),
-                              Positioned(
-                                right: 0,
-                                bottom: 0,
-                                child: IconButton.filled(
-                                  constraints: const BoxConstraints.tightFor(
-                                    width: 48,
-                                    height: 48,
-                                  ),
-                                  padding: EdgeInsets.zero,
-                                  tooltip: uf(
-                                    context,
-                                    'Edit profile',
-                                    'Profile മാറ്റുക',
-                                  ),
-                                  onPressed: onPersonalInfo,
-                                  icon: const Icon(Icons.edit, size: 16),
-                                ),
-                              ),
-                            ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 31,
+                              backgroundColor: const Color(0xffe4d4f5),
+                              backgroundImage: info?.photo == null
+                                  ? null
+                                  : MemoryImage(info!.photo!),
+                              child: info?.photo != null
+                                  ? null
+                                  : Text(
+                                      profileInitials(name),
+                                      style: const TextStyle(
+                                        fontSize: 23,
+                                        fontWeight: FontWeight.w800,
+                                        color: Color(0xff392457),
+                                      ),
+                                    ),
+                            ),
                           ),
                           const SizedBox(width: 18),
                           Expanded(
@@ -5142,11 +5163,6 @@ class ProfileLayout extends StatelessWidget {
                             title: tr(context, 'instagramAccounts'),
                             onTap: onAccounts,
                             trailingText: info?.usernames.length.toString(),
-                          ),
-                          ProfileMenuTile(
-                            icon: Icons.history,
-                            title: tr(context, 'history'),
-                            onTap: onHistory,
                           ),
                           ProfileMenuTile(
                             icon: Icons.people_outline,
