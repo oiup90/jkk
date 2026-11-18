@@ -18,7 +18,7 @@ try {
     # Each build needs its own symbols: later builds must not overwrite them.
     $symbols = Join-Path $repoRoot "release-symbols/$([guid]::NewGuid().ToString())"
     New-Item -ItemType Directory -Path $symbols -ErrorAction Stop | Out-Null
-    $buildArgs = @('build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--obfuscate', "--split-debug-info=$symbols")
+    $buildArgs = @('build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--dart-define=AUTH_CAPTCHA_ENABLED=true', '--obfuscate', "--split-debug-info=$symbols")
     if ($PSBoundParameters.ContainsKey('BuildNumber')) { $buildArgs += "--build-number=$BuildNumber" }
     if ($PSBoundParameters.ContainsKey('BuildName')) { $buildArgs += "--build-name=$BuildName" }
     Invoke-Flutter $flutter $buildArgs
