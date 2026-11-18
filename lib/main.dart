@@ -20,6 +20,9 @@ import 'wallet_balance.dart';
 import 'wallet_transfer.dart';
 import 'legal_pages.dart';
 import 'coin_purchase.dart';
+import 'safe_error_widget.dart';
+import 'secure_transport.dart';
+import 'password_policy.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -37,12 +40,18 @@ final language = ValueNotifier<Locale>(const Locale('en'));
 SupabaseClient get db => Supabase.instance.client;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = safeErrorWidget;
   final configured = validClientConfiguration(supabaseUrl, supabaseKey);
   if (configured) {
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: supabaseKey,
+      httpClient: secureHttpClient,
+      realtimeClientOptions: RealtimeClientOptions(
+        transport: secureRealtimeTransport,
+      ),
       authOptions: FlutterAuthClientOptions(
+        autoRefreshToken: true,
         localStorage: ProtectedAuthStorage(
           'sb-${Uri.parse(supabaseUrl).host.split('.').first}-auth-token',
         ),
@@ -162,7 +171,7 @@ const words = <String, List<String>>{
   'authNameHint': ['Your name', 'നിങ്ങളുടെ പേര്'],
   'authEmailHint': ['you@example.com', 'you@example.com'],
   'authPasswordHint': ['Enter your password', 'പാസ്‌വേഡ് നൽകുക'],
-  'authNewPasswordHint': ['At least 6 characters', 'കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ'],
+  'authNewPasswordHint': ['At least 12 characters', 'കുറഞ്ഞത് 12 അക്ഷരങ്ങൾ'],
   'authSignupHelp': [
     'Verify your email with a 6-digit code, then sign in with your password.',
     '6 അക്ക കോഡ് ഉപയോഗിച്ച് ഇമെയിൽ സ്ഥിരീകരിച്ച് പാസ്‌വേഡ് നൽകി ലോഗിൻ ചെയ്യുക.',
@@ -473,12 +482,12 @@ const words = <String, List<String>>{
     'ബന്ധിപ്പിക്കാൻ കഴിഞ്ഞില്ല. Internet പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.',
   ],
   'confirmationEmailFailed': [
-    'The server could not send your verification email. Contact app support to check email delivery settings.',
-    'Verification email അയയ്ക്കാൻ server-ന് കഴിഞ്ഞില്ല. Email delivery settings പരിശോധിക്കാൻ app support-നെ ബന്ധപ്പെടുക.',
+    'Could not send your verification email. Try again later or contact support.',
+    'Verification email അയയ്ക്കാൻ കഴിഞ്ഞില്ല. പിന്നീട് ശ്രമിക്കുക അല്ലെങ്കിൽ support-നെ ബന്ധപ്പെടുക.',
   ],
   'accountCreationFailed': [
-    'The server could not save your account. Contact app support.',
-    'നിങ്ങളുടെ അക്കൗണ്ട് server-ൽ സേവ് ചെയ്യാൻ കഴിഞ്ഞില്ല. App support-നെ ബന്ധപ്പെടുക.',
+    'Could not create your account. Try again later or contact support.',
+    'അക്കൗണ്ട് തുറക്കാൻ കഴിഞ്ഞില്ല. പിന്നീട് ശ്രമിക്കുക അല്ലെങ്കിൽ support-നെ ബന്ധപ്പെടുക.',
   ],
   'serviceUnavailable': [
     'The sign-in service is temporarily unavailable. Try again later.',
@@ -521,14 +530,28 @@ const words = <String, List<String>>{
     'This email is already registered.',
     'ഈ ഇമെയിൽ ഇതിനകം രജിസ്റ്റർ ചെയ്തിട്ടുണ്ട്.',
   ],
-  'weakPassword': [
-    'Password must be at least 6 characters.',
-    'പാസ്‌വേഡിൽ കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ വേണം.',
-  ],
+  'weakPassword': [passwordRequirementsEnglish, passwordRequirementsMalayalam],
 };
 String tr(BuildContext context, String key) =>
     words[key]?[Localizations.localeOf(context).languageCode == 'ml' ? 1 : 0] ??
     key;
+
+// RPC results are untrusted: only translate known PIN outcomes.
+String safePinError(BuildContext context, Object? result) {
+  const known = {
+    'email_otp_required',
+    'otp_required',
+    'pin_missing',
+    'invalid_pin',
+    'pin_locked',
+    'invalid_format',
+  };
+  return tr(
+    context,
+    result is String && known.contains(result) ? result : 'error',
+  );
+}
+
 String? authErrorKey(AuthException e) {
   switch (e.code) {
     case 'otp_expired':
@@ -596,26 +619,7 @@ String? authErrorKey(AuthException e) {
 String friendlyError(BuildContext context, Object e) {
   if (e is AuthException) {
     final key = authErrorKey(e);
-    if (key != null) {
-      final status = e.statusCode;
-      final diagnostic =
-          e is AuthRetryableFetchException &&
-              status != null &&
-              RegExp(r'^5\d{2}$').hasMatch(status)
-          ? ' (HTTP $status)'
-          : '';
-      return '${tr(context, key)}$diagnostic';
-    }
-    // Error codes help diagnose failures without exposing server messages or user data.
-    final code = e.code;
-    if (code != null && RegExp(r'^[a-z0-9_]{1,64}$').hasMatch(code)) {
-      return '${tr(context, 'error')} ($code)';
-    }
-    final status = e.statusCode;
-    if (status != null && RegExp(r'^\d{3}$').hasMatch(status)) {
-      return '${tr(context, 'error')} (HTTP $status)';
-    }
-    return tr(context, 'error');
+    return tr(context, key ?? 'error');
   }
   if (e is TimeoutException) return tr(context, 'connectionError');
   if (e is PostgrestException) {
@@ -922,7 +926,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
   }
 
   Future<void> save() async {
-    if (password.text.length < 6) {
+    if (!meetsPasswordPolicy(password.text)) {
       toast(context, tr(context, 'weakPassword'));
       return;
     }
@@ -971,13 +975,7 @@ class _RecoveryScreenState extends State<RecoveryScreen> {
                     ?.copyWith(color: growthInk, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              Text(
-                uf(
-                  context,
-                  'Choose a password with at least 6 characters.',
-                  'കുറഞ്ഞത് 6 അക്ഷരങ്ങളുള്ള password തിരഞ്ഞെടുക്കുക.',
-                ),
-              ),
+              Text(tr(context, 'weakPassword')),
               const SizedBox(height: 24),
               Card(
                 child: Padding(
@@ -1152,6 +1150,7 @@ class _AccountGateState extends State<AccountGate> {
 class AuthActions {
   GoTrueClient signupClient() => GoTrueClient(
     url: '$supabaseUrl/auth/v1',
+    httpClient: secureHttpClient,
     headers: {'apikey': supabaseKey},
     autoRefreshToken: false,
     flowType: AuthFlowType.implicit,
@@ -1278,7 +1277,7 @@ class _AuthScreenState extends State<AuthScreen> {
       toast(context, tr(context, 'required'));
       return;
     }
-    if (registering && password.text.length < 6) {
+    if (registering && !meetsPasswordPolicy(password.text)) {
       toast(context, tr(context, 'weakPassword'));
       return;
     }
@@ -1570,8 +1569,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           child: Text(tr(context, 'forgot')),
                         ),
                       )
-                    else
-                      const SizedBox(height: 24),
+                    else ...[
+                      const SizedBox(height: 8),
+                      Text(tr(context, 'weakPassword')),
+                      const SizedBox(height: 16),
+                    ],
                     GrowthPrimaryButton(
                       onPressed: busy || cooldown > 0 ? null : submit,
                       label: tr(context, registering ? 'register' : 'login'),
@@ -2541,12 +2543,45 @@ IconData actionIcon(String type) => switch (type) {
   _ => Icons.circle_outlined,
 };
 
+// Keep campaign link validation aligned with growth_internal.create_campaign.
+String? normalizeCampaignLink(String type, String value) {
+  if (value.length > 500 ||
+      !const ['follow', 'like', 'comment', 'share'].contains(type)) {
+    return null;
+  }
+  final clean = value.trim().replaceFirst(RegExp(r'[?#].*$'), '');
+  final prefix = RegExp(
+    r'^https://(www\.)?instagram\.com/',
+    caseSensitive: false,
+  );
+  if (!prefix.hasMatch(clean)) return null;
+  final path = clean.replaceFirst(prefix, '').replaceFirst(RegExp(r'/+$'), '');
+  if (type == 'follow') {
+    if (!RegExp(r'^[A-Za-z0-9._]{1,30}$').hasMatch(path) ||
+        const [
+          'p',
+          'reel',
+          'reels',
+          'stories',
+          'explore',
+          'accounts',
+        ].contains(path.toLowerCase())) {
+      return null;
+    }
+  } else if (!RegExp(r'^(p|reel)/[A-Za-z0-9_-]+$').hasMatch(path)) {
+    return null;
+  }
+  return 'https://www.instagram.com/$path/';
+}
+
 Future<void> openInstagram(BuildContext context, String link) async {
   try {
-    if (!await launchUrl(
-          Uri.parse(link),
-          mode: LaunchMode.externalApplication,
-        ) &&
+    final clean =
+        normalizeCampaignLink('follow', link) ??
+        normalizeCampaignLink('like', link);
+    if (clean == null) throw const FormatException('Invalid Instagram link.');
+    final uri = Uri.parse(clean);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication) &&
         context.mounted) {
       toast(context, tr(context, 'openError'));
     }
@@ -2787,7 +2822,7 @@ class _ClaimReviewDialogState extends State<ClaimReviewDialog> {
       if (mounted) {
         setState(
           () => error = e is PinException
-              ? tr(context, e.code)
+              ? safePinError(context, e.code)
               : friendlyError(context, e),
         );
       }
@@ -4080,6 +4115,8 @@ class _CreateCampaignState extends State<CreateCampaign> {
                       ),
                       validator: (v) => v == null || v.trim().isEmpty
                           ? tr(context, 'required')
+                          : normalizeCampaignLink(type, v) == null
+                          ? tr(context, 'invalidLink')
                           : null,
                     ),
                   ],
@@ -4421,7 +4458,7 @@ class _ReleasePinDialogState extends State<ReleasePinDialog> {
       if (result == 'ok') {
         Navigator.pop(context, 'ok');
       } else {
-        setState(() => error = tr(context, result.toString()));
+        setState(() => error = safePinError(context, result));
       }
     } catch (e) {
       if (mounted) setState(() => error = friendlyError(context, e));
@@ -4938,6 +4975,10 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
                         () => SupabaseClient(
                           supabaseUrl,
                           supabaseKey,
+                          httpClient: secureHttpClient,
+                          realtimeClientOptions: RealtimeClientOptions(
+                            transport: secureRealtimeTransport,
+                          ),
                           authOptions: const AuthClientOptions(
                             autoRefreshToken: false,
                             authFlowType: AuthFlowType.implicit,
@@ -6647,7 +6688,7 @@ Future<bool> confirmSecurityPin(BuildContext context) async {
     if (result == 'ok' && userId != null && db.auth.currentUser?.id == userId) {
       return true;
     }
-    if (context.mounted) toast(context, tr(context, result.toString()));
+    if (context.mounted) toast(context, safePinError(context, result));
   } catch (error) {
     if (context.mounted) toast(context, friendlyError(context, error));
   }

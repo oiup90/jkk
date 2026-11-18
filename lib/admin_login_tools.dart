@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'password_policy.dart';
+
+// Recovery verifies the email OTP in an isolated, in-memory client.
+const adminRecoveryAuthOptions = AuthClientOptions(
+  autoRefreshToken: false,
+  authFlowType: AuthFlowType.implicit,
+);
 
 /// One saved login per project, encrypted by the operating system's secure store.
 class AdminSavedLogin {
@@ -52,8 +59,11 @@ class _AdminPasswordRecoveryState extends State<AdminPasswordRecovery> {
     if (step == 1 && !RegExp(r'^\d{6}$').hasMatch(code.text.trim())) {
       setState(() => error = 'Enter the six-digit code.'); return;
     }
-    if (step == 2 && (password.text.length < 8 || password.text != confirm.text)) {
-      setState(() => error = 'Enter matching passwords with at least 8 characters.'); return;
+    if (step == 2 && !meetsPasswordPolicy(password.text)) {
+      setState(() => error = passwordRequirementsEnglish); return;
+    }
+    if (step == 2 && password.text != confirm.text) {
+      setState(() => error = 'Passwords must match.'); return;
     }
     setState(() { busy = true; error = null; });
     try {
@@ -96,6 +106,7 @@ class _AdminPasswordRecoveryState extends State<AdminPasswordRecovery> {
         }, child: const Text('Request another code')),
       ],
       if (step == 2) ...[
+        const Text(passwordRequirementsEnglish),
         TextField(controller: password, enabled: !busy, obscureText: true, decoration: const InputDecoration(labelText: 'New password')),
         TextField(controller: confirm, enabled: !busy, obscureText: true, decoration: const InputDecoration(labelText: 'Confirm password')),
       ],

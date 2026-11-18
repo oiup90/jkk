@@ -1,0 +1,6 @@
+// Flutter passes these options to Gradle for APK and app bundle builds.
+ext.validateDartObfuscation = { String enabled, String symbolsDirectory ->
+    // Match the Flutter Gradle plugin's Kotlin String.toBoolean semantics.
+    if (enabled.equalsIgnoreCase('true') && symbolsDirectory?.trim()) return
+    throw new GradleException('Android release builds require Dart obfuscation and a symbols directory. Add --obfuscate --split-debug-info=<unique-private-directory>; see docs/ANDROID_RELEASE_BUILD.md.')
+}

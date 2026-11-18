@@ -90,9 +90,19 @@ Existing paid claims remain marked as legacy self-reports and are not reversed.
 
 For this Freelan Space project, use the checked-in public client configuration. Android user release builds reject missing or unsafe configuration. See [Android release recovery](docs/ANDROID_RELEASE_BUILD.md) for replacing the affected build16 with version1.1.9+17. For another project, supply its own public configuration file.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:feab8182865565dff88700f5c7a180d42c1197dbe1fc18d29d68be71759c7c1e -->
+
+<!-- coderabbit-ai-generated-section:v1:af2b2ad3d9223e3a3d7d7520efc0c9b7493539560976e4847e950f2bfbe27960 -->
+
 ```sh
-flutter build apk --release --dart-define-from-file=config/production.json
+mkdir -p release-symbols
+SYMBOLS_DIR="$(mktemp -d "$PWD/release-symbols/release.XXXXXXXX")"
+flutter build apk --release --dart-define-from-file=config/production.json --obfuscate --split-debug-info="$SYMBOLS_DIR"
 ```
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -306,7 +316,13 @@ Apply `supabase/migrations/20261107100000_security_hardening.sql` after **all te
 - PIN setup/reset now checks the current confirmed account email against the signed JWT email. Generic `otp` AMR can also represent SMS, so PIN setup/reset explicitly rejects accounts with a linked phone or JWT phone claim. This app supports email account login; phone-linked accounts need account support before changing their PIN. Existing PINs still release coins for active verified-email users. Freshness, one-use OTP proof and five-failure/15-minute release lockout remain intact. A stale email claim must be refreshed before setup/reset.
 - Evidence remains JPEG/PNG and at most 512 KiB, and now must also be static and no more than 4096 pixels in either dimension. The database checks PNG/JPEG metadata for new writes. Both reviewer apps check dimensions before decoding and validate a bounded thumbnail before rendering. Historical malformed evidence is not deleted by the migration; updated owners can reject it, while approval stays disabled when evidence cannot be safely decoded. A dimension check is not a claim that a screenshot proves Instagram activity.
 - The lookup Edge Function stops reading request bodies at 2048 bytes and cancels stalled reads after eight seconds. This applies before upstream API calls; credentials remain server-side.
-- Android release traffic explicitly disallows cleartext HTTP. App backup is disabled, with Android 12+ cloud/device-transfer exclusions to keep stored login sessions from being copied. Debug-only cleartext support is retained for Flutter development. See [Android backup configuration](https://developer.android.com/identity/data/autobackup).
+- <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ca9153e3e05d9bc23d6c86480c0b08bedb2b4d4603346477f3e2aa5253f94707 -->
+
+Android debug, profile and release builds disallow cleartext HTTP. App backup is disabled, with Android 12+ cloud/device-transfer exclusions to keep stored login sessions from being copied. Debug tooling that needs cleartext network access may be affected.
+
+<!-- /coderabbit-ai-generated:v1 --> See [Android backup configuration](https://developer.android.com/identity/data/autobackup).
 
 Verification: Flutter analyzer and all 52 tests passed; isolated PostgreSQL security/economy/notification/action/admin-inspection/lookup tests passed; Edge handler tests and Deno checks passed; Gradle debug/release manifest merging and debug resource compilation passed. A query of OSV for the 93 hosted packages in the unchanged lockfile returned no listed advisories. These checks use synthetic Auth/Meta fixtures and do not establish live Supabase configuration, actual OTP delivery, native device behavior or production deployment. Committing migrations and pushing GitHub does **not** apply them to Supabase.
 

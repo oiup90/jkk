@@ -28,6 +28,9 @@ class UserExperience(unittest.TestCase):
   self.assertEqual(sql("select count(*) from public.user_submission_history('rejected','TEST',null,null,0,50)",U),'1')
   self.assertEqual(sql("select count(*) from public.user_submission_history('approved','TEST',null,null,0,50)",U),'0')
   self.assertEqual(sql("select count(*) from public.user_submission_history(null,'TEST',null,null,0,50)",X),'0')
+  # Quotes and SQL syntax remain literal search data; no other user's rows leak.
+  self.assertEqual(sql("select count(*) from public.user_submission_history(null,''' OR 1=1 --',null,null,0,50)",X),'0')
+  sql("select * from public.user_submission_history(null,repeat('x',101),null,null,0,50)",U,fail=True)
   sql("select * from public.user_submission_history(null,'',null,null,0,101)",U,fail=True)
   self.assertEqual(sql(f"select count(*) from public.claim_evidence where campaign_id='{C}'",role='owner'),'0')
   sql(f"select public.submit_claim('{C}','sample','image/png','{PNG}')",U)

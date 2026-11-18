@@ -6,7 +6,21 @@ This change implements the 2026-11-11 audit repairs. Release version: 1.1.7, bui
 
 ## Client changes
 
-Android Supabase session persistence uses flutter_secure_storage11.2.0 (Keystore-protected AES-GCM storage), including PKCE proofs. Existing plaintext sessions are copied into protected storage before their SharedPreferences copy is removed; an existing protected session wins. Storage errors do not fall back to plaintext. Old in-progress plaintext PKCE sign-ins must restart. Existing backups remain disabled. Test device verification of key invalidation, migration and refresh is still required.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cd7b8a5a0876b9b4b4b5514c5dd320a1eb563775af501794ad4cf70b1e1b66ff -->
+
+Android Supabase session persistence uses flutter_secure_storage 11.2.0 (Keystore-protected AES-GCM storage), including PKCE proofs. Existing plaintext sessions are copied into protected storage when possible; an existing protected session wins. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:009cbdbbf86a646cfcb56bb16093e0dbde58098e882939841e8df0e78af566ac -->
+
+The app attempts to remove the old SharedPreferences copy even if secure storage fails. If removal itself fails, initialization fails closed and retries deletion; the old copy may remain until removal succeeds. A user may need to sign in again after storage is repaired.
+
+<!-- /coderabbit-ai-generated:v1 --> Storage errors do not fall back to plaintext. Old in-progress plaintext PKCE sign-ins must restart. Existing backups remain disabled. Test device verification of key invalidation, migration and refresh is still required.
+
+Firebase Messaging and Firebase Installations manage their own Android caches: the current SDK stores its registration token in app-private SharedPreferences and installation auth/refresh tokens in an app-private file. These are separate from Supabase sessions, are not encrypted by this app's secure storage, and remain a limitation while this SDK is used. Android backup exclusions do not encrypt these files.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 User startup accepts only HTTPS project URLs and public publishable/anon keys. The same restriction already applies to admin project setup. Standard certificate validation remains enabled. Certificate pinning was not introduced: it needs a managed pin rotation/recovery policy and Android recommends against it by default.
 

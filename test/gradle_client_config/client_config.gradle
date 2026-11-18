@@ -3,6 +3,7 @@ import groovy.json.JsonOutput
 // Dependency-free Gradle contract tests. Run via the repo Gradle wrapper with
 // -p test/gradle_client_config; the validation script is also used by the real Android app.
 apply from: '../../android/validate-client-config.gradle'
+apply from: '../../android/validate-release-obfuscation.gradle'
 def encoded = { List<String> pairs -> pairs.collect { it.bytes.encodeBase64().toString() }.join(',') }
 def publicKey = 'sb_publishable_syntheticpublickey'
 def jwt = { role -> 'header.' + JsonOutput.toJson([role: role]).bytes.encodeBase64().toString().replace('+','-').replace('/','_').replaceAll('=+$','') + '.signature' }
@@ -38,5 +39,20 @@ tasks.register('testClientConfiguration') {
         reject(encoded(valid + ['SUPABASE_URL=https://another.test']))
         reject(encoded(valid + ["SUPABASE_PUBLISHABLE_KEY=${jwt('service_role')}"]))
         println "PASS: $count client configuration boundary cases"
+    }
+}
+
+tasks.register('testReleaseObfuscation') {
+    doLast {
+        validateDartObfuscation('true', '/tmp/symbols')
+        for (values in [['false', '/tmp/symbols'], ['', '/tmp/symbols'], ['1', '/tmp/symbols'], ['y', '/tmp/symbols'], [' true ', '/tmp/symbols'], ['true', ''], ['true', '   ']]) {
+            try {
+                validateDartObfuscation(values[0], values[1])
+                throw new AssertionError('Release without Dart obfuscation and symbols was accepted')
+            } catch (GradleException e) {
+                assert e.message.contains('--obfuscate --split-debug-info=')
+            }
+        }
+        println 'PASS: release obfuscation requirements'
     }
 }

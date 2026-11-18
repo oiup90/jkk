@@ -15,7 +15,10 @@ sql("select public.create_campaign_for_account('follow','other.account',null,1,1
 campaign=sql("select public.create_campaign_for_account('follow','my.account',null,2,1)",A)
 assert sql(f"select link||':'||instagram_username from public.campaigns where id='{campaign}'")=='https://www.instagram.com/my.account/:my.account'
 sql("select public.create_campaign_for_account('like','my.account','https://www.instagram.com/my.account/',1,1)",A,True)
-sql("select public.create_campaign_for_account('like','my.account','https://www.instagram.com/p/Abc123/',1,1)",A)
+for link in ['http://instagram.com/p/abc', 'https://instagram.com.evil.test/p/abc', 'https://instagram.com@evil.test/p/abc', 'https://instagram.com/p/<script>', "https://instagram.com/p/abc'';select 1--"]:
+    sql(f"select public.create_campaign_for_account('like','my.account','{link}',1,1)",A,True)
+post=sql("select public.create_campaign_for_account('like','my.account','https://instagram.com/p/Abc123/?utm=1#fragment',1,1)",A)
+assert sql(f"select link from public.campaigns where id='{post}'")=='https://www.instagram.com/p/Abc123/'
 sql("select public.create_campaign_for_account('follow','my.account',null,1,999)",A,True)
 assert sql(f"select balance from public.wallets where id='{A}'")=='97'
 print('PASS: own profile account required; follow target generated; post/rate validation and exact reservation preserved')
