@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'password_policy.dart';
+import 'auth_captcha.dart';
 
 // Recovery verifies the email OTP in an isolated, in-memory client.
 const adminRecoveryAuthOptions = AuthClientOptions(
@@ -30,9 +31,10 @@ class AdminSavedLogin {
 }
 
 class AdminPasswordRecovery extends StatefulWidget {
-  const AdminPasswordRecovery({super.key, required this.createClient, required this.savedLogin});
+  const AdminPasswordRecovery({super.key, required this.createClient, required this.savedLogin, this.captchaProvider});
   final SupabaseClient Function() createClient;
   final AdminSavedLogin savedLogin;
+  final AuthCaptchaProvider? captchaProvider;
   @override
   State<AdminPasswordRecovery> createState() => _AdminPasswordRecoveryState();
 }
@@ -68,7 +70,9 @@ class _AdminPasswordRecoveryState extends State<AdminPasswordRecovery> {
     setState(() { busy = true; error = null; });
     try {
       if (step == 0) {
-        await client.auth.resetPasswordForEmail(email.text.trim());
+        final captchaToken = await (widget.captchaProvider ?? requestAuthCaptcha)(context);
+        if (!mounted) return;
+        await client.auth.resetPasswordForEmail(email.text.trim(), captchaToken: captchaToken);
         sentAt = DateTime.now();
       } else if (step == 1) {
         final result = await client.auth.verifyOTP(email: email.text.trim(), token: code.text.trim(), type: OtpType.recovery);
@@ -83,6 +87,8 @@ class _AdminPasswordRecoveryState extends State<AdminPasswordRecovery> {
         return;
       }
       if (mounted) setState(() => step++);
+    } on CaptchaCancelled {
+      // No recovery request was submitted.
     } catch (_) {
       if (mounted) setState(() => error = 'Unable to continue. Check your details or code and try again.');
     } finally { if (mounted) setState(() => busy = false); }

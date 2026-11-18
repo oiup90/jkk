@@ -3,14 +3,22 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/brand_wordmark.dart';
 import 'package:growth_circle/main.dart';
+import 'package:growth_circle/auth_captcha.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FakeAuth extends AuthActions {
   final calls = <String>[];
   Object? error;
   String? submittedName;
+  final captchaTokens = <String?>[];
   @override
-  Future<void> signup(String email, String password, {String? name}) async {
+  Future<void> signup(
+    String email,
+    String password, {
+    String? name,
+    String? captchaToken,
+  }) async {
+    captchaTokens.add(captchaToken);
     submittedName = name;
     calls.add('signup:$email');
     if (error != null) throw error!;
@@ -23,14 +31,26 @@ class FakeAuth extends AuthActions {
   }
 
   @override
-  Future<void> resend(String email) async {
+  Future<void> resend(String email, {String? captchaToken}) async {
+    captchaTokens.add(captchaToken);
     calls.add('resend:$email');
   }
 
   @override
-  Future<void> login(String email, String password) async {
+  Future<void> login(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async {
+    captchaTokens.add(captchaToken);
     calls.add('password:$email');
     if (error != null) throw error!;
+  }
+
+  @override
+  Future<void> reset(String email, {String? captchaToken}) async {
+    captchaTokens.add(captchaToken);
+    calls.add('reset:$email');
   }
 }
 
@@ -54,6 +74,34 @@ Future<void> openSignup(WidgetTester tester, FakeAuth actions) async {
 }
 
 void main() {
+  testWidgets(
+    'login passes a fresh challenge and cancellation sends no request',
+    (tester) async {
+      final actions = FakeAuth();
+      var challengeCount = 0;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AuthScreen(
+            actions: actions,
+            captchaProvider: (_) async {
+              challengeCount++;
+              if (challengeCount == 1) throw const CaptchaCancelled();
+              return 'synthetic-challenge';
+            },
+          ),
+        ),
+      );
+      await enterCredentials(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(actions.calls, isEmpty);
+      await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+      await tester.pumpAndSettle();
+      expect(actions.calls, ['password:person@example.test']);
+      expect(actions.captchaTokens, ['synthetic-challenge']);
+    },
+  );
+
   testWidgets('signup rejects weak passwords before calling Auth', (
     tester,
   ) async {

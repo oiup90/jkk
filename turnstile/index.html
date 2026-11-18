@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Security check</title>
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <style>body{font:16px system-ui,sans-serif;margin:8px;color:#24202e} #status{margin-bottom:16px}</style>
+</head>
+<body>
+  <p id="status">Complete the security check to continue.</p>
+  <div id="challenge"></div>
+  <script>
+    // The site key is public. The verification secret remains in Supabase.
+    const siteKey = '0x4AAAAAAGGqmh6aNhxMsLsE';
+    function renderChallenge() {
+      if (!window.turnstile) {
+        document.getElementById('status').textContent = 'Security check could not load. Close and try again.';
+        return;
+      }
+      turnstile.render('#challenge', {
+        sitekey: siteKey,
+        size: 'compact',
+        callback: token => { window.__freelanCaptchaToken = token; },
+        'error-callback': () => { document.getElementById('status').textContent = 'Security check failed. Close and try again.'; },
+        'expired-callback': () => { window.__freelanCaptchaToken = null; document.getElementById('status').textContent = 'Security check expired. Close and try again.'; }
+      });
+    }
+    window.addEventListener('load', renderChallenge);
+  </script>
+</body>
+</html>

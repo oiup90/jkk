@@ -23,6 +23,7 @@ import 'coin_purchase.dart';
 import 'safe_error_widget.dart';
 import 'secure_transport.dart';
 import 'password_policy.dart';
+import 'auth_captcha.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -1148,6 +1149,8 @@ class _AccountGateState extends State<AccountGate> {
 // Signup verification uses an isolated in-memory client. Its temporary session
 // never reaches AuthGate or persistent storage; only password login opens Home.
 class AuthActions {
+  GoTrueClient get sessionClient => db.auth;
+
   GoTrueClient signupClient() => GoTrueClient(
     url: '$supabaseUrl/auth/v1',
     httpClient: secureHttpClient,
@@ -1156,12 +1159,18 @@ class AuthActions {
     flowType: AuthFlowType.implicit,
   );
 
-  Future<void> signup(String email, String password, {String? name}) async {
+  Future<void> signup(
+    String email,
+    String password, {
+    String? name,
+    String? captchaToken,
+  }) async {
     final client = signupClient();
     try {
       final response = await client.signUp(
         email: email,
         password: password,
+        captchaToken: captchaToken,
         data: name == null || name.trim().isEmpty
             ? null
             : {'full_name': name.trim()},
@@ -1189,27 +1198,49 @@ class AuthActions {
     }
   }
 
-  Future<void> resend(String email) async {
+  Future<void> resend(String email, {String? captchaToken}) async {
     final client = signupClient();
     try {
-      await client.resend(email: email, type: OtpType.signup);
+      await client.resend(
+        email: email,
+        type: OtpType.signup,
+        captchaToken: captchaToken,
+      );
     } finally {
       client.dispose();
     }
   }
 
-  Future<void> login(String email, String password) async {
-    await db.auth.signInWithPassword(email: email, password: password);
+  Future<void> login(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async {
+    await sessionClient.signInWithPassword(
+      email: email,
+      password: password,
+      captchaToken: captchaToken,
+    );
   }
 
-  Future<void> reset(String email) async {
-    await db.auth.resetPasswordForEmail(email, redirectTo: authRedirect);
+  Future<void> reset(String email, {String? captchaToken}) async {
+    await sessionClient.resetPasswordForEmail(
+      email,
+      redirectTo: authRedirect,
+      captchaToken: captchaToken,
+    );
   }
 }
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({super.key, this.actions, this.blockedNotice = false});
+  const AuthScreen({
+    super.key,
+    this.actions,
+    this.blockedNotice = false,
+    this.captchaProvider,
+  });
   final AuthActions? actions;
+  final AuthCaptchaProvider? captchaProvider;
   final bool blockedNotice;
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -1259,6 +1290,8 @@ class _AuthScreenState extends State<AuthScreen> {
     setState(() => busy = true);
     try {
       await operation();
+    } on CaptchaCancelled {
+      // The user closed the security check without submitting the request.
     } catch (e) {
       if (mounted) {
         if (e is AuthException && authErrorKey(e) == 'tooManyRequests') {
@@ -1283,15 +1316,24 @@ class _AuthScreenState extends State<AuthScreen> {
     }
     final address = email.text.trim();
     await perform(() async {
+      final captchaToken = await (widget.captchaProvider ?? requestAuthCaptcha)(
+        context,
+      );
+      if (!mounted) return;
       if (registering) {
-        await actions.signup(address, password.text, name: name.text);
+        await actions.signup(
+          address,
+          password.text,
+          name: name.text,
+          captchaToken: captchaToken,
+        );
         if (!mounted) return;
         password.clear();
         name.clear();
         setState(() => pendingEmail = address);
         startCooldown();
       } else {
-        await actions.login(address, password.text);
+        await actions.login(address, password.text, captchaToken: captchaToken);
       }
     });
   }
@@ -1317,14 +1359,22 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   Future<void> resend() => perform(() async {
-    await actions.resend(pendingEmail!);
+    final captchaToken = await (widget.captchaProvider ?? requestAuthCaptcha)(
+      context,
+    );
+    if (!mounted) return;
+    await actions.resend(pendingEmail!, captchaToken: captchaToken);
     if (mounted) startCooldown();
   });
 
   Future<void> reset() async {
     if (!validEmail()) return;
     await perform(() async {
-      await actions.reset(email.text.trim());
+      final captchaToken = await (widget.captchaProvider ?? requestAuthCaptcha)(
+        context,
+      );
+      if (!mounted) return;
+      await actions.reset(email.text.trim(), captchaToken: captchaToken);
       if (!mounted) return;
       startCooldown();
       toast(context, tr(context, 'resetSent'));

@@ -24,6 +24,8 @@ class FakeAdmin implements AdminGateway {
   }
 
   int signOuts = 0;
+  String? lastCaptcha;
+  int signIns = 0;
   String search = '';
   final changes = <String>[];
   bool blocked = false;
@@ -35,7 +37,15 @@ class FakeAdmin implements AdminGateway {
   Completer<List<AdminCampaign>>? nextCampaigns;
   Completer<Map<String, bool>>? nextActions;
   @override
-  Future<void> signIn(String email, String password) async {}
+  Future<void> signIn(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async {
+    signIns++;
+    lastCaptcha = captchaToken;
+  }
+
   @override
   Future<bool> isAdmin() async => allowed;
   @override
@@ -191,6 +201,28 @@ Future<void> login(WidgetTester tester) async {
 }
 
 void main() {
+  testWidgets('administrator sign-in supplies a challenge token', (
+    tester,
+  ) async {
+    final gateway = FakeAdmin();
+    var signedIn = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AdminSignIn(
+          gateway: gateway,
+          onSuccess: () => signedIn = true,
+          onChangeProject: () async {},
+          onLanguage: () {},
+          captchaProvider: (_) async => 'synthetic-admin-challenge',
+        ),
+      ),
+    );
+    await login(tester);
+    expect(gateway.signIns, 1);
+    expect(gateway.lastCaptcha, 'synthetic-admin-challenge');
+    expect(signedIn, isTrue);
+  });
+
   testWidgets('administrator locks after inactivity and when hidden', (
     tester,
   ) async {

@@ -187,7 +187,17 @@ void main() {
       );
       final api = SupabaseAdminGateway(client);
       try {
-        await api.signIn('admin@example.test', 'synthetic-password');
+        await api.signIn(
+          'admin@example.test',
+          'synthetic-password',
+          captchaToken: 'admin-challenge',
+        );
+        final signInBody =
+            jsonDecode(requests[0]['body'] as String) as Map<String, dynamic>;
+        expect(
+          signInBody['gotrue_meta_security']['captcha_token'],
+          'admin-challenge',
+        );
         expect(await api.isAdmin(), isTrue);
         expect(requests[1]['path'], '/rest/v1/rpc/admin_is_admin');
         expect(requests[1]['authorization'], 'Bearer synthetic-session-token');
