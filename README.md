@@ -208,7 +208,13 @@ Only a database owner can provision administrators. The admin UI cannot block ad
 
 <!-- coderabbit-ai-generated-section:v1:f434a160767ddba86c2fda78ab50811b9e492344382c458906df885a1292fd1a -->
 
-On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\freelan_space_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally. When Save login is selected, the administrator login is stored using Windows secure storage; no service-role key is stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ecef63f81d8602246154419693588e6582eb983b5d8fb05ce53453025134bebc -->
+
+On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart --dart-define=AUTH_CAPTCHA_ENABLED=true`. Run `build\windows\x64\runner\Release\freelan_space_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally. When Save login is selected, the administrator login is stored using Windows secure storage; no service-role key is stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

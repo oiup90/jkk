@@ -17,6 +17,16 @@ ROOT = Path(__file__).resolve().parents[1]
 PWSH = shutil.which('pwsh')
 
 
+class WindowsWorkflow(unittest.TestCase):
+    def test_admin_artifact_enables_auth_captcha(self):
+        workflow = (ROOT / '.github/workflows/windows-admin.yml').read_text()
+        builds = [line.strip() for line in workflow.splitlines()
+                  if line.strip().startswith('- run: flutter build windows ')]
+        self.assertEqual(len(builds), 1)
+        self.assertIn('--dart-define=AUTH_CAPTCHA_ENABLED=true', builds[0].split())
+        self.assertIn('lib/admin_main.dart', builds[0].split())
+
+
 @unittest.skipUnless(PWSH and os.name != 'nt', 'PowerShell and a Unix fake Flutter executable are required')
 class BuildScripts(unittest.TestCase):
     def setUp(self):

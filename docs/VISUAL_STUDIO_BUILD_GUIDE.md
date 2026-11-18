@@ -233,9 +233,15 @@ Phone-ൽ USB authorization അനുവദിക്കുക. പഴയ app ഇ
 
 Visual Studio C++ workload install ചെയ്ത Windows PC-യിൽ, project root-ൽ:
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:ed77cb581c52d763811e47c73c8ed402e348a4c997218b7615de45792557cbdb -->
+
 ```powershell
-flutter build windows --release -t lib/admin_main.dart
+flutter build windows --release -t lib/admin_main.dart --dart-define=AUTH_CAPTCHA_ENABLED=true
 ```
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 വിജയിച്ചാൽ app ഇവിടെ ലഭിക്കും:
 
