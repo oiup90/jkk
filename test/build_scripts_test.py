@@ -42,6 +42,11 @@ if os.environ.get('BUILD_TEST_FAIL') and args[0] == os.environ['BUILD_TEST_FAIL'
  sys.exit(9)
 if args[:2] == ['build','apk']:
  p=pathlib.Path('build/app/outputs/flutter-apk/app-release.apk');p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b'new apk')
+ if not os.environ.get('BUILD_TEST_NO_SYMBOLS'):
+  symbols=next(a.split('=',1)[1] for a in args if a.startswith('--split-debug-info='))
+  for arch in ('arm','arm64','x64'):
+   if arch != os.environ.get('BUILD_TEST_MISSING_ARCH'):
+    (pathlib.Path(symbols)/f'app.android-{arch}.symbols').write_bytes(b'symbols')
 if args[:2] == ['build','windows']:
  p=pathlib.Path('build/windows/x64/runner/Release');p.mkdir(parents=True,exist_ok=True)
  exe=p/'growth_circle_admin.exe';exe.write_text('#!/bin/sh\\n/bin/pwd > "$BUILD_TEST_RUN_LOG"\\n');exe.chmod(0o755)
@@ -63,13 +68,34 @@ if args[:2] == ['build','windows']:
         calls = self.calls()
         self.assertTrue(all(call['cwd'] == str(self.root) for call in calls))
         self.assertEqual(calls[1]['args'], ['pub', 'get', '--enforce-lockfile'])
-        self.assertEqual(calls[2]['args'], ['build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--build-number=18', '--build-name=1.2.0'])
+        args = calls[2]['args']
+        self.assertEqual(args[:6], ['build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--obfuscate'])
+        self.assertTrue(args[6].startswith('--split-debug-info='))
+        symbols = Path(args[6].split('=', 1)[1])
+        self.assertEqual(symbols.parent, self.root / 'release-symbols')
+        self.assertTrue((symbols / 'app.android-arm64.symbols').is_file())
+        self.assertEqual(args[7:], ['--build-number=18', '--build-name=1.2.0'])
         self.assertEqual((self.root / 'build/app/outputs/flutter-apk/app-release.apk').read_bytes(), b'new apk')
 
     def test_default_user_build_uses_pubspec_version(self):
         p = self.run_script('build-user-apk.ps1')
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertFalse(any(a.startswith('--build-number=') for a in self.calls()[2]['args']))
+
+    def test_user_builds_keep_separate_symbols(self):
+        for _ in range(2):
+            p = self.run_script('build-user-apk.ps1')
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        symbol_args = [a for call in self.calls() for a in call['args'] if a.startswith('--split-debug-info=')]
+        self.assertEqual(len(set(symbol_args)), 2)
+        self.assertTrue(all((Path(a.split('=', 1)[1]) / 'app.android-arm64.symbols').exists() for a in symbol_args))
+
+    def test_user_build_requires_symbols(self):
+        self.env['BUILD_TEST_MISSING_ARCH'] = 'x64'
+        p = self.run_script('build-user-apk.ps1')
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('Dart symbols were not found', p.stderr)
+        self.assertIn('app.android-x64.symbols', p.stderr)
 
     def test_admin_zip_includes_entire_release_directory(self):
         old_zip = self.root / 'build/freelan-space-admin-windows.zip'

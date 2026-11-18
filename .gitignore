@@ -2,6 +2,7 @@ node_modules/
 .dart_tool/
 .flutter-plugins*
 build/
+/release-symbols/
 .pub-cache/
 android/.gradle/
 android/local.properties

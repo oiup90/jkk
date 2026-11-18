@@ -44,6 +44,7 @@ Future<void> openSignup(WidgetTester tester, FakeAuth actions) async {
   await tester.tap(find.text(words['noAccount']![0]));
   await tester.pump();
   await enterCredentials(tester);
+  await tester.enterText(find.byKey(const Key('password')), 'Synthetic-123A');
   await tester.enterText(find.byKey(const Key('name')), 'Sample Name');
   await tester.ensureVisible(
     find.widgetWithText(FilledButton, 'Create account'),
@@ -53,6 +54,34 @@ Future<void> openSignup(WidgetTester tester, FakeAuth actions) async {
 }
 
 void main() {
+  testWidgets('signup rejects weak passwords before calling Auth', (
+    tester,
+  ) async {
+    final actions = FakeAuth();
+    await tester.pumpWidget(MaterialApp(home: AuthScreen(actions: actions)));
+    await tester.tap(find.text(words['noAccount']![0]));
+    await tester.pump();
+    await enterCredentials(tester);
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Create account'),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await tester.pump();
+    expect(actions.calls, isEmpty);
+    expect(find.text(words['weakPassword']![0]), findsWidgets);
+  });
+
+  testWidgets('recovery rejects weak passwords before calling Auth', (
+    tester,
+  ) async {
+    await tester.pumpWidget(MaterialApp(home: RecoveryScreen(onDone: () {})));
+    await tester.enterText(find.byType(TextField), 'weak-password');
+    await tester.tap(find.widgetWithText(FilledButton, 'Update password'));
+    await tester.pump();
+    expect(find.text(words['weakPassword']![0]), findsWidgets);
+  });
+
   testWidgets('blocked sign out explains the restriction on sign in', (
     tester,
   ) async {

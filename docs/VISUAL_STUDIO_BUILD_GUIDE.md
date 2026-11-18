@@ -160,14 +160,29 @@ keyPassword=YOUR_KEY_PASSWORD
 
 Project root terminal-ൽ public project values നൽകുക. `BuildNumber` app-ന്റെ Android version code ആണ്: ആദ്യ build-ന് 7 ഉപയോഗിക്കാം; **നിലവിലുള്ള app update ചെയ്യുമ്പോൾ ഫോണിലുള്ള version code-നേക്കാൾ കൂടുതലായ ഒരു integer നൽകണം**. പഴയ split APK-കൾക്ക് വ്യത്യസ്ത version code ഉണ്ടായിരിക്കാം.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:d0cc77b5409c6103ae56257e902f877267127f6167c72c0c6dec744d949279cb -->
+
+<!-- coderabbit-ai-generated-section:v1:f5381527cea35636d8ac100bcb759bff2dc547f24b1cd5952ff0cfcc69b47940 -->
+
 ```powershell
 $ProjectUrl = "https://YOUR_PROJECT.supabase.co"
 $PublicKey = "YOUR_PUBLISHABLE_OR_ANON_KEY"
 $BuildNumber = 7
-flutter build apk --release "--build-number=$BuildNumber" "--dart-define=SUPABASE_URL=$ProjectUrl" "--dart-define=SUPABASE_PUBLISHABLE_KEY=$PublicKey"
+$Symbols = Join-Path (Join-Path (Get-Location) "release-symbols") ([guid]::NewGuid().ToString())
+flutter build apk --release --obfuscate "--split-debug-info=$Symbols" "--build-number=$BuildNumber" "--dart-define=SUPABASE_URL=$ProjectUrl" "--dart-define=SUPABASE_PUBLISHABLE_KEY=$PublicKey"
 ```
 
-ശരിയായ URL/key ഇല്ലാതെ build ചെയ്താൽ app setup screen കാണിക്കും. വിജയിച്ചാൽ APK:
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:be2ded693afaf8d3a6bf9aa6138d0be43e8889ec00452cd81ec988986ec6bb0f -->
+
+ഓരോ build-ന്റെയും `$Symbols` folder സ്വകാര്യമായി ആ APK-യോടൊപ്പം backup ചെയ്യുക; crash stack trace വായിക്കാൻ ആ build-ന്റെ symbols ആവശ്യമാണ്. ശരിയായ URL/key ഇല്ലാതെ release build പരാജയപ്പെടും. വിജയിച്ചാൽ APK:
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ```text
 build\app\outputs\flutter-apk\app-release.apk

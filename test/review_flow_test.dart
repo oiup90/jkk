@@ -147,4 +147,27 @@ void main() {
       isNotNull,
     );
   });
+
+  testWidgets('unexpected review result is not shown to the user', (
+    tester,
+  ) async {
+    const privateResult = 'Database error: private table\n#0 stack trace';
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ClaimReviewDialog(
+            handle: 'person',
+            loadEvidence: () async => {},
+            onDecision: (_, _) async => throw const PinException(privateResult),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reject'));
+    await tester.pumpAndSettle();
+    expect(find.text(words['error']![0]), findsOneWidget);
+    expect(find.textContaining('private table'), findsNothing);
+    expect(find.textContaining('stack trace'), findsNothing);
+  });
 }

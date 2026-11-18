@@ -13,6 +13,7 @@ if (firebaseConfigFile.isFile) {
 }
 
 apply(from = rootProject.file("validate-client-config.gradle"))
+apply(from = rootProject.file("validate-release-obfuscation.gradle"))
 
 val keyProperties = Properties()
 val keyPropertiesFile = rootProject.file("key.properties")
@@ -24,6 +25,11 @@ val hasSigningProperties = keyPropertiesFile.isFile && missingSigningProperties.
 // Never produce an unsigned artifact for distribution. Debug builds do not
 // require a release keystore.
 fun requireReleaseConfiguration() {
+    val validateObfuscation = extra["validateDartObfuscation"] as groovy.lang.Closure<*>
+    validateObfuscation.call(
+        project.findProperty("dart-obfuscation")?.toString().orEmpty(),
+        project.findProperty("split-debug-info")?.toString().orEmpty()
+    )
     // The admin entrypoint connects interactively; the user entrypoint requires
     // compile-time project values. Preserve the admin's existing setup flow.
     val entrypoint = file(project.findProperty("target")?.toString() ?: "../../lib/main.dart")
@@ -90,6 +96,11 @@ android {
     }
     buildTypes {
         release {
+            // Match Flutter's shrink flag, including its --no-shrink override.
+            // Flutter supplies the optimized Android and Flutter R8 rules.
+            val shrink = project.findProperty("shrink")?.toString()?.toBoolean() ?: true
+            isMinifyEnabled = shrink
+            isShrinkResources = shrink
             if (hasSigningProperties) signingConfig = signingConfigs.getByName("release")
         }
     }

@@ -24,7 +24,7 @@ void main() {
               'status': 'rejected',
               'campaign_link': 'https://instagram.com/p/example',
               'submitted_at': '2026-01-01',
-              'rejection_reason': 'Try again',
+              'rejection_reason': '<script>alert(1)</script>',
             },
           ]),
           200,
@@ -39,11 +39,14 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('like · Rejected'), findsOneWidget);
-    expect(find.textContaining('Reason: Try again'), findsOneWidget);
-    await tester.enterText(find.byType(TextField), 'example');
+    expect(
+      find.textContaining('Reason: <script>alert(1)</script>'),
+      findsOneWidget,
+    );
+    await tester.enterText(find.byType(TextField), "' OR 1=1 --");
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
-    expect(calls.last['p_query'], 'example');
+    expect(calls.last['p_query'], "' OR 1=1 --");
     await tester.tap(find.byType(DropdownButton<String>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Approved').last);

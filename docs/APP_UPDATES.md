@@ -88,8 +88,9 @@ Use application ID `space.freelan.app` and retain its production signing keystor
 
 <!-- /coderabbit-ai-generated:v1 -->
 
-```bash
-flutter build apk --release <!-- coderabbit-ai-generated:v1 -->
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:e01d315174b9f365e34ad34616b3a1f92a6e30891388b34532ffd4167c855c5f -->
 
 <!-- coderabbit-ai-generated-section:v1:bd28351a3482c73a77d305dc13ffa549c85dd0ad0d2c9359db95f11577fedc3f -->
 
@@ -101,16 +102,24 @@ flutter build apk --release <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:1bc81190bdb18f6f8436be9c7dd873713a7d9f8bb4a76abcf2fb379c80c87235 -->
 
---build-name=1.1.6 --build-number=14
+<!-- coderabbit-ai-generated:v1 -->
 
-<!-- /coderabbit-ai-generated:v1 -->
+<!-- coderabbit-ai-generated-section:v1:e2dd165bd6c9a1c18889c8a92584e2f73ef87afa19b9b0ddd2504a250b57c0ca -->
 
-<!-- /coderabbit-ai-generated:v1 -->
-
-<!-- /coderabbit-ai-generated:v1 --> \
+```bash
+flutter build apk --release --build-name=1.1.6 --build-number=14 \
   --dart-define=SUPABASE_URL=YOUR_PROJECT_URL \
-  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_OR_ANON_KEY \
+  --obfuscate --split-debug-info=YOUR_UNIQUE_PRIVATE_SYMBOLS_DIRECTORY
 ```
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated:v1 -->
 

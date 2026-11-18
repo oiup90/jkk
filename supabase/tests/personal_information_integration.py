@@ -24,6 +24,25 @@ def sql(query, user=None, role=None, fails=False):
     return (result.stdout.strip().splitlines() or [''])[-1]
 
 class PersonalInformation(unittest.TestCase):
+    def test_name_validation_and_legacy_updates(self):
+        user = '93000000-0000-4000-8000-000000000003'
+        sql(f"insert into auth.users(id,raw_user_meta_data) values ('{user}',jsonb_build_object('full_name',repeat('x',81)))", fails=True)
+        sql(f"insert into auth.users(id) values ('{user}')")
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', repeat('x',81)) where id='{user}'", fails=True)
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', 12) where id='{user}'", fails=True)
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', E'\\n  ') where id='{user}'", fails=True)
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', repeat(' ',4097)||'x') where id='{user}'", fails=True)
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', '  Test User  ') where id='{user}'")
+        self.assertEqual(sql(f"select raw_user_meta_data->>'full_name' from auth.users where id='{user}'"), 'Test User')
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', repeat('x',80)) where id='{user}'")
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', null) where id='{user}'")
+        # Simulate metadata created before the trigger was introduced.
+        sql("alter table auth.users disable trigger validate_profile_name")
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', repeat('x',81)) where id='{user}'")
+        sql("alter table auth.users enable trigger validate_profile_name")
+        sql(f"update auth.users set raw_user_meta_data=raw_user_meta_data || '{{\"other\":true}}'::jsonb where id='{user}'")
+        sql(f"update auth.users set raw_user_meta_data=jsonb_build_object('full_name', 'മലയാളം') where id='{user}'")
+
     def test_private_bounded_photos_and_access(self):
         sql(f"insert into auth.users(id) values ('{A}'),('{B}')")
         sql(f"select public.set_profile_photo('image/png','{PNG}')", role='anon', fails=True)

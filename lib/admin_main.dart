@@ -8,6 +8,8 @@ import 'admin_operations.dart';
 import 'admin_app_releases.dart';
 import 'admin_notifications.dart';
 import 'admin_login_tools.dart';
+import 'safe_error_widget.dart';
+import 'secure_transport.dart';
 
 import 'package:flutter/services.dart';
 
@@ -21,6 +23,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = safeErrorWidget;
   runApp(const AdminApp());
 }
 
@@ -1003,7 +1006,15 @@ class _AdminSetupState extends State<AdminSetup> {
       await prefs.setString('admin_project_url', projectUrl);
       await prefs.setString('admin_public_key', publicKey);
       final gateway = SupabaseAdminGateway(
-        SupabaseClient(projectUrl, publicKey),
+        SupabaseClient(
+          projectUrl,
+          publicKey,
+          httpClient: secureHttpClient,
+          realtimeClientOptions: RealtimeClientOptions(
+            transport: secureRealtimeTransport,
+          ),
+          authOptions: const AuthClientOptions(autoRefreshToken: true),
+        ),
         projectUrl: projectUrl,
         publicKey: publicKey,
       );
@@ -1242,7 +1253,11 @@ class _AdminSignInState extends State<AdminSignIn> {
         createClient: () => SupabaseClient(
           project,
           key,
-          authOptions: const AuthClientOptions(autoRefreshToken: false),
+          httpClient: secureHttpClient,
+          realtimeClientOptions: RealtimeClientOptions(
+            transport: secureRealtimeTransport,
+          ),
+          authOptions: adminRecoveryAuthOptions,
         ),
       ),
     );

@@ -12,7 +12,13 @@ After a successful administrator password sign-in and MFA challenge, Save login 
 
 In Supabase Dashboard → Authentication → Email Templates → Reset Password, set the recovery email body to the contents of supabase/templates/recovery.html. The template must include {{ .Token }} so the recipient receives the six-digit recovery OTP. Preserve configured SMTP, expiry and rate limits. This dashboard setting cannot be applied through the connected Supabase tools.
 
-Forgot password uses an isolated recovery client: request email, verify the recovery OTP, then set a matching password of at least eight characters. It does not authorize the administrator console. After reset, the saved login is removed and password sign-in/MFA must be completed again. Test the recovery email with your SMTP configuration.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:2ea451984ab16bbdeb747c10c3b18f330919dcca363934b34410d07e93e5f9d5 -->
+
+Forgot password uses an isolated recovery client: request email, verify the recovery OTP, then set matching passwords meeting the requirements in [Password policy](PASSWORD_POLICY.md). It does not authorize the administrator console. After reset, the saved login is removed and password sign-in/MFA must be completed again. Test the recovery email with your SMTP configuration.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Sessions
 

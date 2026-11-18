@@ -68,7 +68,7 @@ void main() {
     );
   });
 
-  testWidgets('5xx errors show HTTP status without exposing server details', (
+  testWidgets('5xx errors show a safe message without server details', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -88,7 +88,7 @@ void main() {
         ),
       ),
     );
-    expect(find.textContaining('HTTP 500'), findsOneWidget);
+    expect(find.textContaining('HTTP 500'), findsNothing);
     expect(find.textContaining('verification email'), findsOneWidget);
     expect(find.textContaining('private@example.test'), findsNothing);
     expect(find.textContaining('smtp password'), findsNothing);
@@ -108,9 +108,7 @@ void main() {
     expect(find.text(words['accountBlocked']![0]), findsOneWidget);
   });
 
-  testWidgets('unknown errors show safe code without server message', (
-    tester,
-  ) async {
+  testWidgets('unknown errors hide server codes and messages', (tester) async {
     const error = AuthException(
       'private@example.test',
       code: 'unexpected_failure',
@@ -124,7 +122,8 @@ void main() {
         ),
       ),
     );
-    expect(find.textContaining('unexpected_failure'), findsOneWidget);
+    expect(find.text(words['error']![0]), findsOneWidget);
+    expect(find.textContaining('unexpected_failure'), findsNothing);
     expect(find.textContaining('private@example.test'), findsNothing);
   });
 
@@ -142,7 +141,7 @@ void main() {
     expect(friendlyError(context, error), words['emailNotAuthorized']![1]);
     toggleLanguage();
   });
-  testWidgets('unknown HTTP errors show status without private details', (
+  testWidgets('unknown HTTP errors hide status and private details', (
     tester,
   ) async {
     const error = AuthException('private@example.test', statusCode: '400');
@@ -155,7 +154,8 @@ void main() {
         ),
       ),
     );
-    expect(find.textContaining('HTTP 400'), findsOneWidget);
+    expect(find.text(words['error']![0]), findsOneWidget);
+    expect(find.textContaining('HTTP 400'), findsNothing);
     expect(find.textContaining('private@example.test'), findsNothing);
   });
 }

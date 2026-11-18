@@ -6,6 +6,51 @@ import 'package:growth_circle/admin_main.dart';
 import 'admin_test.dart' show FakeAdmin;
 
 void main() {
+  testWidgets('campaign form rejects invalid post URLs before reserving', (
+    tester,
+  ) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CreateCampaign(
+          loadAccounts: () async => ['example'],
+          loadRates: () async => [
+            {'key': 'follow', 'amount': 1},
+            {'key': 'like', 'amount': 1},
+          ],
+          controls: Stream.value([
+            {'action_type': 'follow', 'enabled': true},
+            {'action_type': 'like', 'enabled': true},
+          ]),
+          reserve: (_, _, _, _) async {
+            calls++;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Like').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('@example').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'https://evil.test/p/abc',
+    );
+    await tester.ensureVisible(
+      find.widgetWithText(FilledButton, 'Create campaign'),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Create campaign'));
+    await tester.pumpAndSettle();
+    expect(calls, 0);
+    expect(find.text(words['invalidLink']![0]), findsOneWidget);
+  });
+
   testWidgets(
     'admin edits rewards, rejects invalid action rate and accepts zero invite',
     (tester) async {

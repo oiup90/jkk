@@ -22,7 +22,13 @@ Repository-യിലെ പുതിയ `android/app/build.gradle.kts` ഉപയ
 .\build-user-apk.cmd
 ```
 
-Locked dependencies എടുത്ത് signed release APK build ചെയ്യും. വിജയിച്ചാൽ:
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:dd23c0e4cc4f94e54fdb601dbaa63f760316c52422d26c1a28a8ff67642bd7a2 -->
+
+Locked dependencies എടുത്ത് Dart obfuscation ഉപയോഗിച്ച് signed release APK build ചെയ്യും. ഓരോ build-നും `release-symbols/`-ൽ വ്യത്യസ്ത folder സൃഷ്ടിച്ച് അതിന്റെ path കാണിക്കും. ആ folder സ്വകാര്യമായി APK-യോടൊപ്പം backup ചെയ്യുക; crash stack trace വായിക്കാൻ അതേ build-ന്റെ symbols ആവശ്യമാണ്. വിജയിച്ചാൽ:
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ```text
 build\app\outputs\flutter-apk\app-release.apk
