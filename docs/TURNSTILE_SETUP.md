@@ -2,7 +2,13 @@
 
 # Turnstile for Android and Windows authentication
 
-The public site key is used by `turnstile/index.html`. The app opens that page in an embedded WebView to obtain a fresh token for each password login, signup, signup-code resend and password recovery request. Supabase verifies the token. Verification-code checks and session refresh use their existing Auth flow. The challenge is disabled by default in these builds until `AUTH_CAPTCHA_ENABLED=true` is provided at build time.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:3474dd08023173c2792f40050eaca792042ffac832305d5201b9d7dd8345aac4 -->
+
+The public site key is used by `turnstile/index.html`. The app opens that page in an embedded WebView to obtain a fresh token for each password login, signup, signup-code resend and password recovery request. Supabase verifies the token. Verification-code checks and session refresh use their existing Auth flow. The build scripts enable the challenge for the user APK and Windows admin app. For an admin build targeting a project without matching CAPTCHA configuration, use `build-admin-windows.cmd -DisableCaptcha`. Direct Flutter builds enable it only when `AUTH_CAPTCHA_ENABLED=true` is provided.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Prepare and test
 
