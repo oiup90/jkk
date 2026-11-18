@@ -79,7 +79,7 @@ class _OfficialSocialLinksState extends State<OfficialSocialLinks> {
             spacing: 6,
             children: [
               for (final link in links)
-                TextButton(
+                TextButton.icon(
                   onPressed: () async {
                     final uri = Uri.parse(link['url'] as String);
                     try {
@@ -114,7 +114,13 @@ class _OfficialSocialLinksState extends State<OfficialSocialLinks> {
                       }
                     }
                   },
-                  child: Text(socialPlatforms[link['platform']]!),
+                  icon: Image.asset(
+                    'assets/social/${link['platform']}.png',
+                    width: 20,
+                    height: 20,
+                    excludeFromSemantics: true,
+                  ),
+                  label: Text(socialPlatforms[link['platform']]!),
                 ),
             ],
           ),

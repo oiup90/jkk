@@ -38,6 +38,7 @@ class InspectionTests(unittest.TestCase):
 
     def test_inspection_privacy_presence_lifecycle_and_stale_submission(self):
         cid = sql("select public.create_campaign('like','https://instagram.com/p/ABC/',1)", OWNER)
+        subprocess.run(['psql','-X','-v','ON_ERROR_STOP=1','-d',DB,'-c',f"update public.campaigns set \"createdAt\"=now()-interval '61 seconds' where id='{cid}'"], check=True, capture_output=True)
         submit = f"select public.submit_claim('{cid}','sample','image/png','{PNG}')"
         sql(submit, ACTOR)
         sid = sql(f"select submission_id from public.campaign_claims where campaign_id='{cid}'", ACTOR)

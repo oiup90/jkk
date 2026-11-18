@@ -17,6 +17,7 @@ class UserExperience(unittest.TestCase):
   sql(f"""insert into auth.users(id,email) values ('{O}','o@example.test'),('{U}','u@example.test'),('{X}','x@example.test'),('{A}','a@example.test');
   insert into public.admin_members(user_id,role) values ('{A}','editor'); insert into public.wallets(id,balance) values('{O}',10),('{U}',10),('{X}',10);
   insert into public.campaigns(id,\"ownerId\",type,link,status,requested,remaining,reward_per_task) values('{C}','{O}','like','https://instagram.com/p/TEST/','active',2,2,1);
+  update public.campaigns set \"createdAt\"=now()-interval '61 seconds' where id='{C}';
   insert into public.campaign_claims(campaign_id,user_id,submission_id,status,instagram_handle) values('{C}','{U}','{S}','pending','sample');
   insert into public.claim_evidence(campaign_id,user_id,mime_type,data_base64) values('{C}','{U}','image/png','{PNG}');""",role='owner')
   enroll_test_admins(DB)

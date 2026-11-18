@@ -93,18 +93,30 @@ void main() {
   testWidgets(
     'official links show only verified platforms and open the selected URL',
     (tester) async {
+      tester.view.physicalSize = const Size(320, 640);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       Uri? opened;
       var loads = 0;
       Future<List<Map<String, dynamic>>> load() async {
         loads++;
         return [
           {'platform': 'instagram', 'url': 'https://instagram.com/freelan'},
-          {'platform': 'facebook', 'url': 'https://malicious.test/'},
+          {'platform': 'facebook', 'url': 'https://facebook.com/freelan'},
+          {'platform': 'youtube', 'url': 'https://youtube.com/@freelan'},
+          {'platform': 'x', 'url': 'https://x.com/freelan'},
+          {'platform': 'youtube', 'url': 'https://malicious.test/'},
         ];
       }
 
       await tester.pumpWidget(
         MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: const TextScaler.linear(1.5)),
+            child: child!,
+          ),
           home: Scaffold(
             body: OfficialSocialLinks(
               load: load,
@@ -117,12 +129,31 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text('Instagram'), findsOneWidget);
-      expect(find.text('Facebook'), findsNothing);
-      await tester.tap(find.text('Instagram'));
-      await tester.pump();
-      expect(opened.toString(), 'https://instagram.com/freelan');
+      for (final entry in {
+        'Instagram': ['instagram', 'https://instagram.com/freelan'],
+        'Facebook': ['facebook', 'https://facebook.com/freelan'],
+        'YouTube': ['youtube', 'https://youtube.com/@freelan'],
+        'X': ['x', 'https://x.com/freelan'],
+      }.entries) {
+        expect(find.text(entry.key), findsOneWidget);
+        final button = find.ancestor(
+          of: find.text(entry.key),
+          matching: find.byType(TextButton),
+        );
+        final logo = tester.widget<Image>(
+          find.descendant(of: button, matching: find.byType(Image)),
+        );
+        expect(
+          (logo.image as AssetImage).assetName,
+          'assets/social/${entry.value[0]}.png',
+        );
+        expect(logo.excludeFromSemantics, isTrue);
+        await tester.tap(find.text(entry.key));
+        await tester.pump();
+        expect(opened.toString(), entry.value[1]);
+      }
       expect(loads, 1);
+      expect(tester.takeException(), isNull);
     },
   );
   testWidgets('sign-in shows official links and sign-up hides them', (

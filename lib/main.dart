@@ -643,6 +643,20 @@ String friendlyError(BuildContext context, Object e) {
     if (e.message.contains('action is disabled')) {
       return tr(context, 'actionDisabled');
     }
+    if (e.message.contains('cancellation period has ended')) {
+      return userText(
+        context,
+        'The one-minute cancellation period has ended.',
+        'Campaign റദ്ദാക്കാനുള്ള ഒരു മിനിറ്റ് കഴിഞ്ഞു.',
+      );
+    }
+    if (e.message.contains('not yet available')) {
+      return userText(
+        context,
+        'This campaign will be available one minute after creation.',
+        'Campaign സൃഷ്ടിച്ച് ഒരു മിനിറ്റിനുശേഷം ലഭ്യമാകും.',
+      );
+    }
     if (e.message.contains('Invalid referral code')) {
       return tr(context, 'invalidReferral');
     }
@@ -2234,7 +2248,6 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   Timer? _pushRetry;
   int selected = 0;
-  String taskType = 'all';
   @override
   void initState() {
     super.initState();
@@ -2292,24 +2305,20 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     final pages = [
       Dashboard(
         onBrowse: () => setState(() {
-          taskType = 'all';
           selected = 1;
         }),
-        onBrowseType: (type) => setState(() {
-          taskType = type;
-          selected = 1;
-        }),
+        onBrowseType: (type) => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TaskCategoryPage(uid: widget.user.id, type: type),
+          ),
+        ),
         onCreate: () => Navigator.push(
           context,
           MaterialPageRoute<void>(builder: (_) => const CreateCampaign()),
         ),
         uid: widget.user.id,
       ),
-      TaskList(
-        key: ValueKey(taskType),
-        uid: widget.user.id,
-        initialType: taskType,
-      ),
+      EarnLanding(uid: widget.user.id),
       Campaigns(uid: widget.user.id),
       Profile(
         user: widget.user,
@@ -2522,34 +2531,8 @@ class Dashboard extends StatelessWidget {
   Widget taskTile(BuildContext context, String type) => DashboardTaskTile(
     icon: actionIcon(type),
     title: tr(context, type),
-    subtitle: switch (type) {
-      'like' => uf(
-        context,
-        'Like an Instagram post',
-        'Instagram post like ചെയ്യുക',
-      ),
-      'comment' => uf(
-        context,
-        'Leave a thoughtful comment',
-        'ഒരു comment നൽകുക',
-      ),
-      'share' => uf(
-        context,
-        'Share a post with friends',
-        'Post സുഹൃത്തുക്കളുമായി share ചെയ്യുക',
-      ),
-      _ => uf(
-        context,
-        'Follow an Instagram page',
-        'Instagram page follow ചെയ്യുക',
-      ),
-    },
-    accent: switch (type) {
-      'like' => const Color(0xffc34f82),
-      'comment' => const Color(0xff6d49ad),
-      'share' => const Color(0xff426bb4),
-      _ => const Color(0xff7650bf),
-    },
+    subtitle: taskDescription(context, type),
+    accent: taskAccent(type),
     onTap: () {
       if (onBrowseType != null) {
         onBrowseType!(type);
@@ -2559,6 +2542,28 @@ class Dashboard extends StatelessWidget {
     },
   );
 }
+
+String taskDescription(BuildContext context, String type) => switch (type) {
+  'like' => uf(
+    context,
+    'Like an Instagram post',
+    'Instagram post like ചെയ്യുക',
+  ),
+  'comment' => uf(context, 'Leave a thoughtful comment', 'ഒരു comment നൽകുക'),
+  'share' => uf(
+    context,
+    'Share a post with friends',
+    'Post സുഹൃത്തുക്കളുമായി share ചെയ്യുക',
+  ),
+  _ => uf(context, 'Follow an Instagram page', 'Instagram page follow ചെയ്യുക'),
+};
+
+Color taskAccent(String type) => switch (type) {
+  'like' => const Color(0xffc34f82),
+  'comment' => const Color(0xff6d49ad),
+  'share' => const Color(0xff426bb4),
+  _ => const Color(0xff7650bf),
+};
 
 class Notice extends StatelessWidget {
   const Notice({super.key, this.refined = false});
@@ -3105,6 +3110,159 @@ class ReviewApi {
   }
 }
 
+const earnCategories = ['follow', 'like', 'comment', 'share'];
+
+class EarnLanding extends StatelessWidget {
+  const EarnLanding({
+    super.key,
+    required this.uid,
+    this.categoryBuilder,
+    this.openHistory,
+  });
+  final String uid;
+  final Widget Function(String type)? categoryBuilder;
+  final VoidCallback? openHistory;
+
+  @override
+  Widget build(BuildContext context) => AppListView(
+    padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+    children: [
+      Container(
+        padding: const EdgeInsets.all(22),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xff38205f), Color(0xff764bbb)],
+          ),
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xff3e1c80).withValues(alpha: .18),
+              blurRadius: 20,
+              offset: const Offset(0, 9),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.auto_awesome_rounded,
+              color: Color(0xfff5dfb2),
+              size: 24,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              tr(context, 'earnTitle'),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              tr(context, 'earnDesc'),
+              style: const TextStyle(
+                color: Color(0xffeee5f8),
+                fontSize: 12,
+                height: 1.45,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 20),
+      EarnSectionHeader(title: uf(context, 'Tasks', 'Task-ുകൾ')),
+      const SizedBox(height: 10),
+      for (final type in earnCategories) ...[
+        EarnCategoryTile(
+          icon: actionIcon(type),
+          title: tr(context, type),
+          subtitle: taskDescription(context, type),
+          accent: taskAccent(type),
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) =>
+                  categoryBuilder?.call(type) ??
+                  TaskCategoryPage(uid: uid, type: type),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+      const SizedBox(height: 4),
+      SizedBox(
+        width: double.infinity,
+        child: OutlinedButton.icon(
+          onPressed:
+              openHistory ??
+              () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => SubmissionHistoryPage(client: db),
+                ),
+              ),
+          icon: const Icon(Icons.history),
+          label: Text(tr(context, 'viewHistory')),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            backgroundColor: Colors.white,
+            foregroundColor: growthPurple,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+          ),
+        ),
+      ),
+      const SizedBox(height: 12),
+      const Notice(refined: true),
+    ],
+  );
+}
+
+class TaskCategoryPage extends StatelessWidget {
+  const TaskCategoryPage({
+    super.key,
+    required this.uid,
+    required this.type,
+    this.controlsStream,
+    this.presenceStream,
+    this.campaignsStream,
+    this.claimsStream,
+    this.loadSavedIds,
+  }) : assert(
+         type == 'follow' ||
+             type == 'like' ||
+             type == 'comment' ||
+             type == 'share',
+       );
+  final String uid, type;
+  final Stream<List<Map<String, dynamic>>>? controlsStream,
+      presenceStream,
+      campaignsStream,
+      claimsStream;
+  final Future<List<String>> Function()? loadSavedIds;
+
+  @override
+  Widget build(BuildContext context) => UserPageScaffold(
+    identity: UserPageIdentity.earn,
+    appBar: AppBar(title: Text(tr(context, type))),
+    body: SafeArea(
+      child: TaskList(
+        uid: uid,
+        initialType: type,
+        separatePage: true,
+        controlsStream: controlsStream,
+        presenceStream: presenceStream,
+        campaignsStream: campaignsStream,
+        claimsStream: claimsStream,
+        loadSavedIds: loadSavedIds,
+      ),
+    ),
+  );
+}
+
 class TaskList extends StatefulWidget {
   const TaskList({
     super.key,
@@ -3115,8 +3273,10 @@ class TaskList extends StatefulWidget {
     this.claimsStream,
     this.loadSavedIds,
     this.initialType = 'all',
+    this.separatePage = false,
   });
   final String initialType;
+  final bool separatePage;
   final String uid;
   final Stream<List<Map<String, dynamic>>>? controlsStream,
       presenceStream,
@@ -3129,13 +3289,78 @@ class TaskList extends StatefulWidget {
 
 class _TaskListState extends State<TaskList> {
   late String selectedType = widget.initialType;
+  late Stream<List<Map<String, dynamic>>> campaignFeed;
+  late Stream<List<Map<String, dynamic>>> controlsFeed,
+      presenceFeed,
+      claimsFeed;
+  Timer? campaignRefresh;
   final saved = <String>{};
   bool savedOnly = false, savedLoading = true, savedError = false;
   final saving = <String>{};
   @override
   void initState() {
     super.initState();
+    configureOtherFeeds();
+    configureCampaignFeed();
     loadSaved();
+  }
+
+  void configureOtherFeeds() {
+    controlsFeed =
+        widget.controlsStream ??
+        db.from('action_controls').stream(primaryKey: ['action_type']);
+    presenceFeed =
+        widget.presenceStream ??
+        db
+            .from('admin_review_presence')
+            .stream(primaryKey: ['session_id'])
+            .eq('user_id', widget.uid);
+    claimsFeed =
+        widget.claimsStream ??
+        db
+            .from('campaign_claims')
+            .stream(primaryKey: ['campaign_id', 'user_id'])
+            .eq('user_id', widget.uid);
+  }
+
+  void configureCampaignFeed() {
+    campaignRefresh?.cancel();
+    campaignFeed =
+        widget.campaignsStream ??
+        db.from('campaigns').stream(primaryKey: ['id']);
+    if (widget.campaignsStream == null) {
+      // RLS makes a campaign readable after a minute without a database event.
+      campaignRefresh = Timer.periodic(const Duration(seconds: 10), (_) {
+        if (mounted &&
+            WidgetsBinding.instance.lifecycleState ==
+                AppLifecycleState.resumed) {
+          setState(
+            () =>
+                campaignFeed = db.from('campaigns').stream(primaryKey: ['id']),
+          );
+        }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant TaskList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.campaignsStream != widget.campaignsStream) {
+      configureCampaignFeed();
+    }
+    if (oldWidget.uid != widget.uid ||
+        oldWidget.controlsStream != widget.controlsStream ||
+        oldWidget.presenceStream != widget.presenceStream ||
+        oldWidget.claimsStream != widget.claimsStream) {
+      configureOtherFeeds();
+    }
+  }
+
+  @override
+  void dispose() {
+    campaignRefresh?.cancel();
+    super.dispose();
   }
 
   Future<void> loadSaved() async {
@@ -3216,9 +3441,7 @@ class _TaskListState extends State<TaskList> {
   @override
   Widget build(BuildContext context) =>
       StreamBuilder<List<Map<String, dynamic>>>(
-        stream:
-            widget.controlsStream ??
-            db.from('action_controls').stream(primaryKey: ['action_type']),
+        stream: controlsFeed,
         builder: (context, controls) {
           if (controls.hasError) {
             return Center(child: Text(tr(context, 'error')));
@@ -3231,12 +3454,7 @@ class _TaskListState extends State<TaskList> {
               row['action_type'] as String: row['enabled'] == true,
           };
           return StreamBuilder<List<Map<String, dynamic>>>(
-            stream:
-                widget.presenceStream ??
-                db
-                    .from('admin_review_presence')
-                    .stream(primaryKey: ['session_id'])
-                    .eq('user_id', widget.uid),
+            stream: presenceFeed,
             builder: (context, presence) {
               if (presence.hasError) {
                 return Center(child: Text(tr(context, 'error')));
@@ -3255,21 +3473,14 @@ class _TaskListState extends State<TaskList> {
     Map<String, bool> controls,
     List<Map<String, dynamic>> presence,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream:
-        widget.campaignsStream ??
-        db.from('campaigns').stream(primaryKey: ['id']),
+    stream: campaignFeed,
     builder: (context, campaigns) {
       if (campaigns.hasError) return Center(child: Text(tr(context, 'error')));
       if (!campaigns.hasData) {
         return const Center(child: CircularProgressIndicator());
       }
       return StreamBuilder<List<Map<String, dynamic>>>(
-        stream:
-            widget.claimsStream ??
-            db
-                .from('campaign_claims')
-                .stream(primaryKey: ['campaign_id', 'user_id'])
-                .eq('user_id', widget.uid),
+        stream: claimsFeed,
         builder: (context, claims) {
           if (claims.hasError) return Center(child: Text(tr(context, 'error')));
           if (!claims.hasData) {
@@ -3291,24 +3502,82 @@ class _TaskListState extends State<TaskList> {
             tasks,
             selectedType,
           ).where((task) => !savedOnly || saved.contains(task['id'])).toList();
-          final history = mine.toList()
-            ..sort(
-              (a, b) => (b['created_at'] as String).compareTo(
-                a['created_at'] as String,
-              ),
-            );
+          final history =
+              mine
+                  .where(
+                    (entry) =>
+                        !widget.separatePage ||
+                        allCampaigns[entry['campaign_id']]?['type'] ==
+                            selectedType,
+                  )
+                  .toList()
+                ..sort(
+                  (a, b) => (b['created_at'] as String).compareTo(
+                    a['created_at'] as String,
+                  ),
+                );
           return AppListView(
             padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
             children: [
-              EarnHero(
-                title: tr(context, 'earnTitle'),
-                subtitle: tr(context, 'earnDesc'),
-                actionLabel: uf(context, 'Start earning', 'നേടിത്തുടങ്ങുക'),
-                onAction: () => setState(() {
-                  selectedType = 'all';
-                  savedOnly = false;
-                }),
-              ),
+              if (!widget.separatePage)
+                EarnHero(
+                  title: tr(context, 'earnTitle'),
+                  subtitle: tr(context, 'earnDesc'),
+                  actionLabel: uf(context, 'Start earning', 'നേടിത്തുടങ്ങുക'),
+                  onAction: () => setState(() {
+                    selectedType = 'all';
+                    savedOnly = false;
+                  }),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(22),
+                    border: Border.all(color: const Color(0xffe9e2f2)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: taskAccent(selectedType).withValues(alpha: .1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Icon(
+                          actionIcon(selectedType),
+                          color: taskAccent(selectedType),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tr(context, selectedType),
+                              style: const TextStyle(
+                                color: growthInk,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              taskDescription(context, selectedType),
+                              style: const TextStyle(
+                                color: Color(0xff6d6580),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const SizedBox(height: 16),
               const Notice(refined: true),
               const SizedBox(height: 12),
@@ -3370,10 +3639,11 @@ class _TaskListState extends State<TaskList> {
                 count: filteredTasks.length,
               ),
               const SizedBox(height: 10),
-              TaskTypePicker(
-                selected: selectedType,
-                onSelected: (value) => setState(() => selectedType = value),
-              ),
+              if (!widget.separatePage)
+                TaskTypePicker(
+                  selected: selectedType,
+                  onSelected: (value) => setState(() => selectedType = value),
+                ),
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilterChip(
@@ -3415,7 +3685,9 @@ class _TaskListState extends State<TaskList> {
                         ? 'emptyTasks'
                         : 'noFilteredTasks',
                   ),
-                  subtitle: savedOnly || selectedType != 'all'
+                  subtitle:
+                      savedOnly ||
+                          (!widget.separatePage && selectedType != 'all')
                       ? tr(context, 'emptyFilteredTasksHelp')
                       : uf(
                           context,
@@ -3423,9 +3695,11 @@ class _TaskListState extends State<TaskList> {
                           'പുതിയ tasks പിന്നീട് പരിശോധിക്കുക.',
                         ),
                   actionLabel: tr(context, 'showAllTasks'),
-                  onAction: savedOnly || selectedType != 'all'
+                  onAction:
+                      savedOnly ||
+                          (!widget.separatePage && selectedType != 'all')
                       ? () => setState(() {
-                          selectedType = 'all';
+                          if (!widget.separatePage) selectedType = 'all';
                           savedOnly = false;
                         })
                       : null,
@@ -3736,10 +4010,86 @@ class PendingReviews extends StatelessWidget {
   );
 }
 
-class Campaigns extends StatelessWidget {
-  const Campaigns({super.key, required this.uid, this.campaignsStream});
+class Campaigns extends StatefulWidget {
+  const Campaigns({
+    super.key,
+    required this.uid,
+    this.campaignsStream,
+    this.reviewsBuilder,
+    this.now,
+  });
   final String uid;
   final Stream<List<Map<String, dynamic>>>? campaignsStream;
+  final Widget Function(String campaignId)? reviewsBuilder;
+  final DateTime Function()? now;
+  @override
+  State<Campaigns> createState() => _CampaignsState();
+}
+
+class _CampaignsState extends State<Campaigns> {
+  String selectedType = 'all', selectedStatus = 'all';
+  Timer? clock;
+  DateTime? scheduledDeadline;
+  late Stream<List<Map<String, dynamic>>> campaignFeed;
+
+  @override
+  void initState() {
+    super.initState();
+    campaignFeed =
+        widget.campaignsStream ??
+        db
+            .from('campaigns')
+            .stream(primaryKey: ['id'])
+            .eq('ownerId', widget.uid);
+  }
+
+  void scheduleDeadline(List<Map<String, dynamic>> campaigns) {
+    final now = widget.now?.call() ?? DateTime.now();
+    DateTime? earliest;
+    for (final campaign in campaigns) {
+      if (campaign['status'] != 'active') continue;
+      final created = DateTime.tryParse(campaign['createdAt'] as String? ?? '');
+      final deadline = created?.add(const Duration(minutes: 1));
+      if (deadline != null &&
+          deadline.isAfter(now) &&
+          (earliest == null || deadline.isBefore(earliest))) {
+        earliest = deadline;
+      }
+    }
+    if (earliest == scheduledDeadline) return;
+    clock?.cancel();
+    scheduledDeadline = earliest;
+    if (earliest != null) {
+      clock = Timer(
+        earliest.difference(now) + const Duration(milliseconds: 50),
+        () {
+          scheduledDeadline = null;
+          if (mounted) setState(() {});
+        },
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant Campaigns oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.uid != widget.uid ||
+        oldWidget.campaignsStream != widget.campaignsStream) {
+      campaignFeed =
+          widget.campaignsStream ??
+          db
+              .from('campaigns')
+              .stream(primaryKey: ['id'])
+              .eq('ownerId', widget.uid);
+    }
+  }
+
+  @override
+  void dispose() {
+    clock?.cancel();
+    super.dispose();
+  }
+
   Future<void> cancel(BuildContext context, String id) async {
     final yes = await showDialog<bool>(
       context: context,
@@ -3771,19 +4121,25 @@ class Campaigns extends StatelessWidget {
   Widget build(
     BuildContext context,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
-    stream:
-        campaignsStream ??
-        db.from('campaigns').stream(primaryKey: ['id']).eq('ownerId', uid),
+    stream: campaignFeed,
     builder: (context, snapshot) {
       if (snapshot.hasError) return Center(child: Text(tr(context, 'error')));
       if (!snapshot.hasData) {
         return const Center(child: CircularProgressIndicator());
       }
-      final docs = snapshot.data!.toList()
+      scheduleDeadline(snapshot.data!);
+      final allDocs = snapshot.data!.toList()
         ..sort(
           (a, b) =>
               (b['createdAt'] as String).compareTo(a['createdAt'] as String),
         );
+      final docs = allDocs
+          .where(
+            (doc) =>
+                (selectedType == 'all' || doc['type'] == selectedType) &&
+                (selectedStatus == 'all' || doc['status'] == selectedStatus),
+          )
+          .toList();
       return AppListView(
         padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
         children: [
@@ -3812,7 +4168,7 @@ class Campaigns extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          if (docs.isEmpty) ...[
+          if (allDocs.isEmpty) ...[
             GrowthEmpty(
               art: 'campaign_reference',
               artHeight: 200,
@@ -3865,12 +4221,56 @@ class Campaigns extends StatelessWidget {
                 label: Text(tr(context, 'create')),
               ),
             ),
+          if (allDocs.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(tr(context, 'type')),
+            TaskTypePicker(
+              selected: selectedType,
+              onSelected: (value) => setState(() => selectedType = value),
+            ),
+            Text(userText(context, 'Status', 'സ്ഥിതി')),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final status in [
+                  'all',
+                  'active',
+                  'completed',
+                  'cancelled',
+                ])
+                  ChoiceChip(
+                    label: Text(
+                      tr(context, status == 'all' ? 'allTasks' : status),
+                    ),
+                    selected: selectedStatus == status,
+                    onSelected: (_) => setState(() => selectedStatus = status),
+                  ),
+              ],
+            ),
+            if (docs.isEmpty)
+              Text(
+                userText(
+                  context,
+                  'No campaigns match these filters.',
+                  'ഈ filters-ന് അനുയോജ്യമായ campaigns ഇല്ല.',
+                ),
+              ),
+          ],
           for (final doc in docs)
             Builder(
               builder: (context) {
                 final data = doc;
                 final remaining = data['remaining'] as int;
                 final requested = data['requested'] as int;
+                final createdAt = DateTime.tryParse(
+                  data['createdAt'] as String? ?? '',
+                );
+                final canCancel =
+                    data['status'] == 'active' &&
+                    createdAt != null &&
+                    (widget.now?.call() ?? DateTime.now()).isBefore(
+                      createdAt.add(const Duration(minutes: 1)),
+                    );
                 return Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -3910,6 +4310,11 @@ class Campaigns extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 12),
+                        if (data['order_id'] is String)
+                          SelectableText(
+                            '${userText(context, 'Order ID', 'Order ID')}: ${data['order_id']}',
+                          ),
+                        const SizedBox(height: 8),
                         Text(
                           data['link'],
                           maxLines: 2,
@@ -3924,8 +4329,9 @@ class Campaigns extends StatelessWidget {
                         Text(
                           '${requested - remaining}/$requested ${tr(context, 'claims')}',
                         ),
-                        PendingReviews(campaignId: data['id'] as String),
-                        if (data['status'] == 'active')
+                        widget.reviewsBuilder?.call(data['id'] as String) ??
+                            PendingReviews(campaignId: data['id'] as String),
+                        if (canCancel)
                           TextButton(
                             onPressed: () =>
                                 cancel(context, doc['id'] as String),
@@ -4101,6 +4507,14 @@ class _CreateCampaignState extends State<CreateCampaign> {
                       'നിങ്ങളുടെ Instagram സാന്നിധ്യം വളർത്തുക.',
                     ),
                     style: const TextStyle(fontSize: 11),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    userText(
+                      context,
+                      'Your campaign becomes public after one minute. You can cancel only during that first minute.',
+                      'ഒരു മിനിറ്റിന് ശേഷം campaign മറ്റുള്ളവർക്ക് ലഭ്യമാകും. ആദ്യ മിനിറ്റിൽ മാത്രം റദ്ദാക്കാം.',
+                    ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(

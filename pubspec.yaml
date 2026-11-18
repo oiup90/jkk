@@ -75,6 +75,7 @@ flutter:
   assets:
     - assets/design/
     - assets/admin/
+    - assets/social/
   fonts:
     - family: Poppins
       fonts:
