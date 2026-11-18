@@ -31,7 +31,15 @@ The public site key is used by `turnstile/index.html`. The app opens that page i
 
 ## Production rollout
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:72a9e4a61137231405e52358f9ea86c61b5c693bc57593680789e48750209119 -->
+
 Publish the production page at the widget's authorized hostname, then build and distribute both apps with the CAPTCHA flag enabled. Confirm the apps and page work before enabling CAPTCHA in the production Supabase project. Enabling the project-wide setting blocks login, signup, resend and recovery from older clients that cannot send CAPTCHA tokens. Plan an app update rollout and recovery path before activation. The Windows app can connect to other Supabase projects; those projects need matching CAPTCHA configuration or builds with this option disabled.
+
+If sign-in reports a failure, check the Auth logs for a missing CAPTCHA token and rebuild the Windows app with the challenge enabled. The challenge page must load in Windows WebView2 and produce a token. If Cloudflare presents a separate access challenge or blocks the page, review the hostname’s Cloudflare security rules and verify the deployed page and widget configuration before retrying. Keep MFA enabled and complete its verification after password sign-in.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 CAPTCHA limits automated abuse but does not implement the five-attempt account lockout or per-user audit trail: those migrations depend on the paid Password Verification Attempt hook. Continue using Supabase Auth and gateway logs for monitoring.
 
