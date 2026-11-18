@@ -1,4 +1,5 @@
 import 'admin_destination.dart';
+import 'admin_wallets.dart';
 
 import 'dart:async';
 
@@ -161,13 +162,15 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       'tickets' => 'admin_support_tickets',
       'inbox' => 'admin_event_feed',
       'reports' => 'admin_campaign_reports',
-      'coins' => 'admin_adjustments',
+      'coins' => '',
       'alerts' => 'admin_alert_settings',
       'trends' => 'admin_daily_report',
       'notes' => 'admin_notes',
       _ => '',
     };
-    if (page == 'security' || (page == 'notes' && noteId.text.trim().isEmpty)) {
+    if (page == 'coins' ||
+        page == 'security' ||
+        (page == 'notes' && noteId.text.trim().isEmpty)) {
       data = Future.value([]);
       return;
     }
@@ -297,34 +300,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
       c.dispose();
     }
     return result;
-  }
-
-  Future<void> requestCoin() async {
-    final v = await fields(
-      op(context, 'Request coin correction', 'Coin correction അപേക്ഷ'),
-      [
-        op(context, 'User ID (8 digits)', 'User ID (8 digits)'),
-        op(context, 'Amount (+ or -)', 'Amount (+ or -)'),
-        op(context, 'Reason', 'കാരണം'),
-      ],
-    );
-    if (v == null || !mounted) return;
-    final amount = int.tryParse(v[1]);
-    if (amount == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            op(context, 'Enter a valid amount.', 'ശരിയായ amount നൽകുക.'),
-          ),
-        ),
-      );
-      return;
-    }
-    await call('admin_request_wallet_adjustment', {
-      'p_public_id': v[0].trim(),
-      'p_amount': amount,
-      'p_reason': v[2],
-    });
   }
 
   Future<void> setThreshold(Map r) async {
@@ -467,11 +442,17 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (page == 'coins') {
+      return AdminWalletsPage(
+        gateway: SupabaseAdminWalletGateway(widget.client),
+        canEdit: widget.canEdit,
+      );
+    }
     final labels = <String, String>{
       'tickets': op(context, 'Support', 'സഹായം'),
       'inbox': op(context, 'Notifications', 'അറിയിപ്പുകൾ'),
       'reports': op(context, 'Campaign reports', 'Campaign reports'),
-      'coins': op(context, 'Wallet controls', 'Wallet controls'),
+      'coins': op(context, 'Wallets Management', 'Wallets Management'),
       'alerts': op(context, 'Alert settings', 'Alert settings'),
       'trends': op(context, 'Analytics', 'Analytics'),
       'notes': op(context, 'Admin notes', 'Admin notes'),
@@ -658,20 +639,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
                           child: Text(op(context, 'Add note', 'Note ചേർക്കുക')),
                         ),
                     ],
-                  ),
-                ),
-              if (page == 'coins' && widget.canEdit)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FilledButton.icon(
-                      onPressed: requestCoin,
-                      icon: const Icon(Icons.add),
-                      label: Text(
-                        op(context, 'Request correction', 'Correction അപേക്ഷ'),
-                      ),
-                    ),
                   ),
                 ),
               if (page == 'security')
@@ -937,80 +904,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
                                                 'Cancel & refund',
                                                 'റദ്ദാക്കി refund ചെയ്യുക',
                                               ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }
-                          if (page == 'coins') {
-                            return Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${r['amount']} coins · ${r['status']}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    Text(
-                                      'User: ${r['user_id']}\n${r['reason']}\nRequested: ${r['requester_id']}',
-                                    ),
-                                    if (widget.canEdit &&
-                                        r['status'] == 'pending' &&
-                                        r['requester_id'] !=
-                                            widget.client.auth.currentUser?.id)
-                                      Wrap(
-                                        spacing: 8,
-                                        children: [
-                                          TextButton(
-                                            onPressed: () async {
-                                              if (await confirm(
-                                                op(
-                                                  context,
-                                                  'Reject correction?',
-                                                  'Correction നിരസിക്കണോ?',
-                                                ),
-                                              )) {
-                                                await call(
-                                                  'admin_decide_adjustment',
-                                                  {
-                                                    'p_id': r['id'],
-                                                    'p_approve': false,
-                                                  },
-                                                );
-                                              }
-                                            },
-                                            child: Text(
-                                              op(c, 'Reject', 'നിരസിക്കുക'),
-                                            ),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () async {
-                                              if (await confirm(
-                                                op(
-                                                  context,
-                                                  'Approve coin correction?',
-                                                  'Coin correction അനുവദിക്കണോ?',
-                                                ),
-                                              )) {
-                                                await call(
-                                                  'admin_decide_adjustment',
-                                                  {
-                                                    'p_id': r['id'],
-                                                    'p_approve': true,
-                                                  },
-                                                );
-                                              }
-                                            },
-                                            child: Text(
-                                              op(c, 'Approve', 'അനുവദിക്കുക'),
                                             ),
                                           ),
                                         ],

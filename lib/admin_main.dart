@@ -5,10 +5,13 @@ import 'dart:convert';
 
 import 'evidence_image.dart';
 import 'admin_operations.dart';
+import 'admin_wallets.dart';
+import 'official_social_links.dart';
 import 'admin_app_releases.dart';
 import 'admin_notifications.dart';
 import 'admin_login_tools.dart';
 import 'auth_captcha.dart';
+import 'brand_wordmark.dart';
 import 'safe_error_widget.dart';
 import 'secure_transport.dart';
 
@@ -54,7 +57,8 @@ const labels = <String, List<String>>{
     'Sign in failed. Check your credentials and connection.',
     'ലോഗിൻ പരാജയപ്പെട്ടു. വിവരങ്ങളും internet-ഉം പരിശോധിക്കുക.',
   ],
-  'walletControls': ['Wallet controls', 'Wallet controls'],
+  'walletsManagement': ['Wallets Management', 'Wallets Management'],
+  'socialLinks': ['Official social links', 'Official social links'],
   'users': ['Users', 'ഉപയോക്താക്കൾ'],
   'workspace': ['ADMIN WORKSPACE', 'ADMIN WORKSPACE'],
   'usersIntro': [
@@ -898,15 +902,7 @@ class AdminBrand extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: adminViolet,
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: const Icon(Icons.hub_outlined, color: Colors.white, size: 21),
-      ),
+      const FreelanMark(size: 36),
       if (!compact) ...[
         const SizedBox(width: 12),
         const Flexible(
@@ -1361,10 +1357,7 @@ class _AdminSignInState extends State<AdminSignIn> {
           const Center(
             child: Column(
               children: [
-                CircleAvatar(
-                  backgroundColor: Color(0xffede6ff),
-                  child: Icon(Icons.hub, color: adminViolet),
-                ),
+                FreelanMark(size: 40),
                 SizedBox(height: 8),
                 Text(
                   'Freelan Space',
@@ -3776,10 +3769,15 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       ),
       canEdit: role == 'editor',
     ),
-    'walletControls' => AdminOperationsPage(
+    'socialLinks' => AdminSocialLinksPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
-      initialPage: 'coins',
+    ),
+    'walletsManagement' => AdminWalletsPage(
+      gateway: SupabaseAdminWalletGateway(
+        (widget.gateway as SupabaseAdminGateway).client,
+      ),
+      canEdit: role == 'editor',
     ),
     'operations' => AdminOperationsPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
@@ -3818,7 +3816,8 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       if (widget.gateway is SupabaseAdminGateway) ...[
         ('sendNotifications', Icons.send_outlined),
         ('updates', Icons.system_update),
-        ('walletControls', Icons.account_balance_wallet_outlined),
+        ('walletsManagement', Icons.account_balance_wallet_outlined),
+        ('socialLinks', Icons.public),
         ('operations', Icons.settings_outlined),
       ],
     ];
@@ -3838,11 +3837,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                       padding: EdgeInsets.fromLTRB(24, 26, 24, 4),
                       child: Column(
                         children: [
-                          Icon(
-                            Icons.hub_rounded,
-                            color: Color(0xffa88bff),
-                            size: 54,
-                          ),
+                          FreelanMark(size: 54),
                           SizedBox(height: 8),
                           Text(
                             'Freelan Space',

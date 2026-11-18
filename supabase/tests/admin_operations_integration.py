@@ -39,27 +39,10 @@ class Operations(unittest.TestCase):
     self.assertEqual(sql(f"select status from public.campaigns where id='{C}'",O),'cancelled')
     self.assertEqual(sql(f"select count(*) from public.coin_ledger where user_id='{O}' and amount=6 and reason='refund'",O),'1')
     sql(f"select public.admin_resolve_report('{rid}',true)",B,fails=True)
- def test_03_coin_approval_atomicity(self):
-    rid=sql(f"select public.admin_request_adjustment('{U}',-3,'Correction')",A)
-    sql(f"select public.admin_decide_adjustment('{rid}',true)",A,fails=True)
-    sql(f"select public.admin_decide_adjustment('{rid}',true)",V,fails=True)
-    sql(f"select public.admin_decide_adjustment('{rid}',true)",B)
-    self.assertEqual(sql(f"select balance from public.wallets where id='{U}'",U),'7')
-    self.assertEqual(sql(f"select count(*) from public.coin_ledger where user_id='{U}' and amount=-3 and reason='admin_adjustment'",U),'1')
-    sql(f"select public.admin_decide_adjustment('{rid}',true)",B,fails=True)
-    self.assertEqual(sql("select count(*) from public.admin_activity() where action='Coin correction approved'",A),'1')
-    bad=sql(f"select public.admin_request_adjustment('{U}',-100,'Too much')",A)
-    sql(f"select public.admin_decide_adjustment('{bad}',true)",B,fails=True)
-    self.assertEqual(sql(f"select balance from public.wallets where id='{U}'",U),'7')
- def test_04_concurrent_coin_approval_is_once(self):
-    rid=sql(f"select public.admin_request_adjustment('{U}',5,'Concurrent')",A)
-    def decide(actor):
-      try: sql(f"select public.admin_decide_adjustment('{rid}',true)",actor); return True
-      except AssertionError: return False
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool: results=list(pool.map(decide,[B,D]))
-    self.assertEqual(sorted(results),[False,True])
-    self.assertEqual(sql(f"select count(*) from public.coin_ledger where user_id='{U}' and amount=5 and reason='admin_adjustment'",U),'1')
-    self.assertEqual(sql(f"select balance from public.wallets where id='{U}'",U),'12')
+ def test_03_old_coin_approval_path_is_retired(self):
+    sql(f"select public.admin_request_adjustment('{U}',-3,'Correction')",A,fails=True)
+    sql("select public.admin_decide_adjustment(gen_random_uuid(),true)",B,fails=True)
+    self.assertEqual(sql(f"select balance from public.wallets where id='{U}'",U),'10')
  def test_05_thresholds_notes_and_mfa(self):
     sql("select public.admin_set_alert_setting('coins_24h',10)",V,fails=True)
     sql("select public.admin_set_alert_setting('coins_24h',10)",A)

@@ -1,3 +1,5 @@
+import 'user_localization.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -32,9 +34,12 @@ class _WalletBalanceState extends State<WalletBalance>
   StreamSubscription<List<Map<String, dynamic>>>? subscription;
   int? balance;
   String? walletNumber;
+  int held = 0;
+  bool active = true;
   int from = 0, target = 0;
   bool revealed = false, failed = false, unavailable = false;
-  String text(String en, String ml) => widget.isMalayalam ? ml : en;
+  String text(String en, String ml) =>
+      userText(context, en, ml, forceMalayalam: widget.isMalayalam);
 
   Future<void> sound(bool play) async {
     try {
@@ -54,11 +59,15 @@ class _WalletBalanceState extends State<WalletBalance>
         if (!mounted) return;
         final value = rows.isEmpty ? null : rows.first['balance'];
         final number = rows.isEmpty ? null : rows.first['wallet_number'];
+        final reserved = rows.isEmpty ? 0 : rows.first['held_balance'];
+        final enabled = rows.isEmpty ? true : rows.first['is_active'];
         final wasPending = balance == null;
         setState(() {
           failed = false;
           unavailable = value is! int || value < 0;
-          balance = value is int && value >= 0 ? value : null;
+          held = reserved is int && reserved >= 0 ? reserved : 0;
+          active = enabled != false;
+          balance = value is int && value >= held ? value - held : null;
           walletNumber =
               number is String && RegExp(r'^[1-9][0-9]{9}$').hasMatch(number)
               ? number
@@ -98,6 +107,8 @@ class _WalletBalanceState extends State<WalletBalance>
       unawaited(sound(false));
       balance = null;
       walletNumber = null;
+      held = 0;
+      active = true;
       revealed = false;
       failed = false;
       unavailable = false;
@@ -337,6 +348,22 @@ class _WalletBalanceState extends State<WalletBalance>
                       ],
                     ),
                   ),
+                  if (!active)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        text(
+                          'Wallet inactive: outgoing spending is disabled.',
+                          'Wallet inactive ആണ്. Coins ചെലവാക്കാൻ കഴിയില്ല.',
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  if (revealed && held > 0)
+                    Text(
+                      '${text('Held coins', 'Hold ചെയ്ത coins')}: $held',
+                      style: const TextStyle(color: Colors.white),
+                    ),
                   if (walletNumber != null) ...[
                     const SizedBox(height: 14),
                     Row(
@@ -423,7 +450,10 @@ class _WalletBalanceState extends State<WalletBalance>
                             _WalletActionButton(
                               icon: Icons.send_outlined,
                               label: text('Transfer coins', 'Coins അയയ്ക്കുക'),
-                              onPressed: widget.onTransfer!,
+                              onPressed:
+                                  active && balance != null && balance! > 0
+                                  ? widget.onTransfer!
+                                  : null,
                             ),
                         ];
                         if (stack) {
@@ -479,7 +509,7 @@ class _WalletActionButton extends StatelessWidget {
   });
   final IconData icon;
   final String label;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) => OutlinedButton.icon(

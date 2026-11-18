@@ -232,4 +232,62 @@ void main() {
       );
     }
   }
+  testWidgets(
+    'holds reduce available balance and inactive wallet disables outgoing transfers',
+    (tester) async {
+      final stream = StreamController<List<Map<String, dynamic>>>();
+      addTearDown(stream.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: WalletBalance(balances: stream.stream, onTransfer: () {}),
+          ),
+        ),
+      );
+      stream.add([
+        {'balance': 100, 'held_balance': 25, 'is_active': true},
+      ]);
+      await tester.pump();
+      await tester.tap(find.byTooltip('Check balance'));
+      await tester.pumpAndSettle();
+      expect(find.text('75 Coins'), findsOneWidget);
+      expect(find.text('Held coins: 25'), findsOneWidget);
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Transfer coins'),
+            )
+            .onPressed,
+        isNotNull,
+      );
+      stream.add([
+        {'balance': 102, 'held_balance': 25, 'is_active': false},
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('77 Coins'), findsOneWidget);
+      expect(find.textContaining('Wallet inactive'), findsOneWidget);
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Transfer coins'),
+            )
+            .onPressed,
+        isNull,
+      );
+      stream.add([
+        {'balance': 102, 'held_balance': 102, 'is_active': true},
+      ]);
+      await tester.pumpAndSettle();
+      expect(find.text('0 Coins'), findsOneWidget);
+      expect(
+        tester
+            .widget<OutlinedButton>(
+              find.widgetWithText(OutlinedButton, 'Transfer coins'),
+            )
+            .onPressed,
+        isNull,
+      );
+      await tester.pumpWidget(const SizedBox());
+    },
+  );
 }

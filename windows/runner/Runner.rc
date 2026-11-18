@@ -92,9 +92,9 @@ BEGIN
             VALUE "CompanyName", "Freelan Space" "\0"
             VALUE "FileDescription", "Freelan Space Admin" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "growth_circle_admin" "\0"
+            VALUE "InternalName", "freelan_space_admin" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 Freelan Space. All rights reserved." "\0"
-            VALUE "OriginalFilename", "growth_circle_admin.exe" "\0"
+            VALUE "OriginalFilename", "freelan_space_admin.exe" "\0"
             VALUE "ProductName", "Freelan Space Admin" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

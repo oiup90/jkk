@@ -237,7 +237,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(FreelanWordmark), findsOneWidget);
     expect(find.bySemanticsLabel('Freelan Space'), findsOneWidget);
-    expect(find.text(words['language']![0]), findsOneWidget);
+    expect(find.byTooltip('Language'), findsOneWidget);
     expect(tester.takeException(), isNull);
     semantics.dispose();
   });

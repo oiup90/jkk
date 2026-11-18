@@ -343,20 +343,22 @@ class UserHelpPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              SizedBox(
-                height: 155,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 155),
                 child: Stack(
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Image.asset(
-                        'assets/design/hero_help.png',
-                        height: 155,
-                        excludeFromSemantics: true,
+                    Positioned.fill(
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Image.asset(
+                          'assets/design/hero_help.png',
+                          height: 155,
+                          excludeFromSemantics: true,
+                        ),
                       ),
                     ),
                     Align(
-                      alignment: Alignment.centerLeft,
+                      alignment: AlignmentDirectional.centerStart,
                       child: Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(

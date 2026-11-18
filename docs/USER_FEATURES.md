@@ -74,7 +74,13 @@ The function accepts the worker secret or a service-role Bearer token after gate
 
 <!-- coderabbit-ai-generated-section:v1:0ca5c52a32c0235d01425f8f0ac0d2e9871f2d6a0b46358b7ea9f311ef8e80fc -->
 
-Event notification content remains generic. Administrator-authored notifications display the supplied title and message, including on the device lock screen; see `docs/ADMIN_NOTIFICATIONS.md`.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:96ed05e611e53af6b8414465db9f584008a1b41afc7e2c548d3082ce743deadd -->
+
+After `20261118120000_wallets_management.sql` and the updated `push-delivery` worker are deployed, wallet receipt pushes include the credited coin amount and source, including referral bonuses and wallet transfers. These amounts can appear on the device lock screen according to Android settings. Other event messages remain generic. Administrator-authored notifications display the supplied title and message; see `docs/ADMIN_NOTIFICATIONS.md`. Existing push opt-in and notification permission continue to apply.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 --> Registrations belong to the signed-in account and are removed on sign-out when the server is reachable; a device registration is reassigned on the next successful sign-in. Push only covers events created after a device is registered. Check function logs and Cron/pg_net results, then test permission, sign-out and all four notification types on an actual Android device before distribution. Firebase, the worker, its schedule, and the migration require separate deployment; committing files does not activate them.
 

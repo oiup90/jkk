@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support_page.dart';
+import 'user_localization.dart';
 
 String transferRequestId() {
   final random = Random.secure();
@@ -162,9 +163,11 @@ class _WalletTransferPageState extends State<WalletTransferPage> {
       builder: (c) => AlertDialog(
         title: Text(text('Confirm transfer', 'Transfer സ്ഥിരീകരിക്കുക')),
         content: Text(
-          text(
-            'Send ${amount.text} coins to $displayName (${wallet.text})? Check the recipient and amount. Transfers cannot be cancelled.',
-            '$displayName (${wallet.text}) എന്ന വാലറ്റിലേക്ക് ${amount.text} coins അയയ്ക്കണോ? പേരും നമ്പറും പരിശോധിക്കുക. Transfer റദ്ദാക്കാനാകില്ല.',
+          userTransferConfirmation(
+            context,
+            amount: amount.text,
+            name: displayName,
+            wallet: wallet.text,
           ),
         ),
         actions: [
@@ -207,7 +210,7 @@ class _WalletTransferPageState extends State<WalletTransferPage> {
         context,
         MaterialPageRoute(
           builder: (_) => _PaymentProcessingPage(
-            isMalayalam: supportText(context, 'en', 'ml') == 'ml',
+            isMalayalam: Localizations.localeOf(context).languageCode == 'ml',
             run: () => performPayment(request, submittedPin, prefs),
           ),
         ),
@@ -402,7 +405,9 @@ class _WalletTransferPageState extends State<WalletTransferPage> {
                         (pending != null && recipientName != null))
                       _RecipientNotice(
                         name: recipientName!,
-                        isMalayalam: supportText(context, 'en', 'ml') == 'ml',
+                        isMalayalam:
+                            Localizations.localeOf(context).languageCode ==
+                            'ml',
                       ),
                     if (lookupState == 'missing')
                       Padding(
@@ -546,7 +551,12 @@ class _RecipientNotice extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isMalayalam ? 'സ്വീകരിക്കുന്നയാൾ' : 'Recipient',
+                userText(
+                  context,
+                  'Recipient',
+                  'സ്വീകരിക്കുന്നയാൾ',
+                  forceMalayalam: isMalayalam,
+                ),
                 style: const TextStyle(color: Color(0xff416b50), fontSize: 11),
               ),
               Text(
@@ -660,18 +670,24 @@ class _PaymentProcessingPageState extends State<_PaymentProcessingPage>
                 ),
                 const SizedBox(height: 30),
                 Text(
-                  widget.isMalayalam
-                      ? 'Payment പരിശോധിക്കുന്നു'
-                      : 'Processing payment',
+                  userText(
+                    context,
+                    'Processing payment',
+                    'Payment പരിശോധിക്കുന്നു',
+                    forceMalayalam: widget.isMalayalam,
+                  ),
                   style: Theme.of(context).textTheme.headlineSmall
                       ?.copyWith(fontWeight: FontWeight.w700),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  widget.isMalayalam
-                      ? 'ദയവായി കാത്തിരിക്കൂ…'
-                      : 'Please wait while we confirm your transfer.',
+                  userText(
+                    context,
+                    'Please wait while we confirm your transfer.',
+                    'ദയവായി കാത്തിരിക്കൂ…',
+                    forceMalayalam: widget.isMalayalam,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],
@@ -687,9 +703,10 @@ class _PaymentResultPage extends StatelessWidget {
   const _PaymentResultPage({required this.outcome, required this.isMalayalam});
   final _PaymentOutcome outcome;
   final bool isMalayalam;
-  String text(String en, String ml) => isMalayalam ? ml : en;
   @override
   Widget build(BuildContext context) {
+    String text(String en, String ml) =>
+        userText(context, en, ml, forceMalayalam: isMalayalam);
     final success = outcome.status == 'success';
     final unknown = outcome.status == 'unknown';
     final color = unknown
@@ -719,6 +736,10 @@ class _PaymentResultPage extends StatelessWidget {
             'insufficient_balance' => text(
               'Not enough coins.',
               'ആവശ്യത്തിന് coins ഇല്ല.',
+            ),
+            'wallet_inactive' => text(
+              'Your wallet is inactive. Contact support.',
+              'Wallet inactive ആണ്. Support-നെ ബന്ധപ്പെടുക.',
             ),
             'pin_missing' => text(
               'Set your Security PIN in Profile first.',

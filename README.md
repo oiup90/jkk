@@ -61,7 +61,13 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 <!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
-2. In Authentication → URL Configuration, add `io.supabase.growthcircle://login-callback/` as an allowed redirect URL for signup and password recovery.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:fa38bdc9a4b45a6858448acb3089bc3cdb8ff9ded9e6a33ec12bfcd62202b957 -->
+
+2. Before distributing the updated Android app, add `space.freelan.app://login-callback/` under Authentication → URL Configuration → Redirect URLs. Keep `io.supabase.growthcircle://login-callback/` allowed while older app versions and previously sent recovery links are in use. The app uses signup OTPs and directs password recovery to the new URL.
+
+<!-- /coderabbit-ai-generated:v1 -->
 <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:ae87e7b9ad6474da4755d50a24fed3ca759194e89d12befb8fdb545ba30a95b9 -->
@@ -128,7 +134,13 @@ The Android package name is `space.freelan.app`. This is a new Android installat
 
 The supplied Firebase configuration for `space.freelan.app` uses project `freelan-space`; verify that the server push worker uses this project before release. The earlier Android app used `growth-circle-c8efe`, so changing the worker project can affect its push delivery. Alternatively register the new package in the old Firebase project and replace the configuration file; see `docs/USER_FEATURES.md`. Production packaging requires the matching Firebase configuration and a signing keystore.
 
-<!-- /coderabbit-ai-generated:v1 --> The existing Supabase auth callback remains `io.supabase.growthcircle://login-callback/`; it is independent of the Android package ID.
+<!-- /coderabbit-ai-generated:v1 --> <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:5c3bc7c9a47c40b7d935a2dd6323f92b52b12224bd9fa65802d911d1cfc38ecb -->
+
+New password recovery requests use `space.freelan.app://login-callback/`. The app also accepts the legacy callback for previously issued recovery links; keep the legacy URL allowed in Supabase until older clients and outstanding links are retired.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -192,7 +204,13 @@ Only a database owner can provision administrators. The admin UI cannot block ad
 
 <!-- coderabbit-ai-generated-section:v1:70b042161d85705e27ad0cfed458b21254052dc2006112a5ccee454cab9da524 -->
 
-On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\growth_circle_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally. When Save login is selected, the administrator login is stored using Windows secure storage; no service-role key is stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:f434a160767ddba86c2fda78ab50811b9e492344382c458906df885a1292fd1a -->
+
+On Windows with Flutter 3.47.9 and Visual Studio C++ tools, run `flutter pub get` and `flutter build windows --release -t lib/admin_main.dart`. Run `build\windows\x64\runner\Release\freelan_space_admin.exe` with the entire Release directory. A GitHub Actions workflow also produces a Windows ZIP artifact. On first launch enter the project URL and publishable/anon key, then sign in as the provisioned admin. The public project configuration is stored locally. When Save login is selected, the administrator login is stored using Windows secure storage; no service-role key is stored by the app. Supabase SQL deployment and a real Windows build must be verified on the target environment.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 

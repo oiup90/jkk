@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'auth_languages.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -92,18 +94,22 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
   Widget build(BuildContext context) => AlertDialog(
     insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
     title: Text(
-      Localizations.localeOf(context).languageCode == 'ml'
-          ? 'സുരക്ഷാ പരിശോധന'
-          : 'Security check',
+      authTranslations[Localizations.localeOf(context)
+              .languageCode]?['securityCheck'] ??
+          (Localizations.localeOf(context).languageCode == 'ml'
+              ? 'സുരക്ഷാ പരിശോധന'
+              : 'Security check'),
     ),
     content: SizedBox(
       width: 400,
       height: 220,
       child: failed
           ? Text(
-              Localizations.localeOf(context).languageCode == 'ml'
-                  ? 'സുരക്ഷാ പരിശോധന ലഭിച്ചില്ല. അടച്ചശേഷം വീണ്ടും ശ്രമിക്കുക.'
-                  : 'Security check could not load. Close and try again.',
+              authTranslations[Localizations.localeOf(context)
+                      .languageCode]?['securityFailed'] ??
+                  (Localizations.localeOf(context).languageCode == 'ml'
+                      ? 'സുരക്ഷാ പരിശോധന ലഭിച്ചില്ല. അടച്ചശേഷം വീണ്ടും ശ്രമിക്കുക.'
+                      : 'Security check could not load. Close and try again.'),
             )
           : InAppWebView(
               initialUrlRequest: URLRequest(
@@ -137,9 +143,11 @@ class _CaptchaDialogState extends State<_CaptchaDialog> {
       TextButton(
         onPressed: () => Navigator.of(context).pop(),
         child: Text(
-          Localizations.localeOf(context).languageCode == 'ml'
-              ? 'റദ്ദാക്കുക'
-              : 'Cancel',
+          authTranslations[Localizations.localeOf(context)
+                  .languageCode]?['cancel'] ??
+              (Localizations.localeOf(context).languageCode == 'ml'
+                  ? 'റദ്ദാക്കുക'
+                  : 'Cancel'),
         ),
       ),
     ],
