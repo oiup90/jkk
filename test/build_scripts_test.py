@@ -69,12 +69,12 @@ if args[:2] == ['build','windows']:
         self.assertTrue(all(call['cwd'] == str(self.root) for call in calls))
         self.assertEqual(calls[1]['args'], ['pub', 'get', '--enforce-lockfile'])
         args = calls[2]['args']
-        self.assertEqual(args[:6], ['build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--obfuscate'])
-        self.assertTrue(args[6].startswith('--split-debug-info='))
-        symbols = Path(args[6].split('=', 1)[1])
+        self.assertEqual(args[:7], ['build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--dart-define=AUTH_CAPTCHA_ENABLED=true', '--obfuscate'])
+        self.assertTrue(args[7].startswith('--split-debug-info='))
+        symbols = Path(args[7].split('=', 1)[1])
         self.assertEqual(symbols.parent, self.root / 'release-symbols')
         self.assertTrue((symbols / 'app.android-arm64.symbols').is_file())
-        self.assertEqual(args[7:], ['--build-number=18', '--build-name=1.2.0'])
+        self.assertEqual(args[8:], ['--build-number=18', '--build-name=1.2.0'])
         self.assertEqual((self.root / 'build/app/outputs/flutter-apk/app-release.apk').read_bytes(), b'new apk')
 
     def test_default_user_build_uses_pubspec_version(self):
