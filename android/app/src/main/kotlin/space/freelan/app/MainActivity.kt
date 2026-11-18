@@ -89,7 +89,7 @@ class MainActivity : FlutterActivity() {
                         }
                         val pending = PendingIntent.getActivity(this, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                         val notification = NotificationCompat.Builder(this, "freelan_updates")
-                            .setSmallIcon(R.drawable.ic_growth_circle)
+                            .setSmallIcon(R.drawable.ic_freelan_notification)
                             .setContentTitle(title)
                             .setContentText(body)
                             .setStyle(NotificationCompat.BigTextStyle().bigText(body))

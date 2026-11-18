@@ -1,5 +1,20 @@
 import 'package:flutter/material.dart';
 
+/// The Freelan Space mark, shared by the app and platform icons.
+class FreelanMark extends StatelessWidget {
+  const FreelanMark({super.key, required this.size});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+    'assets/design/brand_logo.png',
+    width: size,
+    height: size,
+    excludeFromSemantics: true,
+  );
+}
+
 /// A typographic signature for the user app, with one accessible brand name.
 class FreelanWordmark extends StatelessWidget {
   const FreelanWordmark({super.key});

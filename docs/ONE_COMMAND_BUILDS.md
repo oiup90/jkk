@@ -48,7 +48,13 @@ Default version `pubspec.yaml`-ൽ നിന്നാണ് (ഇപ്പോൾ 
 .\build-admin-windows.cmd
 ```
 
-വിജയിച്ചാൽ executable `build\windows\x64\runner\Release\growth_circle_admin.exe`-ലും share ചെയ്യാനുള്ള മുഴുവൻ files അടങ്ങിയ ZIP `build\freelan-space-admin-windows.zip`-ലും ലഭിക്കും. EXE മാത്രം copy ചെയ്യരുത്; ZIP മുഴുവൻ extract ചെയ്ത് EXE തുറക്കുക. ആദ്യ login-ൽ project URL, public key എന്നിവ നൽകണം.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:2a15316282b457c4ff1b0c187c0ff8ae609bd460b9925ba6cb4a406c387161b9 -->
+
+വിജയിച്ചാൽ executable `build\windows\x64\runner\Release\freelan_space_admin.exe`-ലും share ചെയ്യാനുള്ള മുഴുവൻ files അടങ്ങിയ ZIP `build\freelan-space-admin-windows.zip`-ലും ലഭിക്കും. EXE മാത്രം copy ചെയ്യരുത്; ZIP മുഴുവൻ extract ചെയ്ത് EXE തുറക്കുക. ആദ്യ login-ൽ project URL, public key എന്നിവ നൽകണം.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Build കഴിഞ്ഞ് ഇതേ PC-യിൽ admin app തുറക്കാനും വേണമെങ്കിൽ:
 

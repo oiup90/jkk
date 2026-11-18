@@ -73,3 +73,17 @@ test('full batch immediately schedules the next batch', async () => {
  assert.equal((await response.json()).sent,100);
  assert.equal(continued,1);
 });
+
+test('every wallet credit push includes its amount and source, without personal details', async () => {
+  const sources = ['referral', 'welcome', 'transfer_received', 'admin_adjustment', 'purchase', 'refund', 'task', 'future_source'];
+  const sent = [];
+  const handler = createHandler({secret: 'synthetic', claim: async () => sources.map(source => ({job_id: source, lease_id: 'lease', token: 'token', kind: 'coins_received', amount: 42, source})),
+    send: async (_token, title, body, kind) => { sent.push({title, body, kind}); return {success: true, permanent: false}; }, finish: async () => {}});
+  const response = await handler(new Request('https://worker.test', {method: 'POST', headers: {authorization: 'Bearer synthetic'}}));
+  assert.equal(response.status, 200);
+  assert.equal(sent.length, sources.length);
+  for (const message of sent) { assert.equal(message.kind, 'coins_received'); assert.match(message.body, /42 coins credited to your Freelan Space wallet/); }
+  assert.match(sent[0].body, /referral bonus/);
+  assert.match(sent[2].body, /wallet transfer/);
+  assert.match(sent[3].body, /administrator/);
+});

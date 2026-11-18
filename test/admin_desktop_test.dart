@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/admin_main.dart';
+import 'package:growth_circle/brand_wordmark.dart';
 
 import 'admin_workspace_test.dart' show WorkspaceFake;
 
@@ -23,6 +24,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(find.byType(FreelanMark), findsOneWidget);
       expect(find.byType(DataTable), findsOneWidget);
       await tester.ensureVisible(find.text('Details').last);
       await tester.pumpAndSettle();

@@ -49,8 +49,9 @@ if args[:2] == ['build','apk']:
     (pathlib.Path(symbols)/f'app.android-{arch}.symbols').write_bytes(b'symbols')
 if args[:2] == ['build','windows']:
  p=pathlib.Path('build/windows/x64/runner/Release');p.mkdir(parents=True,exist_ok=True)
- exe=p/'growth_circle_admin.exe';exe.write_text('#!/bin/sh\\n/bin/pwd > "$BUILD_TEST_RUN_LOG"\\n');exe.chmod(0o755)
+ exe=p/'freelan_space_admin.exe';exe.write_text('#!/bin/sh\\n/bin/pwd > "$BUILD_TEST_RUN_LOG"\\n');exe.chmod(0o755)
  (p/'flutter_windows.dll').write_bytes(b'engine')
+ data=p/'data';data.mkdir(exist_ok=True);(data/'app.so').write_bytes(b'app')
 ''')
         fake.chmod(0o755)
         self.env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'], BUILD_TEST_LOG=str(self.log), BUILD_TEST_RUN_LOG=str(Path(self.temp.name) / 'started.txt'))
@@ -101,11 +102,16 @@ if args[:2] == ['build','windows']:
         old_zip = self.root / 'build/freelan-space-admin-windows.zip'
         old_zip.parent.mkdir(parents=True)
         old_zip.write_bytes(b'old archive')
+        release = self.root / 'build/windows/x64/runner/Release'
+        release.mkdir(parents=True)
+        (release / 'growth_circle_admin.exe').write_bytes(b'old executable')
+        (release / 'growth_circle_admin.pdb').write_bytes(b'old symbols')
         p = self.run_script('build-admin-windows.ps1')
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertEqual(self.calls()[2]['args'], ['build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart'])
         with zipfile.ZipFile(self.root / 'build/freelan-space-admin-windows.zip') as archive:
-            self.assertEqual(set(archive.namelist()), {'growth_circle_admin.exe', 'flutter_windows.dll'})
+            self.assertEqual(set(archive.namelist()), {'freelan_space_admin.exe', 'flutter_windows.dll', 'data/app.so'})
+        self.assertEqual((release / 'growth_circle_admin.exe').read_bytes(), b'old executable')
 
     def test_admin_run_uses_release_directory(self):
         p = self.run_script('build-admin-windows.ps1', '-Run')

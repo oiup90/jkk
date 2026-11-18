@@ -144,4 +144,47 @@ void main() {
       expect(find.text('₹49'), findsOneWidget);
     },
   );
+  testWidgets('payment status stays with the order checked on a phone', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final source = FakePurchases()
+      ..orders = [
+        const CoinOrder('first-order', 100, 4900, 'first'),
+        const CoinOrder('second-order', 300, 12900, 'second'),
+      ];
+    await tester.pumpWidget(
+      MaterialApp(home: CoinPurchasePage(source: source)),
+    );
+    await tester.pumpAndSettle();
+    final target = find.ancestor(
+      of: find.text('Order: second-order'),
+      matching: find.byType(Card),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Order: second-order'),
+      150,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    final check = find.descendant(
+      of: target,
+      matching: find.widgetWithText(FilledButton, 'Check payment'),
+    );
+    await tester.ensureVisible(check);
+    await tester.tap(check);
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: target,
+        matching: find.textContaining('No completed payment'),
+      ),
+      findsOneWidget,
+    );
+    expect(source.checks, 1);
+    expect(tester.takeException(), isNull);
+  });
 }

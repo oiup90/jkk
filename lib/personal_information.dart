@@ -9,9 +9,10 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'evidence_image.dart';
 import 'design.dart';
+import 'user_localization.dart';
 
 String _t(BuildContext context, String english, String malayalam) =>
-    Localizations.localeOf(context).languageCode == 'ml' ? malayalam : english;
+    userText(context, english, malayalam);
 
 abstract class PersonalInformationGateway {
   Future<void> saveName(String name);
@@ -693,16 +694,8 @@ class _EmailChangePageState extends State<EmailChangePage> {
                       'രണ്ട് email-ലേക്കും code ലഭിക്കും. ആദ്യം നിലവിലെ email പരിശോധിക്കുക.',
                     )
                   : step == 1
-                  ? _t(
-                      context,
-                      'Enter the code sent to ${widget.currentEmail}.',
-                      '${widget.currentEmail}-ലേക്ക് ലഭിച്ച code നൽകുക.',
-                    )
-                  : _t(
-                      context,
-                      'Enter the code sent to ${email.text.trim()}.',
-                      '${email.text.trim()}-ലേക്ക് ലഭിച്ച code നൽകുക.',
-                    ),
+                  ? userCodeSentTo(context, widget.currentEmail)
+                  : userCodeSentTo(context, email.text.trim()),
             ),
             const SizedBox(height: 16),
             if (step == 0)

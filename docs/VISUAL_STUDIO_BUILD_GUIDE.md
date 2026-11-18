@@ -64,7 +64,13 @@ Visual Studio-യിൽ **File → Open → Folder** വഴി `jkk` folder ത�
 
 Android app-നും Windows admin app-നും ഒരേ Supabase project ഉപയോഗിക്കുക. Project Settings → API-യിൽ നിന്ന് **Project URL** ഉം **publishable key** (അല്ലെങ്കിൽ legacy **anon key**) ഉം എടുക്കുക. ഇവ client-ൽ ഉപയോഗിക്കുന്ന public values ആണ്. **Service-role/secret key, database password എന്നിവ app-ലോ Git-ലോ ഇടരുത്.**
 
-പുതിയ Supabase project-ൽ Email/Password sign-in, **Confirm email**, email delivery/SMTP എന്നിവ configure ചെയ്യുക. Authentication → Email Templates → Confirm signup-ൽ verification token ഉൾപ്പെടുത്തുക; app signup-ൽ 6-digit email OTP ആണ് ഉപയോഗിക്കുന്നത്. URL Configuration-ൽ `io.supabase.growthcircle://login-callback/` അനുവദിക്കുക. കൂടുതൽ വിശദാംശങ്ങൾക്ക് root [README](../README.md#supabase-setup) കാണുക.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:803195b09c7682216ccd58b81ecaeee26182f55f006d5ced58a1c82fe8f6f8e1 -->
+
+പുതിയ Supabase project-ൽ Email/Password sign-in, **Confirm email**, email delivery/SMTP എന്നിവ configure ചെയ്യുക. Authentication → Email Templates → Confirm signup-ൽ verification token ഉൾപ്പെടുത്തുക; app signup-ൽ 6-digit email OTP ആണ് ഉപയോഗിക്കുന്നത്. പുതുക്കിയ app വിതരണം ചെയ്യുന്നതിന് മുമ്പ് URL Configuration → Redirect URLs-ൽ `space.freelan.app://login-callback/` ചേർക്കുക. പഴയ app-കളും ഇതിനകം അയച്ച recovery links-ഉം പ്രവർത്തിക്കാൻ `io.supabase.growthcircle://login-callback/` തുടർന്നും അനുവദിക്കുക. കൂടുതൽ വിശദാംശങ്ങൾക്ക് root [README](../README.md#supabase-setup) കാണുക.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 Supabase SQL Editor-ൽ `supabase/migrations/`-ലെ SQL files താഴെ കാണുന്ന ക്രമത്തിൽ പ്രയോഗിക്കുക:
 
@@ -233,23 +239,37 @@ flutter build windows --release -t lib/admin_main.dart
 
 വിജയിച്ചാൽ app ഇവിടെ ലഭിക്കും:
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:b28b1caff97c94328c7f4bbdb6c6258f9ed61403a918c1d9ff01869195cc40cb -->
+
 ```text
-build\windows\x64\runner\Release\growth_circle_admin.exe
+build\windows\x64\runner\Release\freelan_space_admin.exe
 ```
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ഇത് Windows **EXE** ആണ്; APK Android-നുള്ളതാണ്. `Release` folder-ലെ EXE മാത്രം copy ചെയ്യരുത്: അതിനോടൊപ്പം ഉള്ള DLL-കളും `data` folder-ഉം ഉൾപ്പെടെ മുഴുവൻ folder share ചെയ്യുക. ZIP ഉണ്ടാക്കാൻ:
 
-```powershell
 <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:063e6a69110641277ab3a7cf8da546e29e535a49308e4d33e9d047ae24a420f5 -->
 
 <!-- coderabbit-ai-generated-section:v1:4a6289eabc5726cd678045f356ff10f8ed4ebda558d86bf3f6de8ef8ded830fd -->
 
-Compress-Archive -Path .\build\windows\x64\runner\Release\* -DestinationPath .\freelan-space-admin-windows.zip -Force
-
-<!-- /coderabbit-ai-generated:v1 -->
+```powershell
+.\build-admin-windows.cmd
 ```
 
-ZIP extract ചെയ്ത് `growth_circle_admin.exe` തുറക്കുക. ആദ്യ screen-ൽ അതേ Supabase **project URL** ഉം **publishable/anon key** ഉം നൽകുക; തുടർന്ന് മുമ്പ് provision ചെയ്ത admin email/password ഉപയോഗിച്ച് sign in ചെയ്യുക. Windows build-ന് Android keystore വേണ്ടതില്ല. Admin app-ൽ user access, action controls, campaign list, pending submission inspection ലഭ്യമാണ്.
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:eefe64ec0fe4b5fe53a104f5236af23e1d8f9b03157e0872a7257a68aac53731 -->
+
+ZIP extract ചെയ്ത് `freelan_space_admin.exe` തുറക്കുക. ആദ്യ screen-ൽ അതേ Supabase **project URL** ഉം **publishable/anon key** ഉം നൽകുക; തുടർന്ന് മുമ്പ് provision ചെയ്ത admin email/password ഉപയോഗിച്ച് sign in ചെയ്യുക. Windows build-ന് Android keystore വേണ്ടതില്ല. Admin app-ൽ user access, action controls, campaign list, pending submission inspection ലഭ്യമാണ്.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## 7. പ്രശ്നപരിഹാരം
 

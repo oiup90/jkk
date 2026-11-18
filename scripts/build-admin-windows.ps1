@@ -9,12 +9,14 @@ try {
     Invoke-Flutter $flutter @('pub', 'get', '--enforce-lockfile')
     Invoke-Flutter $flutter @('build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart')
     $releaseDir = Join-Path $repoRoot 'build/windows/x64/runner/Release'
-    $exe = Join-Path $releaseDir 'growth_circle_admin.exe'
+    $exe = Join-Path $releaseDir 'freelan_space_admin.exe'
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Build completed but the admin executable was not found.' }
     $zip = Join-Path $repoRoot 'build/freelan-space-admin-windows.zip'
     $temporaryZip = Join-Path $repoRoot ("build/admin-" + [guid]::NewGuid().ToString('N') + '.zip')
     try {
-        Compress-Archive -Path (Join-Path $releaseDir '*') -DestinationPath $temporaryZip
+        # A previous build can leave the old executable in the output folder.
+        $files = Get-ChildItem -LiteralPath $releaseDir | Where-Object { $_.Name -notin @('growth_circle_admin.exe', 'growth_circle_admin.pdb') }
+        Compress-Archive -Path @($files | ForEach-Object { $_.FullName }) -DestinationPath $temporaryZip
         Move-Item -LiteralPath $temporaryZip -Destination $zip -Force
     } finally {
         if (Test-Path -LiteralPath $temporaryZip) { Remove-Item -LiteralPath $temporaryZip -Force }

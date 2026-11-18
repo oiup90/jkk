@@ -9,7 +9,7 @@ TABLES = [
     'admin_alert_settings', 'admin_event_reads', 'admin_events', 'admin_notes',
     'admin_operations_audit', 'admin_setting_audit', 'campaign_reports',
     'coin_adjustments', 'instagram_lookup_limits', 'support_messages',
-    'support_tickets',
+    'support_tickets', 'wallet_operations',
 ]
 
 

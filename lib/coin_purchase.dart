@@ -1,3 +1,5 @@
+import 'user_localization.dart';
+
 import 'user_page_canvas.dart';
 
 import 'package:flutter/material.dart';
@@ -131,8 +133,9 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
   Map<String, int> rates = {};
   List<CoinOrder> orders = [];
   bool busy = true;
-  String? message;
-  String text(String en, String ml) => widget.isMalayalam ? ml : en;
+  String? message, messageOrderId;
+  String text(String en, String ml) =>
+      userText(context, en, ml, forceMalayalam: widget.isMalayalam);
   @override
   void initState() {
     super.initState();
@@ -152,7 +155,10 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
   }
 
   Future<void> refresh() async {
-    setState(() => busy = true);
+    setState(() {
+      busy = true;
+      messageOrderId = null;
+    });
     try {
       final nextPlans = await widget.source.plans();
       final nextOrders = await widget.source.pending();
@@ -168,6 +174,7 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
         rates = nextRates;
         orders = nextOrders;
         message = null;
+        messageOrderId = null;
       });
     } catch (_) {
       if (mounted) {
@@ -187,6 +194,7 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
     setState(() {
       busy = true;
       message = null;
+      messageOrderId = null;
     });
     try {
       final checkout = await widget.source.create(plan.id);
@@ -223,6 +231,7 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
     setState(() {
       busy = true;
       message = null;
+      messageOrderId = selected?.id;
     });
     try {
       final pending = selected == null
@@ -318,7 +327,9 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
             padding: EdgeInsets.symmetric(vertical: 12),
             child: LinearProgressIndicator(),
           ),
-        if (message != null)
+        if (message != null &&
+            (messageOrderId == null ||
+                !orders.any((order) => order.id == messageOrderId)))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Semantics(liveRegion: true, child: Text(message!)),
@@ -360,6 +371,14 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
                         ),
                       ],
                     ),
+                    if (order.id == messageOrderId && message != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Semantics(
+                          liveRegion: true,
+                          child: Text(message!),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -371,61 +390,66 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
-            child: ExpansionTile(
-              leading: const CircleAvatar(
-                backgroundColor: Color(0xffffefce),
-                child: Icon(
-                  Icons.monetization_on_outlined,
-                  color: Color(0xff9a6517),
-                ),
-              ),
-              title: Text('${plan.coins} ${text('coins', 'കോയിനുകൾ')}'),
-              subtitle: Text(plan.price),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.expand_more),
-                  FilledButton(
-                    onPressed: busy ? null : () => buy(plan),
-                    child: Text(text('Buy', 'വാങ്ങുക')),
-                  ),
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (final action in [
-                        'follow',
-                        'like',
-                        'comment',
-                        'share',
-                      ])
-                        if ((rates[action] ?? 0) > 0)
+                ExpansionTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: Color(0xffffefce),
+                    child: Icon(
+                      Icons.monetization_on_outlined,
+                      color: Color(0xff9a6517),
+                    ),
+                  ),
+                  title: Text('${plan.coins} ${text('coins', 'കോയിനുകൾ')}'),
+                  subtitle: Text(plan.price),
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (final action in [
+                            'follow',
+                            'like',
+                            'comment',
+                            'share',
+                          ])
+                            if ((rates[action] ?? 0) > 0)
+                              Text(
+                                '${text('Up to', 'പരമാവധി')} ${plan.coins ~/ rates[action]!} ${switch (action) {
+                                  'follow' => text('follow tasks', 'follow tasks'),
+                                  'like' => text('like tasks', 'like tasks'),
+                                  'comment' => text('comment tasks', 'comment tasks'),
+                                  _ => text('share tasks', 'share tasks'),
+                                }}',
+                              ),
                           Text(
-                            '${text('Up to', 'പരമാവധി')} ${plan.coins ~/ rates[action]!} ${switch (action) {
-                              'follow' => text('follow tasks', 'follow tasks'),
-                              'like' => text('like tasks', 'like tasks'),
-                              'comment' => text('comment tasks', 'comment tasks'),
-                              _ => text('share tasks', 'share tasks'),
-                            }}',
+                            text(
+                              'Use coins across campaigns. Counts are alternatives, not combined; rates may change. Maximum 100 tasks per campaign. No guaranteed results.',
+                              'Coins വിവിധ campaigns-ൽ ഉപയോഗിക്കാം. ഓരോ task count-ഉം വേറിട്ട കണക്കാണ്; നിരക്കുകൾ മാറാം. ഒരു campaign-ൽ പരമാവധി 100 tasks. ഫലം ഉറപ്പില്ല.',
+                            ),
                           ),
-                      Text(
-                        text(
-                          'Use coins across campaigns. Counts are alternatives, not combined; rates may change. Maximum 100 tasks per campaign. No guaranteed results.',
-                          'Coins വിവിധ campaigns-ൽ ഉപയോഗിക്കാം. ഓരോ task count-ഉം വേറിട്ട കണക്കാണ്; നിരക്കുകൾ മാറാം. ഒരു campaign-ൽ പരമാവധി 100 tasks. ഫലം ഉറപ്പില്ല.',
-                        ),
+                          if (rates.isEmpty)
+                            Text(
+                              text(
+                                'Task estimates unavailable. Refresh to retry.',
+                                'Task കണക്ക് ലഭ്യമല്ല. Refresh ചെയ്യുക.',
+                              ),
+                            ),
+                        ],
                       ),
-                      if (rates.isEmpty)
-                        Text(
-                          text(
-                            'Task estimates unavailable. Refresh to retry.',
-                            'Task കണക്ക് ലഭ്യമല്ല. Refresh ചെയ്യുക.',
-                          ),
-                        ),
-                    ],
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(16, 0, 16, 12),
+                  child: Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: FilledButton(
+                      onPressed: busy ? null : () => buy(plan),
+                      child: Text(text('Buy', 'വാങ്ങുക')),
+                    ),
                   ),
                 ),
               ],
@@ -444,7 +468,11 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
 
   Future<void> reopen(CoinOrder order) async {
     // Always verify first so an already-paid order is never presented for payment again.
-    setState(() => busy = true);
+    setState(() {
+      busy = true;
+      message = null;
+      messageOrderId = order.id;
+    });
     try {
       if (await widget.source.verify(order.id)) {
         final remaining = await widget.source.pending();

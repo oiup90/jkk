@@ -24,6 +24,9 @@ import 'safe_error_widget.dart';
 import 'secure_transport.dart';
 import 'password_policy.dart';
 import 'auth_captcha.dart';
+import 'auth_languages.dart';
+import 'user_localization.dart';
+import 'official_social_links.dart';
 
 import 'package:share_plus/share_plus.dart';
 
@@ -36,7 +39,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
-const authRedirect = 'io.supabase.growthcircle://login-callback/';
+const authRedirect = 'space.freelan.app://login-callback/';
 final language = ValueNotifier<Locale>(const Locale('en'));
 SupabaseClient get db => Supabase.instance.client;
 Future<void> main() async {
@@ -533,9 +536,12 @@ const words = <String, List<String>>{
   ],
   'weakPassword': [passwordRequirementsEnglish, passwordRequirementsMalayalam],
 };
-String tr(BuildContext context, String key) =>
-    words[key]?[Localizations.localeOf(context).languageCode == 'ml' ? 1 : 0] ??
-    key;
+String tr(BuildContext context, String key) {
+  final code = Localizations.localeOf(context).languageCode;
+  final pair = words[key];
+  return authTranslations[code]?[key] ??
+      (pair == null ? key : userText(context, pair[0], pair[1]));
+}
 
 // RPC results are untrusted: only translate known PIN outcomes.
 String safePinError(BuildContext context, Object? result) {
@@ -650,11 +656,23 @@ String friendlyError(BuildContext context, Object e) {
       return tr(context, 'invalidLink');
     }
     if (e.message.contains('Reward changed')) {
-      return Localizations.localeOf(context).languageCode == 'ml'
-          ? 'Coin നിരക്ക് മാറി. പുതിയ നിരക്ക് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.'
-          : 'Reward changed. Check the updated price and try again.';
+      return userText(
+        context,
+        'Reward changed. Check the updated price and try again.',
+        'Coin നിരക്ക് മാറി. പുതിയ നിരക്ക് പരിശോധിച്ച് വീണ്ടും ശ്രമിക്കുക.',
+      );
     }
-    if (e.message.contains('Not enough coins')) return tr(context, 'notEnough');
+    if (e.message.contains('Not enough coins') ||
+        e.message.contains('Not enough available coins')) {
+      return tr(context, 'notEnough');
+    }
+    if (e.message.contains('Wallet is inactive')) {
+      return userText(
+        context,
+        'Your wallet is inactive. Contact support.',
+        'Wallet inactive ആണ്. Support-നെ ബന്ധപ്പെടുക.',
+      );
+    }
     if (e.message.contains('no longer active')) return tr(context, 'inactive');
   }
   return tr(context, 'error');
@@ -821,7 +839,13 @@ class GrowthApp extends StatelessWidget {
       title: 'Freelan Space',
       debugShowCheckedModeBanner: false,
       locale: locale,
-      supportedLocales: const [Locale('en'), Locale('ml')],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('hi'),
+        Locale('ta'),
+        Locale('ar'),
+        Locale('ml'),
+      ],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: growthTheme(),
       builder: (context, child) => GrowthBackdrop(
@@ -1238,7 +1262,9 @@ class AuthScreen extends StatefulWidget {
     this.actions,
     this.blockedNotice = false,
     this.captchaProvider,
+    this.socialLinks,
   });
+  final LoadSocialLinks? socialLinks;
   final AuthActions? actions;
   final AuthCaptchaProvider? captchaProvider;
   final bool blockedNotice;
@@ -1256,6 +1282,9 @@ class _AuthScreenState extends State<AuthScreen> {
   String? pendingEmail;
   int cooldown = 0;
   Timer? timer;
+  late final LoadSocialLinks? socialLinks =
+      widget.socialLinks ??
+      (widget.actions == null ? () => loadOfficialSocialLinks(db) : null);
 
   void startCooldown() {
     timer?.cancel();
@@ -1433,9 +1462,9 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                       ),
-                      TextButton(
-                        onPressed: toggleLanguage,
-                        child: Text(tr(context, 'language')),
+                      AuthLanguagePicker(
+                        value: Localizations.localeOf(context).languageCode,
+                        onChanged: (value) => language.value = Locale(value),
                       ),
                     ],
                   ),
@@ -1667,6 +1696,10 @@ class _AuthScreenState extends State<AuthScreen> {
                         child: Text(tr(context, 'receivedOtp')),
                       ),
                   ],
+                  if (!registering &&
+                      pendingEmail == null &&
+                      socialLinks != null)
+                    OfficialSocialLinks(load: socialLinks!),
                   if (busy) const Center(child: CircularProgressIndicator()),
                 ],
               ),
@@ -1721,12 +1754,14 @@ class _VerificationCodeFieldState extends State<VerificationCodeField> {
           children: [
             const Icon(Icons.lock, size: 14, color: growthPurple),
             const SizedBox(width: 6),
-            Text(
-              tr(context, 'otp'),
-              style: const TextStyle(
-                color: growthPurple,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
+            Expanded(
+              child: Text(
+                tr(context, 'otp'),
+                style: const TextStyle(
+                  color: growthPurple,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
@@ -4849,7 +4884,12 @@ class SupabaseProfileGateway implements ProfileGateway {
       .from('wallets')
       .stream(primaryKey: ['id'])
       .eq('id', uid)
-      .map((rows) => rows.isEmpty ? null : rows.first['balance'] as int?);
+      .map((rows) {
+        if (rows.isEmpty) return null;
+        final total = rows.first['balance'] as int?;
+        final held = rows.first['held_balance'] as int? ?? 0;
+        return total == null ? null : total - held;
+      });
   @override
   Stream<List<Map<String, dynamic>>> history(String uid) =>
       client.from('coin_ledger').stream(primaryKey: ['id']).eq('user_id', uid);
@@ -6019,12 +6059,12 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                             ),
                             title: Text(
                               reward.key == 'invite'
-                                  ? (Localizations.localeOf(context)
-                                                .languageCode ==
-                                            'ml'
-                                        ? 'ഓരോ invite-നും'
-                                        : 'Each referral')
-                                  : '${reward.key.split('_').last} invites · ${Localizations.localeOf(context).languageCode == 'ml' ? 'അധിക bonus' : 'extra bonus'}',
+                                  ? userText(
+                                      context,
+                                      'Each referral',
+                                      'ഓരോ invite-നും',
+                                    )
+                                  : '${reward.key.split('_').last} ${userText(context, 'invites', 'invites')} · ${userText(context, 'extra bonus', 'അധിക bonus')}',
                               style: const TextStyle(fontSize: 11),
                             ),
                             subtitle: Text(
@@ -6676,9 +6716,12 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                     ),
                     icon: const Icon(Icons.keyboard_arrow_down, size: 18),
                     value: Localizations.localeOf(context).languageCode,
-                    items: const [
-                      DropdownMenuItem(value: 'en', child: Text('English')),
-                      DropdownMenuItem(value: 'ml', child: Text('മലയാളം')),
+                    items: [
+                      for (final entry in authLanguages.entries)
+                        DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
+                        ),
                     ],
                     onChanged: (value) async {
                       if (value != null &&

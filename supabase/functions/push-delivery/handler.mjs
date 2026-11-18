@@ -26,7 +26,9 @@ export function createHandler({secret, workerSecret, claim, send, finish, contin
         try {
           const [title, body] = job.kind === 'admin_message' && typeof job.title === 'string' && typeof job.body === 'string'
             ? [job.title, job.body]
-            : messages[job.kind] ?? ['Freelan Space', 'Open Freelan Space to see your update.'];
+            : job.kind === 'coins_received' && Number.isInteger(job.amount) && job.amount > 0
+              ? ['Coins received', `${job.amount} coins credited to your Freelan Space wallet${({referral: ' as a referral bonus', welcome: ' as a welcome bonus', transfer_received: ' from a wallet transfer', admin_adjustment: ' by an administrator', purchase: ' from your purchase', refund: ' as a refund', task: ' for your task'})[job.source] ?? ''}.`]
+              : messages[job.kind] ?? ['Freelan Space', 'Open Freelan Space to see your update.'];
           outcome = await send(job.token, title, body, job.kind);
         } catch (_) { /* Leased jobs are retried on transient errors. */ }
         try { await finish(job.job_id, job.lease_id, outcome.success, outcome.permanent); return outcome.success ? 'sent' : 'retry'; }

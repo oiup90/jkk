@@ -43,18 +43,9 @@ class DesktopControls(unittest.TestCase):
         sql(f"select public.admin_send_notification_v2(gen_random_uuid(),'{E}','No devices','Message',false,true)",E,fails=True)
         self.assertEqual(sql(f"select public.admin_push_readiness('{U}')->>'devices'",E),'1')
 
-    def test_public_ids_and_wallet_approval(self):
+    def test_public_ids_and_retired_wallet_approval(self):
         public_id = sql(f"select public_id from growth_internal.user_identifiers where user_id='{U}'")
         self.assertEqual(sql(f"select public_id from public.admin_list_users_v2('{public_id}')",E),public_id)
-        before = int(sql(f"select balance from public.wallets where id='{U}'"))
-        request = sql(f"select public.admin_request_wallet_adjustment('{public_id}',5,'Synthetic correction')",E)
-        sql(f"select public.admin_decide_adjustment('{request}',true)",E,fails=True)
-        sql(f"select public.admin_decide_adjustment('{request}',true)",E2)
-        self.assertEqual(int(sql(f"select balance from public.wallets where id='{U}'")),before+5)
-        sql(f"select public.admin_request_wallet_adjustment('{public_id}',1,'No access')",V,fails=True)
-        sql("select public.admin_request_wallet_adjustment('00000000',1,'Missing')",E,fails=True)
-        request = sql(f"select public.admin_request_wallet_adjustment('{public_id}',-{before+6},'Would be negative')",E)
-        sql(f"select public.admin_decide_adjustment('{request}',true)",E2,fails=True)
-        self.assertEqual(int(sql(f"select balance from public.wallets where id='{U}'")),before+5)
+        sql(f"select public.admin_request_wallet_adjustment('{public_id}',5,'Retired')",E,fails=True)
 
 if __name__ == '__main__': unittest.main()

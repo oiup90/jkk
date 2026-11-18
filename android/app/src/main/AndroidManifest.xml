@@ -12,6 +12,7 @@
         android:name=".FreelanApplication"
         android:icon="@drawable/ic_freelan_launcher">
         <meta-data android:name="com.google.firebase.messaging.default_notification_channel_id" android:value="freelan_updates" />
+        <meta-data android:name="com.google.firebase.messaging.default_notification_icon" android:resource="@drawable/ic_freelan_notification" />
         <provider android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.updates" android:exported="false"
             android:grantUriPermissions="true">
@@ -43,6 +44,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="space.freelan.app" android:host="login-callback" />
+                <!-- Retain old links already sent to users during the transition. -->
                 <data android:scheme="io.supabase.growthcircle" android:host="login-callback" />
             </intent-filter>
         </activity>

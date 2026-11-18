@@ -20,7 +20,13 @@ Coin history is available in Home's wallet and displays transaction references. 
 
 An authenticated, active user can check an exact 10-digit wallet number. The response contains the recipient's display name and public user ID, never their email or authentication UUID. Lookups are limited to 20 per user per minute. The public ID binds the payment to the person shown during confirmation; a changed recipient is rejected. Accounts without a name display `Member`. A blocked recipient can be identified but cannot receive a payment.
 
-The server preserves the existing PIN checks, wallet locks, coin ledger and request idempotency. It records a unique 12-digit reference and server time for each confirmed success or failure. The reference sequence does not cycle. A failed request cannot later be used through the older transfer RPC to move coins. Existing successful transfers can still be recovered by the original request ID.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:9714b2e658f859fd290fc968fe281671becd664e5aebb7cc4d27352dbde27ed0 -->
+
+The server preserves the existing PIN checks, wallet locks, coin ledger and request idempotency. After `20261118130000_random_references_social.sql`, new successful and failed payment references are randomly generated 12-digit values; registration and referral bonuses retain the `RG`/`RF` prefix with random ten-digit suffixes. Previously recorded references remain unchanged. A private reservation table prevents reuse of references recorded at migration time and newly issued references, including after later deletion of the associated rows. Transfer sender/recipient ledger rows and their receipt intentionally share one reference. A failed request cannot later be used through the older transfer RPC to move coins. Existing successful transfers can still be recovered by the original request ID.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 The processing screen remains visible for at least five seconds and waits for the server result. Network errors and timeouts are shown as unconfirmed, never as a definite failure. The request is stored locally without the PIN so it can be retried safely with the same details after reopening. A pre-upgrade pending request that has not completed and has no recipient identity is rejected; the user can verify the recipient and start a new request.
 

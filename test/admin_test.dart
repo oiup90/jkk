@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/admin_main.dart';
+import 'package:growth_circle/brand_wordmark.dart';
 
 class FakeAdmin implements AdminGateway {
   FakeAdmin({this.allowed = true});
@@ -246,6 +247,7 @@ void main() {
       const MaterialApp(home: Scaffold(body: AdminBrand())),
     );
     expect(find.text('Freelan Space'), findsOneWidget);
+    expect(find.byType(FreelanMark), findsOneWidget);
   });
 
   test('configuration accepts only HTTPS and public client credentials', () {
@@ -414,7 +416,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(fake.startedReviews, 1);
     expect(find.text('Instagram username: @sample'), findsOneWidget);
-    expect(find.byType(Image), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AdminInspectionDialog),
+        matching: find.byType(Image),
+      ),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect(fake.endedReviews, ['session']);

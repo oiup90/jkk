@@ -6,11 +6,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'design.dart';
+import 'user_localization.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-String supportText(BuildContext c, String en, String ml) =>
-    Localizations.localeOf(c).languageCode == 'ml' ? ml : en;
+String supportText(BuildContext c, String en, String ml) => userText(c, en, ml);
 
 class SupportPage extends StatefulWidget {
   const SupportPage({super.key, required this.client, this.loadTickets});

@@ -39,7 +39,11 @@ void main() {
       final body = jsonDecode(
         await utf8.decoder.bind(request).join(),
       ) as Map<String, dynamic>;
-      requests.add({'path': request.uri.path, ...body});
+      requests.add({
+        'path': request.uri.path,
+        'redirect_to': request.uri.queryParameters['redirect_to'],
+        ...body,
+      });
       request.response.headers.contentType = ContentType.json;
       request.response.write(
         jsonEncode(
@@ -73,6 +77,8 @@ void main() {
         captchaToken: 'reset-challenge',
       );
       expect(requests.map((r) => r['path']), ['/token', '/recover']);
+      expect(requests[0]['redirect_to'], isNull);
+      expect(requests[1]['redirect_to'], 'space.freelan.app://login-callback/');
       expect(
         requests[0]['gotrue_meta_security']['captcha_token'],
         'login-challenge',
