@@ -38,6 +38,15 @@ class BuildScripts(unittest.TestCase):
             file = self.root / name
             file.parent.mkdir(parents=True, exist_ok=True)
             file.write_text('{}')
+        for name, content in {'pubspec.yaml': 'version: 1.1.9+17\n', 'pubspec.lock': '',
+                              '.metadata': '', 'lib/admin_main.dart': 'current source',
+                              'assets/design/example.txt': 'asset',
+                              'windows/CMakeLists.txt': 'cmake',
+                              'windows/flutter/ephemeral/stale.txt': 'stale'}.items():
+            file = self.root / name
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_text(content)
+        self.output_root = Path(self.temp.name) / 'freelan-space-admin-builds'
         self.log = Path(self.temp.name) / 'calls.jsonl'
         bin_dir = Path(self.temp.name) / 'bin'
         bin_dir.mkdir()
@@ -64,6 +73,9 @@ if args[:2] == ['build','windows']:
  data=p/'data';data.mkdir(exist_ok=True);(data/'app.so').write_bytes(b'app')
 ''')
         fake.chmod(0o755)
+        nuget = bin_dir / 'nuget'
+        nuget.write_text('#!/bin/sh\nexit 0\n')
+        nuget.chmod(0o755)
         self.env = dict(os.environ, PATH=str(bin_dir) + os.pathsep + os.environ['PATH'], BUILD_TEST_LOG=str(self.log), BUILD_TEST_RUN_LOG=str(Path(self.temp.name) / 'started.txt'))
 
     def run_script(self, name, *args):
@@ -108,20 +120,66 @@ if args[:2] == ['build','windows']:
         self.assertIn('Dart symbols were not found', p.stderr)
         self.assertIn('app.android-x64.symbols', p.stderr)
 
-    def test_admin_zip_includes_entire_release_directory(self):
-        old_zip = self.root / 'build/freelan-space-admin-windows.zip'
-        old_zip.parent.mkdir(parents=True)
-        old_zip.write_bytes(b'old archive')
-        release = self.root / 'build/windows/x64/runner/Release'
-        release.mkdir(parents=True)
-        (release / 'growth_circle_admin.exe').write_bytes(b'old executable')
-        (release / 'growth_circle_admin.pdb').write_bytes(b'old symbols')
-        p = self.run_script('build-admin-windows.ps1')
+    def test_admin_build_is_separate_and_uses_versions(self):
+        p = self.run_script('build-admin-windows.ps1', '-BuildName', '2.3.4', '-BuildNumber', '18')
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-        self.assertEqual(self.calls()[2]['args'], ['build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart', '--dart-define=AUTH_CAPTCHA_ENABLED=true'])
-        with zipfile.ZipFile(self.root / 'build/freelan-space-admin-windows.zip') as archive:
+        args = self.calls()[2]['args']
+        self.assertIn('--build-name=2.3.4', args)
+        self.assertIn('--build-number=18', args)
+        self.assertIn('--dart-define=AUTH_CAPTCHA_ENABLED=true', args)
+        archives = list(self.output_root.glob('v2.3.4-18-*/freelan-space-admin-v2.3.4-18.zip'))
+        self.assertEqual(len(archives), 1)
+        with zipfile.ZipFile(archives[0]) as archive:
             self.assertEqual(set(archive.namelist()), {'freelan_space_admin.exe', 'flutter_windows.dll', 'data/app.so'})
-        self.assertEqual((release / 'growth_circle_admin.exe').read_bytes(), b'old executable')
+        source = archives[0].parent / 'source'
+        self.assertEqual(self.calls()[1]['cwd'], str(source))
+        self.assertEqual(self.calls()[2]['cwd'], str(source))
+        self.assertEqual((source / 'lib/admin_main.dart').read_text(), 'current source')
+        self.assertFalse((source / 'android/key.properties').exists())
+        self.assertFalse((source / 'windows/flutter/ephemeral/stale.txt').exists())
+        self.assertFalse((self.root / 'build/windows').exists())
+
+    def test_admin_default_version_and_unique_outputs(self):
+        for _ in range(2):
+            p = self.run_script('build-admin-windows.ps1')
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertEqual(len(list(self.output_root.glob('v1.1.9-17-*/freelan-space-admin-v1.1.9-17.zip'))), 2)
+        self.assertIn('--build-name=1.1.9', self.calls()[2]['args'])
+        self.assertIn('--build-number=17', self.calls()[2]['args'])
+
+    def test_admin_prompts_for_version_on_terminal(self):
+        import pty
+        master, slave = pty.openpty()
+        try:
+            process = subprocess.Popen(
+                [PWSH, '-NoProfile', '-File', str(self.root / 'scripts/build-admin-windows.ps1')],
+                cwd=self.temp.name, env=self.env, stdin=slave,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+            )
+            os.close(slave)
+            slave = None
+            os.write(master, b'2.4.0\n22\n')
+            stdout, stderr = process.communicate(timeout=30)
+        finally:
+            os.close(master)
+            if slave is not None:
+                os.close(slave)
+        self.assertEqual(process.returncode, 0, stdout + stderr)
+        self.assertIn('--build-name=2.4.0', self.calls()[2]['args'])
+        self.assertIn('--build-number=22', self.calls()[2]['args'])
+
+    def test_admin_rejects_invalid_version(self):
+        for args in [('-BuildName', '1.2'), ('-BuildName', '1.2.65536'), ('-BuildNumber', '65536'), ('-BuildNumber', '0')]:
+            p = self.run_script('build-admin-windows.ps1', *args)
+            self.assertNotEqual(p.returncode, 0, p.stdout + p.stderr)
+            self.assertFalse(self.log.exists())
+
+    def test_admin_reports_missing_nuget_before_build(self):
+        (Path(self.temp.name) / 'bin/nuget').unlink()
+        p = self.run_script('build-admin-windows.ps1')
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('NuGet CLI not found', p.stderr)
+        self.assertFalse(self.log.exists())
 
     def test_admin_build_can_disable_captcha_for_other_projects(self):
         p = self.run_script('build-admin-windows.ps1', '-DisableCaptcha')
@@ -136,7 +194,8 @@ if args[:2] == ['build','windows']:
         while not started.exists() and time.monotonic() < deadline:
             time.sleep(0.05)
         self.assertTrue(started.exists(), 'admin process was not started')
-        self.assertEqual(started.read_text().strip(), str(self.root / 'build/windows/x64/runner/Release'))
+        source = Path((self.output_root / 'last-workspace.txt').read_text().strip())
+        self.assertEqual(started.read_text().strip(), str(source / 'build/windows/x64/runner/Release'))
 
     def test_missing_signing_files_stop_before_build(self):
         (self.root / 'android/key.properties').unlink()
@@ -147,13 +206,10 @@ if args[:2] == ['build','windows']:
 
     def test_failed_build_never_reports_stale_output(self):
         self.env['BUILD_TEST_FAIL'] = 'build'
-        stale = self.root / 'build/freelan-space-admin-windows.zip'
-        stale.parent.mkdir(parents=True)
-        stale.write_bytes(b'previous zip')
         p = self.run_script('build-admin-windows.ps1')
         self.assertNotEqual(p.returncode, 0)
         self.assertNotIn('Admin ZIP (includes required files):', p.stdout)
-        self.assertEqual(stale.read_bytes(), b'previous zip')
+        self.assertEqual(list(self.output_root.glob('**/*.zip')), [])
         self.assertIn('exit 9', p.stderr)
 
     def test_verbose_builds_forward_flag(self):
@@ -167,6 +223,18 @@ if args[:2] == ['build','windows']:
         self.assertNotEqual(p.returncode, 0)
         self.assertIn('CMake cache not found', p.stderr)
         self.assertFalse(self.log.exists())
+
+    def test_install_diagnostic_uses_last_separate_workspace(self):
+        native = self.output_root / 'run/source/build/windows/x64'
+        native.mkdir(parents=True)
+        cmake = Path(self.temp.name) / 'diagnostic-cmake'
+        cmake.write_text('#!/bin/sh\npwd > "$BUILD_TEST_RUN_LOG"\n')
+        cmake.chmod(0o755)
+        (native / 'CMakeCache.txt').write_text(f'CMAKE_COMMAND:INTERNAL={cmake}\n')
+        (self.output_root / 'last-workspace.txt').write_text(str(self.output_root / 'run/source'))
+        p = self.run_script('build-admin-windows.ps1', '-DiagnoseInstall')
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertEqual(Path(self.env['BUILD_TEST_RUN_LOG']).read_text().strip(), str(native))
 
     def test_install_diagnostic_uses_cached_cmake_and_propagates_errors(self):
         native = self.root / 'build/windows/x64'
