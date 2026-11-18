@@ -1,13 +1,43 @@
 [CmdletBinding()]
-param([switch] $Run)
+param(
+    [Parameter(ParameterSetName = 'Build')] [switch] $Run,
+    [Parameter(ParameterSetName = 'Build')] [switch] $VerboseBuild,
+    [Parameter(ParameterSetName = 'Build')] [switch] $DisableCaptcha,
+    [Parameter(Mandatory, ParameterSetName = 'Diagnose')] [switch] $DiagnoseInstall
+)
 . "$PSScriptRoot/build-common.ps1"
 $repoRoot = Split-Path $PSScriptRoot -Parent
 try {
     Push-Location $repoRoot
+    if ($DiagnoseInstall) {
+        $nativeBuild = Join-Path $repoRoot 'build/windows/x64'
+        $cache = Join-Path $nativeBuild 'CMakeCache.txt'
+        if (-not (Test-Path -LiteralPath $cache -PathType Leaf)) {
+            throw 'Windows CMake cache not found. Run the admin build first.'
+        }
+        $cmakeEntry = Select-String -LiteralPath $cache -Pattern '^CMAKE_COMMAND:INTERNAL=(.+)$' | Select-Object -First 1
+        if (-not $cmakeEntry) { throw 'CMake executable was not recorded in CMakeCache.txt.' }
+        $cmake = $cmakeEntry.Matches[0].Groups[1].Value
+        if (-not (Test-Path -LiteralPath $cmake -PathType Leaf)) { throw 'The cached CMake executable no longer exists. Reconfigure the Windows build.' }
+        # Use the exact executable and working directory selected by Flutter.
+        # This reruns installation only and exposes the error hidden by MSBuild.
+        Push-Location $nativeBuild
+        try {
+            & $cmake '-DBUILD_TYPE=Release' '-P' 'cmake_install.cmake'
+            if ($LASTEXITCODE -ne 0) { throw "CMake install failed (exit $LASTEXITCODE). See the CMake error above." }
+        } finally {
+            Pop-Location
+        }
+        Write-Host 'CMake install succeeded. Run the admin build again to create the ZIP.'
+        return
+    }
     $flutter = Get-FlutterCommand
     Assert-FlutterVersion $flutter
     Invoke-Flutter $flutter @('pub', 'get', '--enforce-lockfile')
-    Invoke-Flutter $flutter @('build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart')
+    $buildArgs = @('build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart')
+    if (-not $DisableCaptcha) { $buildArgs += '--dart-define=AUTH_CAPTCHA_ENABLED=true' }
+    if ($VerboseBuild) { $buildArgs += '--verbose' }
+    Invoke-Flutter $flutter $buildArgs
     $releaseDir = Join-Path $repoRoot 'build/windows/x64/runner/Release'
     $exe = Join-Path $releaseDir 'freelan_space_admin.exe'
     if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw 'Build completed but the admin executable was not found.' }

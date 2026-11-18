@@ -1,7 +1,8 @@
 [CmdletBinding()]
 param(
     [ValidateRange(1, 2100000000)] [int] $BuildNumber,
-    [ValidatePattern('^\d+\.\d+\.\d+$')] [string] $BuildName
+    [ValidatePattern('^\d+\.\d+\.\d+$')] [string] $BuildName,
+    [switch] $VerboseBuild
 )
 . "$PSScriptRoot/build-common.ps1"
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -21,6 +22,7 @@ try {
     $buildArgs = @('build', 'apk', '--release', '--no-pub', '--dart-define-from-file=config/production.json', '--dart-define=AUTH_CAPTCHA_ENABLED=true', '--obfuscate', "--split-debug-info=$symbols")
     if ($PSBoundParameters.ContainsKey('BuildNumber')) { $buildArgs += "--build-number=$BuildNumber" }
     if ($PSBoundParameters.ContainsKey('BuildName')) { $buildArgs += "--build-name=$BuildName" }
+    if ($VerboseBuild) { $buildArgs += '--verbose' }
     Invoke-Flutter $flutter $buildArgs
     $apk = Join-Path $repoRoot 'build/app/outputs/flutter-apk/app-release.apk'
     if (-not (Test-Path -LiteralPath $apk -PathType Leaf)) { throw 'Build completed but the release APK was not found.' }

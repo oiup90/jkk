@@ -108,10 +108,15 @@ if args[:2] == ['build','windows']:
         (release / 'growth_circle_admin.pdb').write_bytes(b'old symbols')
         p = self.run_script('build-admin-windows.ps1')
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-        self.assertEqual(self.calls()[2]['args'], ['build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart'])
+        self.assertEqual(self.calls()[2]['args'], ['build', 'windows', '--release', '--no-pub', '-t', 'lib/admin_main.dart', '--dart-define=AUTH_CAPTCHA_ENABLED=true'])
         with zipfile.ZipFile(self.root / 'build/freelan-space-admin-windows.zip') as archive:
             self.assertEqual(set(archive.namelist()), {'freelan_space_admin.exe', 'flutter_windows.dll', 'data/app.so'})
         self.assertEqual((release / 'growth_circle_admin.exe').read_bytes(), b'old executable')
+
+    def test_admin_build_can_disable_captcha_for_other_projects(self):
+        p = self.run_script('build-admin-windows.ps1', '-DisableCaptcha')
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertNotIn('--dart-define=AUTH_CAPTCHA_ENABLED=true', self.calls()[2]['args'])
 
     def test_admin_run_uses_release_directory(self):
         p = self.run_script('build-admin-windows.ps1', '-Run')
@@ -140,6 +145,46 @@ if args[:2] == ['build','windows']:
         self.assertNotIn('Admin ZIP (includes required files):', p.stdout)
         self.assertEqual(stale.read_bytes(), b'previous zip')
         self.assertIn('exit 9', p.stderr)
+
+    def test_verbose_builds_forward_flag(self):
+        for name in ('build-user-apk.ps1', 'build-admin-windows.ps1'):
+            p = self.run_script(name, '-VerboseBuild')
+            self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+            self.assertIn('--verbose', self.calls()[-1]['args'])
+
+    def test_install_diagnostic_requires_existing_build(self):
+        p = self.run_script('build-admin-windows.ps1', '-DiagnoseInstall')
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('CMake cache not found', p.stderr)
+        self.assertFalse(self.log.exists())
+
+    def test_install_diagnostic_uses_cached_cmake_and_propagates_errors(self):
+        native = self.root / 'build/windows/x64'
+        native.mkdir(parents=True)
+        cmake = Path(self.temp.name) / 'cmake with spaces'
+        cmake.write_text('''#!/usr/bin/env python3
+import json, os, pathlib, sys
+pathlib.Path(os.environ['BUILD_TEST_RUN_LOG']).write_text(json.dumps({'cwd':os.getcwd(),'args':sys.argv[1:]}))
+print('synthetic install error', file=sys.stderr)
+sys.exit(7)
+''')
+        cmake.chmod(0o755)
+        (native / 'CMakeCache.txt').write_text(f'CMAKE_COMMAND:INTERNAL={cmake}\n')
+        p = self.run_script('build-admin-windows.ps1', '-DiagnoseInstall')
+        self.assertNotEqual(p.returncode, 0)
+        self.assertIn('synthetic install error', p.stderr)
+        self.assertIn('exit 7', p.stderr)
+        call = json.loads(Path(self.env['BUILD_TEST_RUN_LOG']).read_text())
+        self.assertEqual(call['cwd'], str(native))
+        self.assertEqual(call['args'], ['-DBUILD_TYPE=Release', '-P', 'cmake_install.cmake'])
+        self.assertFalse(self.log.exists())
+        self.assertFalse((self.root / 'build/freelan-space-admin-windows.zip').exists())
+        cmake.write_text(cmake.read_text().replace('sys.exit(7)', 'sys.exit(0)'))
+        p = self.run_script('build-admin-windows.ps1', '-DiagnoseInstall')
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        self.assertIn('CMake install succeeded', p.stdout)
+        self.assertFalse(self.log.exists())
+        self.assertFalse((self.root / 'build/freelan-space-admin-windows.zip').exists())
 
     def test_wrong_flutter_version_stops_build(self):
         self.env['BUILD_TEST_VERSION'] = '3.40.0'
