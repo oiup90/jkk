@@ -32,6 +32,7 @@ class Operations(unittest.TestCase):
     sql(f"select public.admin_close_ticket('{tid}')",A)
     sql(f"select public.support_reply('{tid}','again')",U,fails=True)
  def test_02_campaign_report_and_refund(self):
+    sql(f"update public.campaigns set \"createdAt\"=now()-interval '61 seconds' where id='{C}'")
     rid=sql(f"select public.report_campaign('{C}','Unsafe')",U)
     sql(f"select public.admin_resolve_report('{rid}',true)",V,fails=True)
     sql(f"select public.admin_resolve_report('{rid}',true)",A)

@@ -75,6 +75,7 @@ class SecurityTests(unittest.TestCase):
 
     def test_02_images_fail_without_partial_submission(self):
         cid=sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)",OWNER)
+        sql(f"update public.campaigns set \"createdAt\"=now()-interval '61 seconds' where id='{cid}'")
         def submit(raw,mime='image/png',fails=False):
             encoded=base64.b64encode(raw).decode()
             return sql(f"select public.submit_claim('{cid}','participant','{mime}','{encoded}')",ACTOR,fails=fails)
@@ -100,8 +101,11 @@ class SecurityTests(unittest.TestCase):
         submit(JPEG,'image/jpeg')
         sql(f"select public.withdraw_claim('{cid}')",ACTOR)
         submit(PNG)
-        sql(f"select public.cancel_campaign('{cid}')",OWNER)
-        self.assertEqual(sql('select balance from public.wallets',OWNER),'10')
+        sql(f"select public.cancel_campaign('{cid}')",OWNER,fails=True)
+        self.assertEqual(sql('select balance from public.wallets',OWNER),'9')
+        early=sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)",OWNER)
+        sql(f"select public.cancel_campaign('{early}')",OWNER)
+        self.assertEqual(sql('select balance from public.wallets',OWNER),'9')
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

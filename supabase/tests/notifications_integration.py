@@ -49,6 +49,7 @@ class NotificationsTests(unittest.TestCase):
         issue_pin_nonce(DB, OWNER)
         self.assertEqual(sql("select public.set_release_pin_reauthenticated('1234','123456')", OWNER, claims={}), 'ok')
         campaign = sql("select public.create_campaign('like','https://instagram.com/p/ABC/',2)", OWNER)
+        subprocess.run(['psql','-X','-v','ON_ERROR_STOP=1','-d',DB,'-c',f"update public.campaigns set \"createdAt\"=now()-interval '61 seconds' where id='{campaign}'"], check=True, capture_output=True)
         self.assertEqual(sql("select count(*) from public.notifications", OWNER), '1')  # spend creates no notification
         def submit():
             sql(f"select public.submit_claim('{campaign}','user','image/png','{PNG}')", ACTOR)
