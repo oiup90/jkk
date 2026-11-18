@@ -8,6 +8,7 @@ import 'admin_operations.dart';
 import 'admin_app_releases.dart';
 import 'admin_notifications.dart';
 import 'admin_login_tools.dart';
+import 'auth_captcha.dart';
 import 'safe_error_widget.dart';
 import 'secure_transport.dart';
 
@@ -319,7 +320,7 @@ class AdminSubmission {
 abstract class AdminGateway {
   Future<List<Map<String, dynamic>>> coinSettings();
   Future<void> setCoinSetting(String key, int amount);
-  Future<void> signIn(String email, String password);
+  Future<void> signIn(String email, String password, {String? captchaToken});
   Future<bool> isAdmin();
   Future<List<AdminUser>> users(String query, int offset, int limit);
   Future<void> setBlocked(String userId, bool blocked);
@@ -436,8 +437,15 @@ class SupabaseAdminGateway implements AdminGateway, AdminWorkspaceGateway {
   }
 
   @override
-  Future<void> signIn(String email, String password) async =>
-      client.auth.signInWithPassword(email: email, password: password);
+  Future<void> signIn(
+    String email,
+    String password, {
+    String? captchaToken,
+  }) async => client.auth.signInWithPassword(
+    email: email,
+    password: password,
+    captchaToken: captchaToken,
+  );
   @override
   Future<bool> isAdmin() async => (await client.rpc('admin_is_admin')) == true;
   @override
@@ -1198,8 +1206,10 @@ class AdminSignIn extends StatefulWidget {
     required this.onSuccess,
     required this.onChangeProject,
     required this.onLanguage,
+    this.captchaProvider,
   });
   final AdminGateway gateway;
+  final AuthCaptchaProvider? captchaProvider;
   final VoidCallback onSuccess, onLanguage;
   final Future<void> Function() onChangeProject;
   @override
@@ -1250,6 +1260,7 @@ class _AdminSignInState extends State<AdminSignIn> {
       barrierDismissible: false,
       builder: (_) => AdminPasswordRecovery(
         savedLogin: savedLogin!,
+        captchaProvider: widget.captchaProvider,
         createClient: () => SupabaseClient(
           project,
           key,
@@ -1284,7 +1295,15 @@ class _AdminSignInState extends State<AdminSignIn> {
       error = null;
     });
     try {
-      await widget.gateway.signIn(email.text.trim(), password.text);
+      final captchaToken = await (widget.captchaProvider ?? requestAuthCaptcha)(
+        context,
+      );
+      if (!mounted) return;
+      await widget.gateway.signIn(
+        email.text.trim(),
+        password.text,
+        captchaToken: captchaToken,
+      );
       if (!await widget.gateway.isAdmin()) {
         await widget.gateway.signOut();
         if (mounted) setState(() => error = at(context, 'unauthorized'));
@@ -1318,6 +1337,8 @@ class _AdminSignInState extends State<AdminSignIn> {
         password.clear();
         widget.onSuccess();
       }
+    } on CaptchaCancelled {
+      // No authentication request was submitted.
     } catch (_) {
       try {
         await widget.gateway.signOut();

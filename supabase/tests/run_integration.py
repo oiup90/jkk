@@ -65,7 +65,7 @@ def main():
     try:
         if sql('postgres', "select rolsuper from pg_roles where rolname=current_user") != 't':
             raise RuntimeError('Local PostgreSQL superuser access is required')
-        for role in ('anon', 'authenticated', 'service_role'):
+        for role in ('anon', 'authenticated', 'service_role', 'supabase_auth_admin'):
             sql('postgres', f"do $$ begin if not exists(select 1 from pg_roles where rolname='{role}') "
                             f"then create role {role} nologin; end if; end $$;")
         template = create('schema')

@@ -16,7 +16,78 @@ class LocalSignupActions extends AuthActions {
   );
 }
 
+class LocalSessionActions extends AuthActions {
+  LocalSessionActions(this.client);
+  final GoTrueClient client;
+  @override
+  GoTrueClient get sessionClient => client;
+}
+
 void main() {
+  test('login and recovery send their own challenge tokens to Auth', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    final requests = <Map<String, dynamic>>[];
+    final user = {
+      'id': '11111111-1111-4111-8111-111111111111',
+      'aud': 'authenticated',
+      'email': 'synthetic@example.test',
+      'created_at': '2026-11-07T00:00:00Z',
+      'app_metadata': <String, dynamic>{},
+      'user_metadata': <String, dynamic>{},
+    };
+    final subscription = server.listen((request) async {
+      final body = jsonDecode(
+        await utf8.decoder.bind(request).join(),
+      ) as Map<String, dynamic>;
+      requests.add({'path': request.uri.path, ...body});
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(
+        jsonEncode(
+          request.uri.path == '/token'
+              ? {
+                  'access_token': 'synthetic',
+                  'refresh_token': 'synthetic',
+                  'token_type': 'bearer',
+                  'expires_in': 3600,
+                  'user': user,
+                }
+              : <String, dynamic>{},
+        ),
+      );
+      await request.response.close();
+    });
+    final client = GoTrueClient(
+      url: 'http://127.0.0.1:${server.port}',
+      autoRefreshToken: false,
+      flowType: AuthFlowType.implicit,
+    );
+    try {
+      final actions = LocalSessionActions(client);
+      await actions.login(
+        'synthetic@example.test',
+        'synthetic-password',
+        captchaToken: 'login-challenge',
+      );
+      await actions.reset(
+        'synthetic@example.test',
+        captchaToken: 'reset-challenge',
+      );
+      expect(requests.map((r) => r['path']), ['/token', '/recover']);
+      expect(
+        requests[0]['gotrue_meta_security']['captcha_token'],
+        'login-challenge',
+      );
+      expect(
+        requests[1]['gotrue_meta_security']['captcha_token'],
+        'reset-challenge',
+      );
+    } finally {
+      client.dispose();
+      await server.close(force: true);
+      await subscription.cancel();
+    }
+  });
+
   test('signup and verification use signup OTP endpoints without the app session', () async {
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final requests = <Map<String, dynamic>>[];
@@ -57,12 +128,24 @@ void main() {
         'synthetic@example.test',
         'synthetic-password',
         name: '  Test User  ',
+        captchaToken: 'signup-challenge',
       );
-      await actions.resend('synthetic@example.test');
+      await actions.resend(
+        'synthetic@example.test',
+        captchaToken: 'resend-challenge',
+      );
       await actions.verify('synthetic@example.test', '123456');
       expect(requests.map((r) => r['path']), ['/signup', '/resend', '/verify']);
       expect(requests[0]['password'], 'synthetic-password');
       expect(requests[0]['data'], {'full_name': 'Test User'});
+      expect(
+        requests[0]['gotrue_meta_security']['captcha_token'],
+        'signup-challenge',
+      );
+      expect(
+        requests[1]['gotrue_meta_security']['captcha_token'],
+        'resend-challenge',
+      );
       expect(requests[1]['type'], 'signup');
       expect(requests[2]['type'], 'signup');
       expect(requests[2]['token'], '123456');

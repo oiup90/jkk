@@ -17,6 +17,7 @@ void main() {
   ) async {
     FlutterSecureStorage.setMockInitialValues({});
     final requests = <String>[];
+    final requestBodies = <String, dynamic>{};
     final user = {
       'id': 'user',
       'aud': 'authenticated',
@@ -31,6 +32,9 @@ void main() {
       authOptions: adminRecoveryAuthOptions,
       httpClient: MockClient((request) async {
         requests.add('${request.method} ${request.url.path}');
+        if (request.body.isNotEmpty) {
+          requestBodies[request.url.path] = jsonDecode(request.body);
+        }
         final response = request.url.path.endsWith('/verify')
             ? {
                 'access_token': 'synthetic-access',
@@ -59,6 +63,7 @@ void main() {
                 builder: (_) => AdminPasswordRecovery(
                   createClient: () => client,
                   savedLogin: AdminSavedLogin('https://example.test'),
+                  captchaProvider: (_) async => 'recovery-challenge',
                 ),
               ),
               child: const Text('Open recovery'),
@@ -73,6 +78,10 @@ void main() {
     await tester.tap(find.text('Send OTP'));
     await tester.pumpAndSettle();
     expect(find.text('Verify OTP'), findsOneWidget);
+    expect(
+      requestBodies['/auth/v1/recover']['gotrue_meta_security']['captcha_token'],
+      'recovery-challenge',
+    );
     await tester.enterText(find.byType(TextField), '123456');
     await tester.tap(find.text('Verify OTP'));
     await tester.pumpAndSettle();
