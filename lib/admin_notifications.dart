@@ -107,9 +107,11 @@ class AdminSendNotificationPage extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.canEdit,
+    this.initialRecipient,
   });
   final AdminNotificationGateway gateway;
   final bool canEdit;
+  final Map<String, dynamic>? initialRecipient;
   @override
   State<AdminSendNotificationPage> createState() =>
       _AdminSendNotificationPageState();
@@ -127,6 +129,14 @@ class _AdminSendNotificationPageState extends State<AdminSendNotificationPage> {
   List<Map<String, dynamic>> users = [];
   Map<String, dynamic>? selected;
   String? error, requestId, lastPayload;
+  @override
+  void initState() {
+    super.initState();
+    selected = widget.initialRecipient == null
+        ? null
+        : Map.of(widget.initialRecipient!);
+  }
+
   @override
   void dispose() {
     query.dispose();
