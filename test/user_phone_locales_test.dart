@@ -110,7 +110,6 @@ void main() {
             body: Dashboard(
               uid: 'synthetic',
               onBrowse: () {},
-              onCreate: () {},
               balanceStream: Stream.value([
                 {
                   'id': 'synthetic',

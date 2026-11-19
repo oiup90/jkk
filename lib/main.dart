@@ -2312,10 +2312,6 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
             builder: (_) => TaskCategoryPage(uid: widget.user.id, type: type),
           ),
         ),
-        onCreate: () => Navigator.push(
-          context,
-          MaterialPageRoute<void>(builder: (_) => const CreateCampaign()),
-        ),
         uid: widget.user.id,
       ),
       EarnLanding(uid: widget.user.id),
@@ -2426,7 +2422,6 @@ class Dashboard extends StatelessWidget {
   const Dashboard({
     super.key,
     required this.onBrowse,
-    required this.onCreate,
     required this.uid,
     this.balanceStream,
     this.historyStream,
@@ -2435,7 +2430,7 @@ class Dashboard extends StatelessWidget {
   final Stream<List<Map<String, dynamic>>>? balanceStream;
   final Stream<List<Map<String, dynamic>>>? historyStream;
   final ValueChanged<String>? onBrowseType;
-  final VoidCallback onBrowse, onCreate;
+  final VoidCallback onBrowse;
   final String uid;
   @override
   Widget build(BuildContext context) => AppListView(
@@ -2484,46 +2479,9 @@ class Dashboard extends StatelessWidget {
         const SizedBox(height: 10),
       ],
       const SizedBox(height: 14),
-      const Notice(refined: true),
-      const SizedBox(height: 12),
-      Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xffe9e2f2)),
-            ),
-            child: ProfileMenuTile(
-              icon: Icons.explore_outlined,
-              title: tr(context, 'browse'),
-              subtitle: uf(
-                context,
-                'Explore available tasks & earn coins',
-                'Tasks കണ്ടെത്തി coins നേടുക',
-              ),
-              onTap: onBrowse,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xffe9e2f2)),
-            ),
-            child: ProfileMenuTile(
-              icon: Icons.campaign_outlined,
-              title: tr(context, 'create'),
-              subtitle: uf(
-                context,
-                'Start your campaign & grow',
-                'Campaign ആരംഭിക്കുക',
-              ),
-              onTap: onCreate,
-            ),
-          ),
-        ],
+      const Notice(
+        refined: true,
+        text: 'Every campaign task and Instagram activity is reviewed and verified by AI with a 100% guarantee.',
       ),
     ],
   );
@@ -2566,8 +2524,9 @@ Color taskAccent(String type) => switch (type) {
 };
 
 class Notice extends StatelessWidget {
-  const Notice({super.key, this.refined = false});
+  const Notice({super.key, this.refined = false, this.text});
   final bool refined;
+  final String? text;
   @override
   Widget build(BuildContext context) => refined
       ? Container(
@@ -2587,7 +2546,7 @@ class Notice extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  tr(context, 'disclaimer'),
+                  text ?? tr(context, 'disclaimer'),
                   style: const TextStyle(
                     fontSize: 11,
                     height: 1.45,
@@ -2616,7 +2575,7 @@ class Notice extends StatelessWidget {
               ),
               Expanded(
                 child: Text(
-                  tr(context, 'disclaimer'),
+                  text ?? tr(context, 'disclaimer'),
                   style: const TextStyle(fontSize: 10, color: growthInk),
                 ),
               ),
@@ -4013,17 +3972,21 @@ class Campaigns extends StatefulWidget {
     this.campaignsStream,
     this.reviewsBuilder,
     this.now,
+    this.categoryType,
+    this.initialCampaigns,
   });
   final String uid;
   final Stream<List<Map<String, dynamic>>>? campaignsStream;
   final Widget Function(String campaignId)? reviewsBuilder;
   final DateTime Function()? now;
+  final String? categoryType;
+  final List<Map<String, dynamic>>? initialCampaigns;
   @override
   State<Campaigns> createState() => _CampaignsState();
 }
 
 class _CampaignsState extends State<Campaigns> {
-  String selectedType = 'all', selectedStatus = 'all';
+  String selectedStatus = 'all';
   Timer? clock;
   DateTime? scheduledDeadline;
   late Stream<List<Map<String, dynamic>>> campaignFeed;
@@ -4032,11 +3995,14 @@ class _CampaignsState extends State<Campaigns> {
   void initState() {
     super.initState();
     campaignFeed =
-        widget.campaignsStream ??
-        db
-            .from('campaigns')
-            .stream(primaryKey: ['id'])
-            .eq('ownerId', widget.uid);
+        (widget.campaignsStream ??
+                db
+                    .from('campaigns')
+                    .stream(primaryKey: ['id'])
+                    .eq('ownerId', widget.uid))
+            .asBroadcastStream(
+              onCancel: (subscription) => subscription.cancel(),
+            );
   }
 
   void scheduleDeadline(List<Map<String, dynamic>> campaigns) {
@@ -4072,11 +4038,14 @@ class _CampaignsState extends State<Campaigns> {
     if (oldWidget.uid != widget.uid ||
         oldWidget.campaignsStream != widget.campaignsStream) {
       campaignFeed =
-          widget.campaignsStream ??
-          db
-              .from('campaigns')
-              .stream(primaryKey: ['id'])
-              .eq('ownerId', widget.uid);
+          (widget.campaignsStream ??
+                  db
+                      .from('campaigns')
+                      .stream(primaryKey: ['id'])
+                      .eq('ownerId', widget.uid))
+              .asBroadcastStream(
+                onCancel: (subscription) => subscription.cancel(),
+              );
     }
   }
 
@@ -4118,12 +4087,13 @@ class _CampaignsState extends State<Campaigns> {
     BuildContext context,
   ) => StreamBuilder<List<Map<String, dynamic>>>(
     stream: campaignFeed,
+    initialData: widget.initialCampaigns,
     builder: (context, snapshot) {
       if (snapshot.hasError) return Center(child: Text(tr(context, 'error')));
       if (!snapshot.hasData) {
         return const Center(child: CircularProgressIndicator());
       }
-      scheduleDeadline(snapshot.data!);
+      if (widget.categoryType != null) scheduleDeadline(snapshot.data!);
       final allDocs = snapshot.data!.toList()
         ..sort(
           (a, b) =>
@@ -4132,15 +4102,96 @@ class _CampaignsState extends State<Campaigns> {
       final docs = allDocs
           .where(
             (doc) =>
-                (selectedType == 'all' || doc['type'] == selectedType) &&
+                doc['type'] == widget.categoryType &&
                 (selectedStatus == 'all' || doc['status'] == selectedStatus),
           )
           .toList();
+      if (widget.categoryType == null) {
+        return AppListView(
+          padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
+          children: [
+            GrowthHero(
+              title: tr(context, 'myCampaigns'),
+              minHeight: 150,
+              subtitle: uf(
+                context,
+                'Create and manage your campaigns with ease.',
+                'നിങ്ങളുടെ campaigns സൃഷ്ടിക്കുകയും നിയന്ത്രിക്കുകയും ചെയ്യുക.',
+              ),
+              icon: Icons.campaign_rounded,
+              background: 'campaign_hero_reference',
+              action: TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: growthPurple,
+                  minimumSize: const Size(0, 28),
+                  textStyle: const TextStyle(fontSize: 10),
+                ),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => const CreateCampaign(),
+                  ),
+                ),
+                child: Text(tr(context, 'create')),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Text(
+              uf(context, 'Campaign categories', 'Campaign വിഭാഗങ്ങൾ'),
+              style: const TextStyle(
+                color: growthInk,
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              uf(
+                context,
+                'Choose a category to manage your campaigns.',
+                'Campaign-ുകൾ കാണാൻ ഒരു വിഭാഗം തിരഞ്ഞെടുക്കുക.',
+              ),
+              style: const TextStyle(color: Color(0xff6d6580), fontSize: 12),
+            ),
+            const SizedBox(height: 14),
+            for (final type in ['follow', 'like', 'comment', 'share']) ...[
+              CampaignCategoryTile(
+                title: tr(context, type),
+                count: allDocs.where((doc) => doc['type'] == type).length,
+                countLabel: tr(context, 'campaigns'),
+                icon: actionIcon(type),
+                accent: taskAccent(type),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => UserPageScaffold(
+                      identity: UserPageIdentity.campaigns,
+                      appBar: AppBar(title: Text(tr(context, type))),
+                      body: SafeArea(
+                        child: Campaigns(
+                          uid: widget.uid,
+                          categoryType: type,
+                          campaignsStream: campaignFeed,
+                          initialCampaigns: allDocs,
+                          reviewsBuilder: widget.reviewsBuilder,
+                          now: widget.now,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+            ],
+          ],
+        );
+      }
       return AppListView(
         padding: const EdgeInsets.fromLTRB(14, 4, 14, 20),
         children: [
           GrowthHero(
-            title: tr(context, 'myCampaigns'),
+            title: tr(context, widget.categoryType!),
             minHeight: 150,
             subtitle: uf(
               context,
@@ -4158,13 +4209,16 @@ class _CampaignsState extends State<Campaigns> {
               ),
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute<void>(builder: (_) => const CreateCampaign()),
+                MaterialPageRoute<void>(
+                  builder: (_) =>
+                      CreateCampaign(initialType: widget.categoryType!),
+                ),
               ),
               child: Text(tr(context, 'create')),
             ),
           ),
           const SizedBox(height: 12),
-          if (allDocs.isEmpty) ...[
+          if (allDocs.every((doc) => doc['type'] != widget.categoryType)) ...[
             GrowthEmpty(
               art: 'campaign_reference',
               artHeight: 200,
@@ -4178,7 +4232,8 @@ class _CampaignsState extends State<Campaigns> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) => const CreateCampaign(),
+                    builder: (_) =>
+                        CreateCampaign(initialType: widget.categoryType!),
                   ),
                 ),
                 icon: Icons.add,
@@ -4210,20 +4265,16 @@ class _CampaignsState extends State<Campaigns> {
                 onPressed: () => Navigator.push(
                   context,
                   MaterialPageRoute<void>(
-                    builder: (_) => const CreateCampaign(),
+                    builder: (_) =>
+                        CreateCampaign(initialType: widget.categoryType!),
                   ),
                 ),
                 icon: const Icon(Icons.add),
                 label: Text(tr(context, 'create')),
               ),
             ),
-          if (allDocs.isNotEmpty) ...[
+          if (allDocs.any((doc) => doc['type'] == widget.categoryType)) ...[
             const SizedBox(height: 12),
-            Text(tr(context, 'type')),
-            TaskTypePicker(
-              selected: selectedType,
-              onSelected: (value) => setState(() => selectedType = value),
-            ),
             Text(userText(context, 'Status', 'സ്ഥിതി')),
             Wrap(
               spacing: 8,
@@ -4345,6 +4396,86 @@ class _CampaignsState extends State<Campaigns> {
   );
 }
 
+class CampaignCategoryTile extends StatelessWidget {
+  const CampaignCategoryTile({
+    super.key,
+    required this.title,
+    required this.count,
+    required this.countLabel,
+    required this.icon,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final String title, countLabel;
+  final int count;
+  final IconData icon;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(22),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xffe9e2f2)),
+          boxShadow: [
+            BoxShadow(
+              color: accent.withValues(alpha: .07),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: accent.withValues(alpha: .1),
+                borderRadius: BorderRadius.circular(17),
+              ),
+              child: Icon(icon, color: accent, size: 24),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: growthInk,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '$count $countLabel',
+                    style: const TextStyle(
+                      color: Color(0xff6d6580),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: accent),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 class CreateCampaign extends StatefulWidget {
   const CreateCampaign({
     super.key,
@@ -4352,10 +4483,17 @@ class CreateCampaign extends StatefulWidget {
     this.loadAccounts,
     this.controls,
     this.reserve,
-  });
+    this.initialType = 'follow',
+  }) : assert(
+         initialType == 'follow' ||
+             initialType == 'like' ||
+             initialType == 'comment' ||
+             initialType == 'share',
+       );
   final Future<List<Map<String, dynamic>>> Function()? loadRates;
   final Future<List<String>> Function()? loadAccounts;
   final Stream<List<Map<String, dynamic>>>? controls;
+  final String initialType;
   final Future<void> Function(String type, String link, int count, int reward)?
   reserve;
   @override
@@ -4366,7 +4504,7 @@ class _CreateCampaignState extends State<CreateCampaign> {
   final form = GlobalKey<FormState>();
   final link = TextEditingController();
   final count = TextEditingController(text: '1');
-  String type = 'follow';
+  late String type = widget.initialType;
   String? selectedUsername;
   late Future<List<String>> accounts = loadAccounts();
   Future<List<String>> loadAccounts() async {

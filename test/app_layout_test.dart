@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
 import 'package:growth_circle/design.dart';
+import 'package:growth_circle/user_page_design.dart';
 
 void main() {
   tearDown(() => language.value = const Locale('en'));
@@ -20,7 +21,6 @@ void main() {
           body: Dashboard(
             uid: 'sample',
             onBrowse: () {},
-            onCreate: () {},
             balanceStream: Stream.value([
               {'balance': 20},
             ]),
@@ -214,7 +214,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
   for (final locale in ['en', 'ml']) {
-    testWidgets('home actions remain reachable at narrow width in $locale', (
+    testWidgets('home wallet and task cards work at narrow width in $locale', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(320, 640);
@@ -222,7 +222,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       language.value = Locale(locale);
-      var browse = false, create = false;
+      var browse = false;
       await tester.pumpWidget(
         MaterialApp(
           theme: growthTheme(),
@@ -241,7 +241,6 @@ void main() {
                 {'balance': 128},
               ]),
               onBrowse: () => browse = true,
-              onCreate: () => create = true,
             ),
           ),
         ),
@@ -255,16 +254,15 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(find.textContaining('128'), findsOneWidget);
-      final menus = find.byType(ProfileMenuTile);
-      await tester.scrollUntilVisible(find.byIcon(Icons.explore_outlined), 200);
-      await tester.ensureVisible(menus.at(0));
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -1000));
       await tester.pumpAndSettle();
-      await tester.tap(menus.at(0));
-      await tester.ensureVisible(menus.at(1));
+      expect(find.text(words['browse']![locale == 'ml' ? 1 : 0]), findsNothing);
+      expect(find.text(words['create']![locale == 'ml' ? 1 : 0]), findsNothing);
+      final task = find.byType(DashboardTaskTile).first;
+      await tester.ensureVisible(task);
       await tester.pumpAndSettle();
-      await tester.tap(menus.at(1));
+      await tester.tap(task);
       expect(browse, isTrue);
-      expect(create, isTrue);
       expect(tester.takeException(), isNull);
     });
   }
@@ -281,7 +279,6 @@ void main() {
               {'balance': 1},
             ]),
             onBrowse: () {},
-            onCreate: () {},
             onBrowseType: (type) => selected = type,
           ),
         ),
