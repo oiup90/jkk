@@ -343,57 +343,14 @@ class UserHelpPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 155),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: Image.asset(
-                          'assets/design/hero_help.png',
-                          height: 155,
-                          excludeFromSemantics: true,
-                        ),
-                      ),
-                    ),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          gradient: growthGradient,
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              uf(context, 'Need Help?', 'സഹായം വേണോ?'),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              uf(
-                                context,
-                                'We are here to help you!',
-                                'നിങ്ങളെ സഹായിക്കാൻ ഞങ്ങൾ ഇവിടെയുണ്ട്!',
-                              ),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+              UserSectionIntro(
+                title: uf(context, 'Need Help?', 'സഹായം വേണോ?'),
+                subtitle: uf(
+                  context,
+                  'Learn how tasks, campaigns and coins work.',
+                  'Tasks, campaigns, coins എന്നിവ എങ്ങനെ ഉപയോഗിക്കാം എന്ന് അറിയുക.',
                 ),
+                icon: Icons.help_outline_rounded,
               ),
               const SizedBox(height: 16),
               for (final (index, item) in items.entries.indexed)

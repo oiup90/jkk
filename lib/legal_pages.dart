@@ -3,6 +3,7 @@ import 'user_page_canvas.dart';
 import 'package:flutter/material.dart';
 
 import 'support_page.dart';
+import 'design.dart';
 
 /// Feature-specific notices. Operator contact/retention/refund terms must be
 /// confirmed by the app owner before publishing these as final legal policies.
@@ -76,27 +77,24 @@ class LegalPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: terms
-                        ? const Color(0xffffefd8)
-                        : const Color(0xffe1eff6),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Icon(
-                    terms ? Icons.article_outlined : Icons.privacy_tip_outlined,
-                    color: terms
-                        ? const Color(0xff926018)
-                        : const Color(0xff326b7e),
-                    size: 30,
-                  ),
-                ),
+              UserSectionIntro(
+                title: terms
+                    ? text('Using Freelan Space', 'Freelan Space ഉപയോഗം')
+                    : text('Your information', 'നിങ്ങളുടെ വിവരങ്ങൾ'),
+                subtitle: terms
+                    ? text(
+                        'Read how campaigns, credits and payments work.',
+                        'Campaigns, credits, payments എന്നിവയുടെ നിബന്ധനകൾ വായിക്കുക.',
+                      )
+                    : text(
+                        'Understand what you share and the choices you have.',
+                        'നിങ്ങളുടെ വിവരങ്ങളും അവ നിയന്ത്രിക്കാനുള്ള വഴികളും അറിയുക.',
+                      ),
+                icon: terms
+                    ? Icons.article_outlined
+                    : Icons.privacy_tip_outlined,
               ),
-              const SizedBox(height: 18),
-              for (final (index, section) in sections.entries.indexed)
+              for (final section in sections.entries)
                 Card(
                   margin: const EdgeInsets.only(bottom: 14),
                   shape: RoundedRectangleBorder(
@@ -108,7 +106,7 @@ class LegalPage extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${(index + 1).toString().padLeft(2, '0')}  ${section.key}',
+                          section.key,
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),

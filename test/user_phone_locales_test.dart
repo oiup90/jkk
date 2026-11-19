@@ -205,7 +205,17 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
+        // Larger text can place this control below the initial viewport.
+        await tester.scrollUntilVisible(
+          find.byType(Switch),
+          160,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.pumpAndSettle();
         expect(find.byType(Switch), findsOneWidget);
+        await tester.tap(find.byType(Switch));
+        await tester.pumpAndSettle();
+        expect(tester.widget<Switch>(find.byType(Switch)).value, isTrue);
         await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(

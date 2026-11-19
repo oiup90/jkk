@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'design.dart';
+import 'user_tokens.dart';
 
 class DashboardTaskTile extends StatelessWidget {
   const DashboardTaskTile({
@@ -19,15 +20,15 @@ class DashboardTaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(20),
+    borderRadius: BorderRadius.circular(18),
     child: InkWell(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xffe9e2f2)),
-          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: userLine),
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,7 +36,7 @@ class DashboardTaskTile extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(9),
+                  padding: const EdgeInsets.all(11),
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: .10),
                     borderRadius: BorderRadius.circular(13),
@@ -44,18 +45,18 @@ class DashboardTaskTile extends StatelessWidget {
                 ),
                 const Spacer(),
                 const Icon(
-                  Icons.north_east,
+                  Icons.chevron_right_rounded,
                   size: 16,
                   color: Color(0xff8a779d),
                 ),
               ],
             ),
-            const SizedBox(height: 13),
+            const SizedBox(height: 20),
             Text(
               title,
               style: const TextStyle(
                 color: growthInk,
-                fontSize: 14,
+                fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -63,8 +64,8 @@ class DashboardTaskTile extends StatelessWidget {
             Text(
               subtitle,
               style: const TextStyle(
-                color: Color(0xff6d6580),
-                fontSize: 10,
+                color: userMuted,
+                fontSize: 12,
                 height: 1.4,
               ),
             ),
@@ -94,7 +95,7 @@ class EarnEmptyState extends StatelessWidget {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(24),
-      border: Border.all(color: const Color(0xffe9e2f2)),
+      border: Border.all(color: userLine),
     ),
     child: Column(
       children: [
@@ -124,11 +125,7 @@ class EarnEmptyState extends StatelessWidget {
         Text(
           subtitle,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xff6d6580),
-            fontSize: 11,
-            height: 1.5,
-          ),
+          style: const TextStyle(color: userMuted, fontSize: 11, height: 1.5),
         ),
         if (onAction != null && actionLabel != null) ...[
           const SizedBox(height: 12),

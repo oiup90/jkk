@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'design.dart';
+import 'user_theme.dart';
 import 'brand_wordmark.dart';
 import 'account_block_guard.dart';
 import 'earn_design.dart';
@@ -354,7 +355,7 @@ const words = <String, List<String>>{
     'Campaign cancelled and unused coins refunded.',
     'Campaign റദ്ദാക്കി; ബാക്കി coins തിരികെ നൽകി.',
   ],
-  'accountSection': ['ACCOUNT', 'അക്കൗണ്ട്'],
+  'accountSection': ['Account', 'അക്കൗണ്ട്'],
   'profileJoined': ['Joined', 'ചേർന്നത്'],
   'profileAccounts': ['Accounts', 'അക്കൗണ്ടുകൾ'],
   'profileReferrals': ['Referrals', 'Referrals'],
@@ -704,110 +705,7 @@ void toggleLanguage() =>
     language.value = Locale(language.value.languageCode == 'en' ? 'ml' : 'en');
 
 // Shared user-app surfaces follow the profile layout on phones and wide windows.
-ThemeData growthTheme() => ThemeData(
-  useMaterial3: true,
-  fontFamily: 'Poppins',
-  colorScheme: ColorScheme.fromSeed(
-    seedColor: growthPurple,
-    primary: growthPurple,
-    surface: const Color(0xfffaf8ff),
-  ),
-  scaffoldBackgroundColor: Colors.transparent,
-  appBarTheme: const AppBarTheme(
-    backgroundColor: Colors.transparent,
-    surfaceTintColor: Colors.transparent,
-    elevation: 0,
-    scrolledUnderElevation: 0,
-    centerTitle: false,
-    titleTextStyle: TextStyle(
-      color: growthInk,
-      fontSize: 16,
-      fontWeight: FontWeight.w700,
-    ),
-  ),
-  listTileTheme: const ListTileThemeData(
-    minTileHeight: 52,
-    titleTextStyle: TextStyle(
-      fontFamily: 'Poppins',
-      fontSize: 12,
-      fontWeight: FontWeight.w600,
-      color: growthInk,
-    ),
-    subtitleTextStyle: TextStyle(
-      fontFamily: 'Poppins',
-      fontSize: 10,
-      color: Color(0xff635b80),
-    ),
-    iconColor: growthPurple,
-  ),
-  iconButtonTheme: IconButtonThemeData(
-    style: IconButton.styleFrom(
-      backgroundColor: const Color(0xffeee4ff),
-      foregroundColor: growthPurple,
-      iconSize: 21,
-      minimumSize: const Size(38, 38),
-      padding: const EdgeInsets.all(8),
-      shape: const CircleBorder(),
-    ),
-  ),
-  dialogTheme: DialogThemeData(
-    backgroundColor: const Color(0xfff7f1ff),
-    surfaceTintColor: Colors.transparent,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(26),
-      side: const BorderSide(color: Colors.white, width: 1.5),
-    ),
-  ),
-  navigationBarTheme: NavigationBarThemeData(
-    backgroundColor: Colors.white,
-    elevation: 0,
-    indicatorColor: const Color(0xffd8c5ff),
-    labelTextStyle: WidgetStateProperty.all(
-      const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-    ),
-  ),
-  cardTheme: CardThemeData(
-    elevation: 4,
-    shadowColor: const Color(0x557a52da),
-    color: const Color(0xfffaf8ff),
-    surfaceTintColor: Colors.transparent,
-    margin: const EdgeInsets.symmetric(vertical: 6),
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(22),
-      side: const BorderSide(color: Color(0xeeffffff)),
-    ),
-  ),
-  inputDecorationTheme: InputDecorationTheme(
-    filled: true,
-    fillColor: const Color(0xfff8f7fa),
-    contentPadding: const EdgeInsets.all(16),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-    enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: const BorderSide(color: Color(0xffdedce6)),
-    ),
-  ),
-  filledButtonTheme: FilledButtonThemeData(
-    style: FilledButton.styleFrom(
-      minimumSize: const Size(48, 48),
-      backgroundColor: growthPurple,
-      foregroundColor: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-    ),
-  ),
-  outlinedButtonTheme: OutlinedButtonThemeData(
-    style: OutlinedButton.styleFrom(
-      minimumSize: const Size(48, 48),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-    ),
-  ),
-  chipTheme: ChipThemeData(
-    backgroundColor: const Color(0xfff2eff8),
-    side: BorderSide.none,
-    selectedColor: const Color(0xffded0ff),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-  ),
-);
+ThemeData growthTheme() => userAppTheme();
 
 class AppListView extends StatelessWidget {
   const AppListView({
@@ -1439,10 +1337,10 @@ class _AuthScreenState extends State<AuthScreen> {
     suffixIcon: suffix,
     prefixIcon: icon == null ? null : Icon(icon, color: growthPurple),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(32)),
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
     enabledBorder: OutlineInputBorder(
-      borderRadius: BorderRadius.circular(32),
-      borderSide: const BorderSide(color: Color(0xffd9d8e4)),
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(color: userLine),
     ),
   );
 
@@ -1458,7 +1356,7 @@ class _AuthScreenState extends State<AuthScreen> {
         child: Align(
           alignment: Alignment.topCenter,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
+            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
@@ -1491,7 +1389,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   ],
                   if (pendingEmail != null) ...[
                     const SizedBox(height: 18),
-                    const GrowthArt('verify', height: 150),
+                    const Center(child: UserOrbitMark(size: 88)),
                   ] else
                     const SizedBox(height: 42),
                   if (pendingEmail == null)
@@ -1530,13 +1428,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           ),
                         ),
                         const SizedBox(width: 4),
-                        Image.asset(
-                          'assets/design/${registering ? 'auth_signup_art' : 'auth_signin_art'}.png',
-                          width: 72,
-                          height: 88,
-                          fit: BoxFit.contain,
-                          excludeFromSemantics: true,
-                        ),
+                        const UserOrbitMark(size: 72),
                       ],
                     )
                   else ...[
@@ -2116,24 +2008,12 @@ class NotificationsPage extends StatelessWidget {
         final items = snapshot.data!;
         return AppListView(
           children: [
-            if (items.where((item) => item['read_at'] == null).length == 1)
-              const GrowthArt('notifications', height: 125),
-            if (items.where((item) => item['read_at'] == null).length > 1)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 30),
-                child: Center(
-                  child: Badge.count(
-                    count: items
-                        .where((item) => item['read_at'] == null)
-                        .length,
-                    child: const Icon(
-                      Icons.notifications_rounded,
-                      color: growthPurple,
-                      size: 70,
-                    ),
-                  ),
-                ),
-              ),
+            UserSectionIntro(
+              title: tr(context, 'notifications'),
+              subtitle:
+                  '${items.where((item) => item['read_at'] == null).length} ${tr(context, 'notificationUnread')}',
+              icon: Icons.notifications_none_rounded,
+            ),
             for (final item in items)
               Card(
                 margin: const EdgeInsets.symmetric(vertical: 6),
@@ -2441,11 +2321,11 @@ class Dashboard extends StatelessWidget {
         balanceStream: balanceStream,
         historyStream: historyStream,
       ),
-      const SizedBox(height: 20),
+      const SizedBox(height: 26),
       Text(
         tr(context, 'welcome'),
         style: const TextStyle(
-          fontSize: 19,
+          fontSize: 23,
           height: 1.25,
           fontWeight: FontWeight.w800,
           color: growthInk,
@@ -2455,7 +2335,7 @@ class Dashboard extends StatelessWidget {
       Text(
         tr(context, 'homeDesc'),
         style: const TextStyle(
-          fontSize: 11,
+          fontSize: 12,
           height: 1.5,
           color: Color(0xff6d6580),
         ),
@@ -2532,7 +2412,7 @@ class Notice extends StatelessWidget {
       ? Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xffeee8f8),
+            color: const Color(0xffeeedf5),
             borderRadius: BorderRadius.circular(18),
           ),
           child: Row(
@@ -2548,7 +2428,7 @@ class Notice extends StatelessWidget {
                 child: Text(
                   text ?? tr(context, 'disclaimer'),
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: 12,
                     height: 1.45,
                     color: growthInk,
                   ),
@@ -3086,51 +2966,10 @@ class EarnLanding extends StatelessWidget {
   Widget build(BuildContext context) => AppListView(
     padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
     children: [
-      Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xff38205f), Color(0xff764bbb)],
-          ),
-          borderRadius: BorderRadius.circular(26),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xff3e1c80).withValues(alpha: .18),
-              blurRadius: 20,
-              offset: const Offset(0, 9),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(
-              Icons.auto_awesome_rounded,
-              color: Color(0xfff5dfb2),
-              size: 24,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              tr(context, 'earnTitle'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              tr(context, 'earnDesc'),
-              style: const TextStyle(
-                color: Color(0xffeee5f8),
-                fontSize: 12,
-                height: 1.45,
-              ),
-            ),
-          ],
-        ),
+      UserSectionIntro(
+        title: tr(context, 'earnTitle'),
+        subtitle: tr(context, 'earnDesc'),
+        icon: Icons.explore_outlined,
       ),
       const SizedBox(height: 20),
       EarnSectionHeader(title: uf(context, 'Tasks', 'Task-ുകൾ')),
@@ -3606,7 +3445,7 @@ class _TaskListState extends State<TaskList> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: FilterChip(
-                  visualDensity: VisualDensity.compact,
+                  visualDensity: VisualDensity.standard,
                   materialTapTargetSize: MaterialTapTargetSize.padded,
                   labelPadding: const EdgeInsets.symmetric(horizontal: 4),
                   backgroundColor: Colors.white,
@@ -4124,8 +3963,8 @@ class _CampaignsState extends State<Campaigns> {
                 style: TextButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: growthPurple,
-                  minimumSize: const Size(0, 28),
-                  textStyle: const TextStyle(fontSize: 10),
+                  minimumSize: const Size(0, 48),
+                  textStyle: const TextStyle(fontSize: 12),
                 ),
                 onPressed: () => Navigator.push(
                   context,
@@ -4204,8 +4043,8 @@ class _CampaignsState extends State<Campaigns> {
               style: TextButton.styleFrom(
                 backgroundColor: Colors.white,
                 foregroundColor: growthPurple,
-                minimumSize: const Size(0, 28),
-                textStyle: const TextStyle(fontSize: 10),
+                minimumSize: const Size(0, 48),
+                textStyle: const TextStyle(fontSize: 12),
               ),
               onPressed: () => Navigator.push(
                 context,
@@ -4416,22 +4255,15 @@ class CampaignCategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(22),
+    borderRadius: BorderRadius.circular(16),
     child: InkWell(
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(16),
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: const Color(0xffe9e2f2)),
-          boxShadow: [
-            BoxShadow(
-              color: accent.withValues(alpha: .07),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: userLine),
         ),
         child: Row(
           children: [
@@ -4468,7 +4300,7 @@ class CampaignCategoryTile extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded, size: 16, color: accent),
+            Icon(Icons.chevron_right_rounded, size: 16, color: accent),
           ],
         ),
       ),
@@ -4578,16 +4410,7 @@ class _CreateCampaignState extends State<CreateCampaign> {
   @override
   Widget build(BuildContext context) => UserPageScaffold(
     identity: UserPageIdentity.createCampaign,
-    appBar: AppBar(
-      title: Text(tr(context, 'create')),
-      toolbarHeight: 118,
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 14),
-          child: GrowthArt('create_reference', height: 86),
-        ),
-      ],
-    ),
+    appBar: AppBar(title: Text(tr(context, 'create'))),
     body: FutureBuilder<List<Map<String, dynamic>>>(
       future: rates,
       builder: (context, prices) {
@@ -5695,20 +5518,9 @@ class ProfileLayout extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xff352052), Color(0xff65418f)],
-                        ),
+                        color: Colors.white,
+                        border: Border.all(color: userLine),
                         borderRadius: BorderRadius.circular(24),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xff392061)
-                                .withValues(alpha: .18),
-                            blurRadius: 18,
-                            offset: const Offset(0, 7),
-                          ),
-                        ],
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -5748,10 +5560,10 @@ class ProfileLayout extends StatelessWidget {
                                 Text(
                                   name,
                                   style: const TextStyle(
-                                    fontSize: 17,
+                                    fontSize: 21,
                                     height: 1.2,
                                     fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                                    color: userInk,
                                   ),
                                 ),
                                 if (profileName(user) != null &&
@@ -5760,8 +5572,8 @@ class ProfileLayout extends StatelessWidget {
                                   Text(
                                     user.email!,
                                     style: const TextStyle(
-                                      color: Color(0xffeee3f9),
-                                      fontSize: 11,
+                                      color: userMuted,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -5770,8 +5582,8 @@ class ProfileLayout extends StatelessWidget {
                                   SelectableText(
                                     'User ID: ${info!.publicUserId}',
                                     style: const TextStyle(
-                                      color: Color(0xfff4dcad),
-                                      fontSize: 11,
+                                      color: growthPurple,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -5780,8 +5592,8 @@ class ProfileLayout extends StatelessWidget {
                                   Text(
                                     joined,
                                     style: const TextStyle(
-                                      color: Color(0xffeee3f9),
-                                      fontSize: 11,
+                                      color: userMuted,
+                                      fontSize: 12,
                                     ),
                                   ),
                                 ],
@@ -5847,7 +5659,7 @@ class ProfileLayout extends StatelessWidget {
                     const SizedBox(height: 10),
                     Container(
                       decoration: BoxDecoration(
-                        gradient: growthGradient,
+                        color: growthPurple,
                         borderRadius: BorderRadius.circular(18),
                       ),
                       child: Material(
@@ -5891,7 +5703,7 @@ class ProfileLayout extends StatelessWidget {
                                         tr(context, 'profileReferralDesc'),
                                         style: const TextStyle(
                                           color: Colors.white70,
-                                          fontSize: 10,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],
@@ -5925,7 +5737,7 @@ class ProfileLayout extends StatelessWidget {
                               style: const TextStyle(
                                 color: Color(0xff6a6f8b),
                                 fontWeight: FontWeight.w700,
-                                fontSize: 11,
+                                fontSize: 12,
                                 letterSpacing: .5,
                               ),
                             ),
@@ -6049,15 +5861,15 @@ class ProfileMenuTile extends StatelessWidget {
     child: ListTile(
       enabled: onTap != null,
       onTap: onTap,
-      dense: true,
-      minTileHeight: 56,
+      dense: false,
+      minTileHeight: 66,
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       horizontalTitleGap: 12,
       leading: Container(
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: const Color(0xffeee6ff),
+          color: const Color(0xfff0edfa),
           borderRadius: BorderRadius.circular(11),
         ),
         child: icon == Icons.alternate_email
@@ -6066,11 +5878,11 @@ class ProfileMenuTile extends StatelessWidget {
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
       ),
       subtitle: subtitle == null
           ? null
-          : Text(subtitle!, style: const TextStyle(fontSize: 9)),
+          : Text(subtitle!, style: const TextStyle(fontSize: 11)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -6262,41 +6074,9 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         ? UserPageIdentity.instagramAccounts
         : UserPageIdentity.referrals,
     appBar: AppBar(
-      toolbarHeight: 80,
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            tr(context, widget.accounts ? 'instagramAccounts' : 'referrals'),
-          ),
-          Text(
-            widget.accounts
-                ? uf(
-                    context,
-                    'Manage your Instagram accounts',
-                    'Instagram accounts നിയന്ത്രിക്കുക',
-                  )
-                : uf(
-                    context,
-                    'Invite friends, earn rewards!',
-                    'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക!',
-                  ),
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.normal,
-              color: growthInk,
-            ),
-          ),
-        ],
+      title: Text(
+        tr(context, widget.accounts ? 'instagramAccounts' : 'referrals'),
       ),
-      actions: widget.accounts
-          ? [
-              const Padding(
-                padding: EdgeInsets.only(right: 10),
-                child: GrowthArt('accounts', height: 55),
-              ),
-            ]
-          : null,
     ),
     body: FutureBuilder<ProfileInfo>(
       future: data,
@@ -6336,6 +6116,16 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
               ),
               const SizedBox(height: 16),
             ],
+            if (widget.accounts)
+              UserSectionIntro(
+                title: tr(context, 'instagramAccounts'),
+                subtitle: uf(
+                  context,
+                  'Choose the accounts you use for campaign tasks.',
+                  'Campaign tasks-ന് ഉപയോഗിക്കുന്ന accounts തിരഞ്ഞെടുക്കുക.',
+                ),
+                icon: Icons.alternate_email_rounded,
+              ),
             if (widget.accounts) ...[
               Card(
                 child: Padding(
@@ -6393,7 +6183,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             child: Text(
-                              uf(context, 'OR', 'അല്ലെങ്കിൽ'),
+                              uf(context, 'or', 'അല്ലെങ്കിൽ'),
                               style: const TextStyle(fontSize: 11),
                             ),
                           ),
@@ -6403,10 +6193,10 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                       TextButton.icon(
                         style: TextButton.styleFrom(
                           backgroundColor: const Color(0xffe2d3fb),
-                          minimumSize: const Size(0, 32),
+                          minimumSize: const Size(0, 48),
                           textStyle: const TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 11,
+                            fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -6450,8 +6240,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                     minLeadingWidth: 38,
                     leading: IconButton(
                       constraints: const BoxConstraints.tightFor(
-                        width: 38,
-                        height: 40,
+                        width: 44,
+                        height: 48,
                       ),
                       padding: EdgeInsets.zero,
                       tooltip: 'Open @$username on Instagram',
@@ -6490,8 +6280,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                           ),
                         IconButton(
                           constraints: const BoxConstraints.tightFor(
-                            width: 34,
-                            height: 40,
+                            width: 40,
+                            height: 48,
                           ),
                           padding: EdgeInsets.zero,
                           icon: const Icon(Icons.delete_outline),
@@ -6505,8 +6295,8 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                             'Account options',
                           ),
                           child: const SizedBox(
-                            width: 32,
-                            height: 40,
+                            width: 40,
+                            height: 48,
                             child: Icon(Icons.more_vert, size: 18),
                           ),
                           onSelected: (value) async {
@@ -6653,7 +6443,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                       Text(
                         tr(context, 'referralCode'),
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: growthPurple,
                         ),
@@ -6720,7 +6510,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                               child: Text(
                                 '${tr(context, 'referralCount')}: ${info.referralCount}',
                                 style: const TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -6752,7 +6542,7 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                                           )
                                         : '${uf(context, 'Next milestone', 'അടുത്ത milestone')}: ${info.referralCount}/$next',
                                     style: const TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   );
@@ -7153,17 +6943,22 @@ class _UserSettingsPageState extends State<UserSettingsPage>
   @override
   Widget build(BuildContext context) => UserPageScaffold(
     identity: UserPageIdentity.settings,
-    appBar: AppBar(
-      toolbarHeight: 112,
-      title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ')),
-      actions: [const GrowthArt('settings_reference', height: 100)],
-    ),
+    appBar: AppBar(title: Text(uf(context, 'Settings', 'ക്രമീകരണങ്ങൾ'))),
     body: Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            UserSectionIntro(
+              title: uf(context, 'Make it yours', 'നിങ്ങളുടെ ഇഷ്ടത്തിന്'),
+              subtitle: uf(
+                context,
+                'Language, notifications and app preferences.',
+                'ഭാഷ, notifications, app ക്രമീകരണങ്ങൾ.',
+              ),
+              icon: Icons.tune_rounded,
+            ),
             Card(
               child: ListTile(
                 minTileHeight: 64,
