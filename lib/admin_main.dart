@@ -1782,14 +1782,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
     return SingleChildScrollView(
       child: Card(
+        clipBehavior: Clip.antiAlias,
+        elevation: 0,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xffe7e2f2)),
+        ),
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: constraints.maxWidth),
               child: DataTable(
+                horizontalMargin: 20,
+                columnSpacing: 28,
+                headingRowHeight: 54,
+                dataRowMinHeight: 72,
+                dataRowMaxHeight: 96,
+                dividerThickness: .7,
+                headingTextStyle: const TextStyle(
+                  color: Color(0xff71678f),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+                dataTextStyle: const TextStyle(color: adminInk, fontSize: 13),
                 headingRowColor: WidgetStateProperty.all(
-                  const Color(0xfff2edf9),
+                  const Color(0xfff7f5fc),
                 ),
                 columns: [
                   const DataColumn(label: Text('Name')),
@@ -1817,7 +1836,35 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     DataRow(
                       cells: [
                         DataCell(
-                          AdminCopyField(label: 'Name', value: user.name),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xffeee8ff),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  user.name.trim().isEmpty
+                                      ? '•'
+                                      : user.name
+                                            .trim()
+                                            .characters
+                                            .first
+                                            .toUpperCase(),
+                                  style: const TextStyle(
+                                    color: adminViolet,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              AdminCopyField(label: 'Name', value: user.name),
+                            ],
+                          ),
                         ),
                         if (show('email'))
                           DataCell(
@@ -2006,12 +2053,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (widget.embedded)
-                AdminHeading(
+                AdminDirectoryHeading(
                   title: at(context, 'users'),
-                  icon: Icons.people_rounded,
                   eyebrow: at(context, 'directory'),
                   subtitle: at(context, 'usersIntro'),
-                  art: 'users',
                 )
               else ...[
                 Text(
@@ -2069,187 +2114,238 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ],
               const SizedBox(height: 12),
-              Text(
-                at(context, 'accessInfo'),
-                style: const TextStyle(
-                  color: adminMuted,
-                  fontSize: 12,
-                  height: 1.4,
-                ),
-              ),
-              if (widget.gateway is SupabaseAdminGateway && canEdit)
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    icon: const Icon(Icons.send_outlined),
-                    label: Text(at(context, 'sendNotifications')),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute<void>(
-                        builder: (_) => AdminSendNotificationPage(
-                          gateway: SupabaseAdminNotificationGateway(
-                            (widget.gateway as SupabaseAdminGateway).client,
-                          ),
-                          canEdit: canEdit,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      key: const Key('admin_search'),
-                      controller: query,
-                      maxLength: 100,
-                      decoration: InputDecoration(
-                        hintText: at(context, 'search'),
-                        prefixIcon: const Icon(Icons.search, size: 20),
-                        counterText: '',
-                      ),
-                      onSubmitted: (_) => reload(newSearch: true),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  FilledButton(
-                    onPressed: () => reload(newSearch: true),
-                    child: Text(at(context, 'searchButton')),
-                  ),
-                  IconButton(
-                    onPressed: reload,
-                    tooltip: at(context, 'refresh'),
-                    icon: const Icon(Icons.refresh),
-                  ),
-                ],
-              ),
-              if (widget.gateway is AdminUserDirectoryGateway)
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      DropdownButton<String>(
-                        value: status,
-                        items: [
-                          DropdownMenuItem(
-                            value: 'all',
-                            child: Text(at(context, 'allUsersFilter')),
-                          ),
-                          DropdownMenuItem(
-                            value: 'active',
-                            child: Text(at(context, 'active')),
-                          ),
-                          DropdownMenuItem(
-                            value: 'blocked',
-                            child: Text(at(context, 'blocked')),
+              Container(
+                padding: widget.embedded
+                    ? const EdgeInsets.fromLTRB(18, 14, 18, 14)
+                    : EdgeInsets.zero,
+                decoration: widget.embedded
+                    ? BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(color: const Color(0xffe9e4f3)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xff4c3787)
+                                .withValues(alpha: .05),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
                           ),
                         ],
-                        onChanged: (v) => setState(() {
-                          status = v!;
-                          offset = 0;
-                          results = fetchUsers();
-                        }),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () => dateFilter(true),
-                        icon: const Icon(Icons.date_range),
-                        label: Text(
-                          joinedRange == null
-                              ? at(context, 'joinDateFilter')
-                              : 'Joined: ${_dateOnly(joinedRange!.start)} – ${_dateOnly(joinedRange!.end)}',
-                        ),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: () => dateFilter(false),
-                        icon: const Icon(Icons.login),
-                        label: Text(
-                          loginRange == null
-                              ? at(context, 'lastLoginFilter')
-                              : 'Login: ${_dateOnly(loginRange!.start)} – ${_dateOnly(loginRange!.end)}',
-                        ),
-                      ),
-                      DropdownButton<String>(
-                        value: sort,
-                        items: [
-                          DropdownMenuItem(
-                            value: 'joined',
-                            child: Text(at(context, 'sortJoinDate')),
+                      )
+                    : null,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (widget.embedded) ...[
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.tune_rounded,
+                            size: 18,
+                            color: adminViolet,
                           ),
-                          DropdownMenuItem(
-                            value: 'last_login',
-                            child: Text(at(context, 'sortLastLogin')),
+                          const SizedBox(width: 8),
+                          Text(
+                            Localizations.localeOf(context).languageCode == 'ml'
+                                ? 'തിരയലും filters-ഉം'
+                                : 'Search & filters',
+                            style: const TextStyle(
+                              color: adminInk,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ],
-                        onChanged: (v) => setState(() {
-                          sort = v!;
-                          offset = 0;
-                          results = fetchUsers();
-                        }),
                       ),
-                      IconButton(
-                        tooltip: at(
-                          context,
-                          descending ? 'newestFirst' : 'oldestFirst',
-                        ),
-                        icon: Icon(descending ? Icons.south : Icons.north),
-                        onPressed: () => setState(() {
-                          descending = !descending;
-                          offset = 0;
-                          results = fetchUsers();
-                        }),
+                      const SizedBox(height: 6),
+                    ],
+                    Text(
+                      at(context, 'accessInfo'),
+                      style: const TextStyle(
+                        color: adminMuted,
+                        fontSize: 12,
+                        height: 1.4,
                       ),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          status = 'all';
-                          joinedRange = null;
-                          loginRange = null;
-                          sort = 'joined';
-                          descending = true;
-                          offset = 0;
-                          results = fetchUsers();
-                        }),
-                        child: Text(at(context, 'clearFilters')),
-                      ),
-                      if (widget.embedded)
-                        PopupMenuButton<String>(
-                          tooltip: at(context, 'chooseColumns'),
-                          onSelected: (key) => setState(() {
-                            if (!columns.add(key)) columns.remove(key);
-                          }),
-                          itemBuilder: (_) => [
-                            for (final entry in const [
-                              ('email', 'Email'),
-                              ('id', 'User ID'),
-                              ('joined', 'Join date'),
-                              ('login', 'Last login'),
-                              ('coins', 'Coins'),
-                              ('status', 'Status'),
-                            ])
-                              CheckedPopupMenuItem(
-                                value: entry.$1,
-                                checked: columns.contains(entry.$1),
-                                child: Text(entry.$2),
+                    ),
+                    if (widget.gateway is SupabaseAdminGateway && canEdit)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          icon: const Icon(Icons.send_outlined),
+                          label: Text(at(context, 'sendNotifications')),
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) => AdminSendNotificationPage(
+                                gateway: SupabaseAdminNotificationGateway(
+                                  (widget.gateway as SupabaseAdminGateway)
+                                      .client,
+                                ),
+                                canEdit: canEdit,
                               ),
-                          ],
-                          child: const Padding(
-                            padding: EdgeInsets.all(8),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.view_column_outlined),
-                                SizedBox(width: 6),
-                                Text('Columns'),
-                              ],
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            key: const Key('admin_search'),
+                            controller: query,
+                            maxLength: 100,
+                            decoration: InputDecoration(
+                              hintText: at(context, 'search'),
+                              prefixIcon: const Icon(Icons.search, size: 20),
+                              counterText: '',
+                            ),
+                            onSubmitted: (_) => reload(newSearch: true),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        FilledButton(
+                          onPressed: () => reload(newSearch: true),
+                          child: Text(at(context, 'searchButton')),
+                        ),
+                        IconButton(
+                          onPressed: reload,
+                          tooltip: at(context, 'refresh'),
+                          icon: const Icon(Icons.refresh),
+                        ),
+                      ],
+                    ),
+                    if (widget.gateway is AdminUserDirectoryGateway)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            DropdownButton<String>(
+                              value: status,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'all',
+                                  child: Text(at(context, 'allUsersFilter')),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'active',
+                                  child: Text(at(context, 'active')),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'blocked',
+                                  child: Text(at(context, 'blocked')),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() {
+                                status = v!;
+                                offset = 0;
+                                results = fetchUsers();
+                              }),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => dateFilter(true),
+                              icon: const Icon(Icons.date_range),
+                              label: Text(
+                                joinedRange == null
+                                    ? at(context, 'joinDateFilter')
+                                    : 'Joined: ${_dateOnly(joinedRange!.start)} – ${_dateOnly(joinedRange!.end)}',
+                              ),
+                            ),
+                            OutlinedButton.icon(
+                              onPressed: () => dateFilter(false),
+                              icon: const Icon(Icons.login),
+                              label: Text(
+                                loginRange == null
+                                    ? at(context, 'lastLoginFilter')
+                                    : 'Login: ${_dateOnly(loginRange!.start)} – ${_dateOnly(loginRange!.end)}',
+                              ),
+                            ),
+                            DropdownButton<String>(
+                              value: sort,
+                              items: [
+                                DropdownMenuItem(
+                                  value: 'joined',
+                                  child: Text(at(context, 'sortJoinDate')),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'last_login',
+                                  child: Text(at(context, 'sortLastLogin')),
+                                ),
+                              ],
+                              onChanged: (v) => setState(() {
+                                sort = v!;
+                                offset = 0;
+                                results = fetchUsers();
+                              }),
+                            ),
+                            IconButton(
+                              tooltip: at(
+                                context,
+                                descending ? 'newestFirst' : 'oldestFirst',
+                              ),
+                              icon: Icon(
+                                descending ? Icons.south : Icons.north,
+                              ),
+                              onPressed: () => setState(() {
+                                descending = !descending;
+                                offset = 0;
+                                results = fetchUsers();
+                              }),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() {
+                                status = 'all';
+                                joinedRange = null;
+                                loginRange = null;
+                                sort = 'joined';
+                                descending = true;
+                                offset = 0;
+                                results = fetchUsers();
+                              }),
+                              child: Text(at(context, 'clearFilters')),
+                            ),
+                            if (widget.embedded)
+                              PopupMenuButton<String>(
+                                tooltip: at(context, 'chooseColumns'),
+                                onSelected: (key) => setState(() {
+                                  if (!columns.add(key)) columns.remove(key);
+                                }),
+                                itemBuilder: (_) => [
+                                  for (final entry in const [
+                                    ('email', 'Email'),
+                                    ('id', 'User ID'),
+                                    ('joined', 'Join date'),
+                                    ('login', 'Last login'),
+                                    ('coins', 'Coins'),
+                                    ('status', 'Status'),
+                                  ])
+                                    CheckedPopupMenuItem(
+                                      value: entry.$1,
+                                      checked: columns.contains(entry.$1),
+                                      child: Text(entry.$2),
+                                    ),
+                                ],
+                                child: const Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.view_column_outlined),
+                                      SizedBox(width: 6),
+                                      Text('Columns'),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
+              ),
               if (!widget.embedded && widget.gateway is AdminWorkspaceGateway)
                 Align(
                   alignment: Alignment.centerLeft,
@@ -2362,6 +2458,38 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     final users = snapshot.data!;
                     return Column(
                       children: [
+                        if (widget.embedded)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(4, 6, 4, 8),
+                            child: Row(
+                              children: [
+                                Text(
+                                  Localizations.localeOf(context)
+                                              .languageCode ==
+                                          'ml'
+                                      ? 'അംഗങ്ങൾ'
+                                      : 'Members',
+                                  style: const TextStyle(
+                                    color: adminInk,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const Spacer(),
+                                Text(
+                                  Localizations.localeOf(context)
+                                              .languageCode ==
+                                          'ml'
+                                      ? 'ഈ പേജിൽ ${users.length}'
+                                      : '${users.length} on this page',
+                                  style: const TextStyle(
+                                    color: adminMuted,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         Expanded(
                           child: users.isEmpty
                               ? Center(child: Text(at(context, 'empty')))
@@ -2428,6 +2556,154 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ],
           ),
         ),
+      ),
+    ),
+  );
+}
+
+class AdminDirectoryHeading extends StatelessWidget {
+  const AdminDirectoryHeading({
+    super.key,
+    required this.title,
+    required this.eyebrow,
+    required this.subtitle,
+  });
+  final String title, eyebrow, subtitle;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final wide = constraints.maxWidth >= 700;
+      return Container(
+        padding: EdgeInsets.symmetric(horizontal: wide ? 26 : 18, vertical: 16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xff271464), Color(0xff5033a0), Color(0xff8067cd)],
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xff342078).withValues(alpha: .18),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: wide ? 62 : 48,
+              height: wide ? 62 : 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: .16),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: Colors.white.withValues(alpha: .2)),
+              ),
+              child: const Icon(
+                Icons.people_rounded,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    eyebrow,
+                    style: const TextStyle(
+                      color: Color(0xffded4ff),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: wide ? 30 : 22,
+                      height: 1.15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Color(0xffe6defb),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (wide) ...[const SizedBox(width: 24), const _DirectoryHeroArt()],
+          ],
+        ),
+      );
+    },
+  );
+}
+
+class _DirectoryHeroArt extends StatelessWidget {
+  const _DirectoryHeroArt();
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox(
+      width: 180,
+      height: 96,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 92,
+            height: 92,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: .08),
+              border: Border.all(color: Colors.white.withValues(alpha: .14)),
+            ),
+          ),
+          const Icon(Icons.groups_rounded, size: 66, color: Color(0xffe0d6ff)),
+          Positioned(
+            right: 24,
+            bottom: 8,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: const Color(0xffa892ef),
+                border: Border.all(color: const Color(0xff6a50b8), width: 2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 20),
+            ),
+          ),
+          Positioned(
+            left: 12,
+            top: 16,
+            child: Icon(
+              Icons.auto_awesome_rounded,
+              color: Colors.white.withValues(alpha: .35),
+              size: 17,
+            ),
+          ),
+          Positioned(
+            right: 8,
+            top: 10,
+            child: Icon(
+              Icons.circle,
+              color: Colors.white.withValues(alpha: .2),
+              size: 8,
+            ),
+          ),
+        ],
       ),
     ),
   );

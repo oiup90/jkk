@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/admin_notifications.dart';
+import 'package:growth_circle/admin_app_releases.dart';
 import 'package:growth_circle/admin_release_audience.dart';
 import 'package:growth_circle/admin_release_activity.dart';
 import 'package:growth_circle/app_updates.dart';
@@ -15,6 +16,117 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_notifications_test.dart' show FakeNotifications;
 
 void main() {
+  testWidgets(
+    'release history exposes promotion only to editors for targeted releases',
+    (tester) async {
+      final client = SupabaseClient(
+        'https://example.test',
+        'test',
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        httpClient: MockClient((request) async {
+          final rows = request.url.path.endsWith('/admin_app_release_history')
+              ? [
+                  {
+                    'id': 'r1',
+                    'version_name': '1.1.1',
+                    'version_code': 17,
+                    'target_user_id': 'member',
+                    'notes': '',
+                    'created_at': 'today',
+                  },
+                  {
+                    'id': 'r2',
+                    'version_name': '1.0.0',
+                    'version_code': 16,
+                    'target_user_id': null,
+                    'notes': '',
+                    'created_at': 'today',
+                  },
+                ]
+              : [];
+          return http.Response(
+            jsonEncode(rows),
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+      tester.view.physicalSize = const Size(1200, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        MaterialApp(home: AdminAppReleasesPage(client: client, canEdit: true)),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Published releases'),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).first,
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('1.1.1 · build 17'), findsOneWidget);
+      expect(find.text('Publish to all users'), findsOneWidget);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: AdminAppReleasesPage(
+            key: const ValueKey('viewer'),
+            client: client,
+            canEdit: false,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Published releases'),
+        300,
+        scrollable: find
+            .descendant(
+              of: find.byType(ListView).first,
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Publish to all users'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      client.dispose();
+    },
+  );
+
+  testWidgets('promoting a release requires confirmation', (tester) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AdminReleasePromoteButton(
+            versionName: '1.1.1',
+            versionCode: 17,
+            enabled: true,
+            onConfirm: () => calls++,
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('Publish to all users'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('1.1.1 (build 17)'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(calls, 0);
+    await tester.tap(find.text('Publish to all users'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Publish to all'));
+    await tester.pumpAndSettle();
+    expect(calls, 1);
+  });
+
   testWidgets(
     'release audience requires explicit selection and supports returning to all users',
     (tester) async {
