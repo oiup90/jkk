@@ -313,8 +313,8 @@ class UserHelpPage extends StatelessWidget {
       ),
       uf(context, 'Submit a task', 'Task സമർപ്പിക്കുക'): uf(
         context,
-        'Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner reviews it.',
-        'Action പൂർത്തിയാക്കി Instagram username-ഉം അനുയോജ്യമായ screenshot-ഉം നൽകുക. Campaign ഉടമ പരിശോധിക്കും.',
+        'Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner or an administrator reviews it.',
+        'Action പൂർത്തിയാക്കി Instagram username-ഉം അനുയോജ്യമായ screenshot-ഉം നൽകുക. Campaign ഉടമയോ administrator-ഓ പരിശോധിക്കും.',
       ),
       uf(context, 'PIN and approval', 'PIN, approval'): uf(
         context,

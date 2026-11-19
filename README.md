@@ -76,7 +76,13 @@ Flutter Android app using Supabase Auth and PostgreSQL for self-reported Instagr
 
 <!-- coderabbit-ai-generated-section:v1:f281b6fbd28e9a638d156e70d9294f3f4bfc60de25d3c896fe7468217c62bdec -->
 
-3. In the SQL Editor, apply `supabase/migrations/20261107000000_growth_circle.sql` to a new project, then apply `supabase/migrations/20261107010000_owner_review.sql` once. Existing Freelan Space projects that already have the first migration only need the second. The second migration changes the coin contract: new submissions require owner approval. It disables immediate claims from old APKs; distribute the upgraded APK after applying the migration. <!-- coderabbit-ai-generated:v1 -->
+3. In the SQL Editor, apply `supabase/migrations/20261107000000_growth_circle.sql` to a new project, then apply `supabase/migrations/20261107010000_owner_review.sql` once. Existing Freelan Space projects that already have the first migration only need the second. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:132c4708b1de61e31999242bc95cbe10e4a50ac66334906a3d05424758ce401e -->
+
+The second migration changes the coin contract: new submissions require review. Later migrations also permit administrator editors to decide submissions.
+
+<!-- /coderabbit-ai-generated:v1 --> It disables immediate claims from old APKs; distribute the upgraded APK after applying the migration. <!-- coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -298,7 +304,19 @@ Apply `supabase/migrations/20261107060000_admin_submission_review.sql` after the
 
 Participants see “AI is checking your submission” while an administrator is checking it.
 
-<!-- /coderabbit-ai-generated:v1 --> The indicator expires after two minutes without a connection and is refreshed while the inspection is open. Campaign owners continue to make approval decisions using their PIN. No AI review is performed.
+<!-- /coderabbit-ai-generated:v1 --> The indicator expires after two minutes without a connection and is refreshed while the inspection is open. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:cfeb64b3a72bb07bf2b68757c24137fd4b78ede075171f5f6efda8526a77f2aa -->
+
+<!-- coderabbit-ai-generated-section:v1:c947922b7af6c02433f24827dfe2d96ecbc57f451cc2fb08fdec2ee03b53f90b -->
+
+Campaign owners can make approval decisions using their PIN. After `20261119074241_admin_users_and_submission_decisions.sql`, MFA-verified editors can also approve or reject independently. No AI review is performed.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Administrator campaign overview
 
@@ -308,7 +326,13 @@ Apply `supabase/migrations/20261107050000_admin_campaigns.sql` after the precedi
 
 <!-- coderabbit-ai-generated-section:v1:7c61c051ab47f1de730559a2c54dd6684a9a255f8ac029ed45a33523f35a20a6 -->
 
-The campaign owner retains the approval decision; administrators can inspect pending evidence as described above.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:c380870997a8121922c42e7b0bd3561d95f68c1393a31e0726c3f67984972d0a -->
+
+Campaign owners and administrator editors can decide pending submissions as described above.
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 <!-- /coderabbit-ai-generated:v1 -->
 
@@ -441,7 +465,13 @@ A user can apply one other user's code once. The economy migration below enables
 
 The default registration bonus is 10 coins once, and the default campaign reward is one coin per task. After the economy migration, administrators can change both. Campaigns reserve the configured reward multiplied by the requested task count.
 
-<!-- /coderabbit-ai-generated:v1 --> A participant submits an Instagram username and a JPEG or PNG screenshot (maximum 512 KiB); the owner sees a pending submission, reviews the screenshot and approves or rejects it. <!-- coderabbit-ai-generated:v1 -->
+<!-- /coderabbit-ai-generated:v1 --> <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:8e0b2abfa5f49ef6b6fcca81b7a2c836a041f5c5cfa65a6b99fa5ac6e2d7fe70 -->
+
+A participant submits an Instagram username and a JPEG or PNG screenshot (maximum 512 KiB). The campaign owner or an MFA-verified administrator editor can review it and approve or reject it.
+
+<!-- /coderabbit-ai-generated:v1 --> <!-- coderabbit-ai-generated:v1 -->
 
 <!-- coderabbit-ai-generated-section:v1:04c6b5e61c4712e1f6c99ef7592762da032e646f0bf8ddc1006f9c76cef62ee8 -->
 

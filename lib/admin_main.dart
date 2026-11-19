@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'evidence_image.dart';
 import 'admin_operations.dart';
+import 'admin_users_support.dart';
 import 'admin_wallets.dart';
 import 'official_social_links.dart';
 import 'admin_app_releases.dart';
@@ -73,7 +74,7 @@ const labels = <String, List<String>>{
   'activity': ['Admin activity', 'Admin പ്രവർത്തനങ്ങൾ'],
   'reports': ['Reports & CSV', 'റിപ്പോർട്ടുകളും CSV-യും'],
   'alerts': ['Alerts', 'അറിയിപ്പുകൾ'],
-  'roles': ['Admin roles', 'Admin roles'],
+  'roles': ['Admin users', 'Admin users'],
   'details': ['Details', 'വിശദാംശങ്ങൾ'],
   'actionsLabel': ['Actions', 'പ്രവർത്തനങ്ങൾ'],
   'filterSubmissions': ['Filter submissions', 'Submissions filter ചെയ്യുക'],
@@ -139,8 +140,8 @@ const labels = <String, List<String>>{
   'inspect': ['Inspect', 'പരിശോധിക്കുക'],
   'inspecting': ['Inspect submission', 'Submission പരിശോധിക്കുക'],
   'reviewNotice': [
-    'The participant sees when an administrator is checking. The campaign owner makes the decision.',
-    'Administrator പരിശോധിക്കുമ്പോൾ participant-ന് കാണാം. തീരുമാനം campaign ഉടമയാണ് എടുക്കുന്നത്.',
+    'Editors can approve or reject submissions after checking the evidence.',
+    'Evidence പരിശോധിച്ച ശേഷം editors-ന് submission അംഗീകരിക്കാനോ നിരസിക്കാനോ കഴിയും.',
   ],
   'submissionEmpty': [
     'No pending submissions.',
@@ -151,6 +152,12 @@ const labels = <String, List<String>>{
     'Submission ലഭ്യമല്ല. അത് പരിശോധിച്ചു കഴിഞ്ഞിരിക്കാം.',
   ],
   'close': ['Close', 'അടയ്ക്കുക'],
+  'approveSubmission': ['Approve', 'അംഗീകരിക്കുക'],
+  'rejectSubmission': ['Reject', 'നിരസിക്കുക'],
+  'decisionFailure': [
+    'Unable to decide this submission. It may have already been reviewed.',
+    'Submission തീരുമാനിക്കാനായില്ല. ഇതിനകം പരിശോധിച്ചിട്ടുണ്ടാകാം.',
+  ],
   'instagramUsername': ['Instagram username', 'Instagram username'],
   'allActions': ['All actions', 'എല്ലാ actions'],
   'allStatuses': ['All statuses', 'എല്ലാ നിലകളും'],
@@ -344,6 +351,10 @@ abstract class AdminGateway {
   Future<void> dispose();
 }
 
+abstract class AdminDecisionGateway {
+  Future<void> decideSubmission(AdminSubmission submission, bool approve);
+}
+
 abstract class AdminWorkspaceGateway {
   Future<String> workspaceRole();
   Future<Map<String, dynamic>> overview();
@@ -362,7 +373,8 @@ abstract class AdminWorkspaceGateway {
   );
 }
 
-class SupabaseAdminGateway implements AdminGateway, AdminWorkspaceGateway {
+class SupabaseAdminGateway
+    implements AdminGateway, AdminWorkspaceGateway, AdminDecisionGateway {
   SupabaseAdminGateway(this.client, {this.projectUrl, this.publicKey});
   final String? projectUrl, publicKey;
   final SupabaseClient client;
@@ -513,6 +525,22 @@ class SupabaseAdminGateway implements AdminGateway, AdminWorkspaceGateway {
           },
         ) as Map,
       );
+  @override
+  Future<void> decideSubmission(
+    AdminSubmission submission,
+    bool approve,
+  ) async {
+    await client.rpc(
+      'admin_decide_submission',
+      params: {
+        'p_campaign_id': submission.campaignId,
+        'p_user_id': submission.userId,
+        'p_submission_id': submission.submissionId,
+        'p_approve': approve,
+      },
+    );
+  }
+
   @override
   Future<bool> renewReview(String sessionId) async =>
       (await client.rpc(
@@ -1809,7 +1837,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               )
                             : page == 'operations' &&
                                   widget.gateway is SupabaseAdminGateway
-                            ? AdminOperationsPage(
+                            ? AdminUsersSupportPage(
                                 client: (widget.gateway as SupabaseAdminGateway)
                                     .client,
                                 canEdit: canEdit,
@@ -1832,8 +1860,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           value: 'operations',
                           child: Text(
                             Localizations.localeOf(context).languageCode == 'ml'
-                                ? 'Admin പ്രവർത്തനങ്ങൾ'
-                                : 'Admin operations',
+                                ? 'Users Supports'
+                                : 'Users Supports',
                           ),
                         ),
                       PopupMenuItem(
@@ -2579,6 +2607,29 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
                                                 color: adminMuted,
                                               ),
                                             ),
+                                            if (widget.gateway
+                                                    is AdminWorkspaceGateway &&
+                                                campaign.status == 'active')
+                                              TextButton.icon(
+                                                onPressed: () => Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute<void>(
+                                                    builder: (_) =>
+                                                        AdminSubmissions(
+                                                          gateway:
+                                                              widget.gateway,
+                                                          initialCampaign:
+                                                              campaign.id,
+                                                        ),
+                                                  ),
+                                                ),
+                                                icon: const Icon(
+                                                  Icons.fact_check_outlined,
+                                                ),
+                                                label: Text(
+                                                  at(context, 'submissions'),
+                                                ),
+                                              ),
                                             const SizedBox(height: 16),
                                             Text(
                                               '${at(context, 'progress')}: $completed/${campaign.requested}',
@@ -2651,8 +2702,13 @@ class _AdminCampaignsState extends State<AdminCampaigns> {
 }
 
 class AdminSubmissions extends StatefulWidget {
-  const AdminSubmissions({super.key, required this.gateway});
+  const AdminSubmissions({
+    super.key,
+    required this.gateway,
+    this.initialCampaign,
+  });
   final AdminGateway gateway;
+  final String? initialCampaign;
   @override
   State<AdminSubmissions> createState() => _AdminSubmissionsState();
 }
@@ -2725,6 +2781,7 @@ class _AdminSubmissionsState extends State<AdminSubmissions> {
   @override
   void initState() {
     super.initState();
+    campaign.text = widget.initialCampaign ?? '';
     result = fetch();
   }
 
@@ -2962,10 +3019,43 @@ class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
   String? session, username, error;
   Uint8List? bytes;
   Timer? heartbeat;
+  bool canDecide = false, deciding = false;
   @override
   void initState() {
     super.initState();
+    final gateway = widget.gateway;
+    if (gateway is AdminDecisionGateway) {
+      if (gateway is AdminWorkspaceGateway) {
+        (gateway as AdminWorkspaceGateway)
+            .workspaceRole()
+            .then((role) {
+              if (mounted) setState(() => canDecide = role == 'editor');
+            })
+            .catchError((Object _) {});
+      } else {
+        canDecide = true;
+      }
+    }
     load();
+  }
+
+  Future<void> decide(bool approve) async {
+    if (deciding || session == null || bytes == null) return;
+    setState(() => deciding = true);
+    try {
+      await (widget.gateway as AdminDecisionGateway).decideSubmission(
+        widget.submission,
+        approve,
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          error = at(context, 'decisionFailure');
+          deciding = false;
+        });
+      }
+    }
   }
 
   Future<void> load() async {
@@ -3045,8 +3135,22 @@ class _AdminInspectionDialogState extends State<AdminInspectionDialog> {
       ),
     ),
     actions: [
+      if (canDecide) ...[
+        TextButton(
+          onPressed: deciding || bytes == null || error != null
+              ? null
+              : () => decide(false),
+          child: Text(at(context, 'rejectSubmission')),
+        ),
+        FilledButton(
+          onPressed: deciding || bytes == null || error != null
+              ? null
+              : () => decide(true),
+          child: Text(at(context, 'approveSubmission')),
+        ),
+      ],
       TextButton(
-        onPressed: () => Navigator.pop(context),
+        onPressed: deciding ? null : () => Navigator.pop(context),
         child: Text(at(context, 'close')),
       ),
     ],
@@ -3779,7 +3883,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       ),
       canEdit: role == 'editor',
     ),
-    'operations' => AdminOperationsPage(
+    'operations' => AdminUsersSupportPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
     ),
@@ -3818,7 +3922,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
         ('updates', Icons.system_update),
         ('walletsManagement', Icons.account_balance_wallet_outlined),
         ('socialLinks', Icons.public),
-        ('operations', Icons.settings_outlined),
+        ('operations', Icons.support_agent_outlined),
       ],
     ];
     return AdminDestinationScaffold(
@@ -3912,7 +4016,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                       entry.$1 == 'updates'
                                           ? 'App releases'
                                           : entry.$1 == 'operations'
-                                          ? 'Admin operations'
+                                          ? 'Users Supports'
                                           : at(context, entry.$1),
                                       style: TextStyle(
                                         color: selected == entry.$1
@@ -4011,7 +4115,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                       Expanded(
                         child: Text(
                           selected == 'operations'
-                              ? 'Admin operations'
+                              ? 'Users Supports'
                               : selected == 'updates'
                               ? 'App releases'
                               : at(context, selected),

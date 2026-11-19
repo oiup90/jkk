@@ -57,7 +57,7 @@ const Map<String, Map<String, String>> userTranslations = {
         "अभियान रद्द कर दिया गया और अप्रयुक्त सिक्के वापस कर दिए गए।",
     "Campaign created.": "अभियान बनाया गया।",
     "Campaign information is visible to signed-in members as needed to perform tasks. Submission evidence is available to the submitting member, the campaign owner and administrators. Support conversations are available to you and authorized administrators. Wallet numbers are identifiers you can share to receive coins; they are not login credentials.": "अभियान की जानकारी साइन-इन सदस्यों को कार्यों को करने के लिए आवश्यक रूप से दिखाई देती है। प्रस्तुत करने वाले सदस्य, अभियान के मालिक और प्रशासकों के लिए प्रस्तुत प्रमाण उपलब्ध है। समर्थन बातचीत आपके और अधिकृत प्रशासकों के लिए उपलब्ध है। वॉलेट नंबर पहचानकर्ता हैं जिन्हें आप सिक्के प्राप्त करने के लिए साझा कर सकते हैं; वे लॉगिन क्रेडेंशियल्स नहीं हैं।",
-    "Campaign owners review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.": "अभियान के मालिक प्रस्तुत किए गए साक्ष्य की समीक्षा करते हैं। इंस्टाग्राम की कार्रवाई स्वचालित रूप से सत्यापित या गारंटी नहीं होती है। इसकी सेवा का उपयोग करते समय इंस्टाग्राम के नियमों का पालन करें। सहेजे गए उपयोगकर्ता नाम सदस्यों द्वारा दर्ज किए जाते हैं और खाते के स्वामित्व को साबित नहीं करते हैं।",
+    "Campaign owners or administrators review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.": "अभियान के मालिक या प्रशासक प्रस्तुत प्रमाण की समीक्षा करते हैं। Instagram गतिविधि स्वतः सत्यापित या गारंटीकृत नहीं है। सेवा का उपयोग करते समय Instagram के नियमों का पालन करें। सदस्यों द्वारा दर्ज उपयोगकर्ता नाम खाते का स्वामित्व साबित नहीं करते।",
     "Campaign refund": "अभियान रिफंड",
     "Campaigns": "अभियान",
     "Campaigns and reviews": "अभियान और समीक्षाएँ",
@@ -117,7 +117,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Complete easy Instagram tasks and earn coins while growing our community.": "हमारे समुदाय को बढ़ाते हुए आसान इंस्टाग्राम कार्यों को पूरा करें और सिक्के अर्जित करें।",
     "Complete installation in the Android installer.":
         "एंड्रायड इंस्टॉलर में पूरी तरह से इंस्टॉल करें।",
-    "Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner reviews it.": "कार्रवाई को पूरा करें, अपना इंस्टाग्राम उपयोगकर्ता नाम दर्ज करें और प्रासंगिक स्क्रीनशॉट प्रदान करें। अभियान का मालिक इसकी समीक्षा करता है।",
+    "Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner or an administrator reviews it.": "कार्य पूरा करें, अपना Instagram उपयोगकर्ता नाम दर्ज करें और संबंधित स्क्रीनशॉट दें। अभियान का मालिक या प्रशासक इसकी समीक्षा करेगा।",
     "Completed": "पूरा किया गया।",
     "Confirm": "पुष्टि करें",
     "Confirm PIN": "पिन की पुष्टि करें",
@@ -195,7 +195,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Enter your 4-digit PIN": "अपना 4 अंकों का पिन दर्ज करें",
     "Enter your 4-digit Security PIN to continue.":
         "जारी रखने के लिए अपना 4 अंकों का सुरक्षा पिन दर्ज करें।",
-    "Enter your Instagram username and choose a screenshot. The campaign owner will review it before you earn coins.": "अपना इंस्टाग्राम उपयोगकर्ता नाम दर्ज करें और एक स्क्रीनशॉट चुनें। मुद्रा अर्जित करने से पहले अभियान का मालिक इसकी समीक्षा करेगा।",
+    "Enter your Instagram username and choose a screenshot. The campaign owner or an administrator will review it before you earn coins.": "अपना Instagram उपयोगकर्ता नाम दर्ज करें और स्क्रीनशॉट चुनें। कॉइन मिलने से पहले अभियान का मालिक या प्रशासक इसकी समीक्षा करेगा।",
     "Enter your email first.": "पहले अपना ईमेल दर्ज करें।",
     "Enter your password": "अपना कूटशब्द दर्ज करें",
     "Evidence unavailable.": "सबूत उपलब्ध नहीं हैं।",
@@ -416,8 +416,8 @@ const Map<String, Map<String, String>> userTranslations = {
     "Submit a task": "एक कार्य प्रस्तुत करें",
     "Submit for review": "समीक्षा के लिए प्रस्तुत करें",
     "Submit your task": "अपना कार्य प्रस्तुत करें।",
-    "Submitted. Your coin is awarded after owner approval.":
-        "प्रस्तुत किया गया। आपका सिक्का मालिक की मंजूरी के बाद दिया जाता है।",
+    "Submitted. Your coin is awarded after approval.":
+        "सबमिट किया गया। स्वीकृति के बाद आपको कॉइन मिलेंगे।",
     "Supabase is not configured. See the project setup instructions to build this app with a Supabase project.": "सुपरबेस कॉन्फ़िगर नहीं किया गया है। सुपरबेस परियोजना के साथ इस ऐप को बनाने के लिए परियोजना सेटअप निर्देशों को देखें।",
     "Supabase provides account and app data services; Cloudflare R2 hosts APK downloads; Firebase supports push delivery; Instamojo handles payment checkout. Opening Instagram or checkout uses those services. The app stores preferences locally and uses secure storage when login is saved. Android balance audio is played locally.": "सुपरबेस खाता और ऐप डेटा सेवाएं प्रदान करता है; क्लाउडफ्लेयर आर2 एपीके डाउनलोड होस्ट करता है; फायरबेस पुश डिलीवरी का समर्थन करता है; इंस्टामोजो भुगतान चेकआउट को संभालता है। इंस्टाग्राम या चेकआउट खोलने में उन सेवाओं का उपयोग किया जाता है। ऐप स्थानीय रूप से वरीयताओं को संग्रहीत करता है और लॉग इन करने पर सुरक्षित भंडारण का उपयोग करता है। एंड्रॉइड बैलेंस ऑडियो स्थानीय रूप से चलाया जाता है।",
     "Support": "सहायता",
@@ -426,7 +426,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Task estimates unavailable. Refresh to retry.":
         "कार्य अनुमान उपलब्ध नहीं है। फिर से प्रयास करने के लिए ताज़ा करें।",
     "Tasks": "कार्य",
-    "Tasks are reviewed by campaign owners. Instagram activity is not automatically verified or guaranteed.": "अभियान मालिकों द्वारा कार्यों की समीक्षा की जाती है। इंस्टाग्राम गतिविधि स्वचालित रूप से सत्यापित या गारंटी नहीं है।",
+    "Tasks are reviewed by campaign owners or administrators. Instagram activity is not automatically verified or guaranteed.": "कार्य अभियान के मालिकों या प्रशासकों द्वारा जाँचे जाते हैं। इंस्टाग्राम गतिविधि स्वचालित रूप से सत्यापित या गारंटीकृत नहीं है।",
     "Terms of Service": "सेवा की शर्तें",
     "The app download link is not available yet. Please contact support.":
         "ऐप डाउनलोड लिंक अभी तक उपलब्ध नहीं है। कृपया समर्थन से संपर्क करें।",
@@ -611,7 +611,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Campaign cancelled and unused coins refunded.": "பிரச்சாரம் ரத்து செய்யப்பட்டது மற்றும் பயன்படுத்தப்படாத நாணயங்கள் திருப்பித் தரப்பட்டன.",
     "Campaign created.": "பிரச்சாரம் உருவாக்கப்பட்டது.",
     "Campaign information is visible to signed-in members as needed to perform tasks. Submission evidence is available to the submitting member, the campaign owner and administrators. Support conversations are available to you and authorized administrators. Wallet numbers are identifiers you can share to receive coins; they are not login credentials.": "பிரச்சாரத் தகவல்கள் உள்நுழைந்த உறுப்பினர்களுக்கு பணிகளைச் செய்யத் தேவையான வகையில் தெரியும். சமர்ப்பிப்புச் சான்றுகள் சமர்ப்பிக்கும் உறுப்பினர், பிரச்சார உரிமையாளர் மற்றும் நிர்வாகிகளுக்குக் கிடைக்கும். ஆதரவு உரையாடல்கள் உங்களுக்கும் அங்கீகரிக்கப்பட்ட நிர்வாகிகளுக்கும் கிடைக்கும். பணப்பை எண்கள் நாணயங்களைப் பெற நீங்கள் பகிர்ந்து கொள்ளக்கூடிய அடையாளங்காட்டிகளாகும்; அவை உள்நுழைவுச் சான்றுகள் அல்ல.",
-    "Campaign owners review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.": "பிரச்சார உரிமையாளர்கள் சமர்ப்பிக்கப்பட்ட ஆதாரங்களை மதிப்பாய்வு செய்கிறார்கள். இன்ஸ்டாகிராம் நடவடிக்கைகள் தானாகவே சரிபார்க்கப்படுவதில்லை அல்லது உத்தரவாதம் அளிக்கப்படுவதில்லை. இன்ஸ்டாகிராம் சேவையைப் பயன்படுத்தும் போது அதன் விதிகளைப் பின்பற்றவும். சேமிக்கப்பட்ட பயனர்பெயர்கள் உறுப்பினர்களால் உள்ளிடப்படுகின்றன, மேலும் கணக்கு உரிமையை நிரூபிக்காது.",
+    "Campaign owners or administrators review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.": "சமர்ப்பிக்கப்பட்ட ஆதாரங்களை பிரச்சார உரிமையாளர்கள் அல்லது நிர்வாகிகள் மதிப்பாய்வு செய்கிறார்கள். Instagram செயல்கள் தானாக சரிபார்க்கப்படுவதில்லை அல்லது உறுதி செய்யப்படுவதில்லை. சேவையைப் பயன்படுத்தும்போது Instagram விதிகளைப் பின்பற்றவும். உறுப்பினர்கள் உள்ளிடும் பயனர்பெயர்கள் கணக்கு உரிமையை நிரூபிக்காது.",
     "Campaign refund": "பிரச்சாரத்தின் பணத்தைத் திருப்பிச் செலுத்துதல்",
     "Campaigns": "பிரச்சாரங்கள்",
     "Campaigns and reviews": "பிரச்சாரங்கள் மற்றும் மதிப்புரைகள்",
@@ -672,7 +672,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Complete easy Instagram tasks and earn coins while growing our community.": "எங்கள் சமூகத்தை வளர்க்கும் போது எளிதான இன்ஸ்டாகிராம் பணிகளை முடித்து நாணயங்களை சம்பாதிக்கவும்.",
     "Complete installation in the Android installer.":
         "ஆண்ட்ராய்டு இன்ஸ்டாலரில் முழுமையான நிறுவல்.",
-    "Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner reviews it.": "செயலைச் செய்து, உங்கள் இன்ஸ்டாகிராம் பயனர்பெயரை உள்ளிட்டு, பொருத்தமான ஸ்கிரீன் ஷாட்டை வழங்கவும். பிரச்சார உரிமையாளர் அதை மதிப்பாய்வு செய்கிறார்.",
+    "Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner or an administrator reviews it.": "செயலை முடித்து, உங்கள் Instagram பயனர்பெயரையும் பொருத்தமான ஸ்கிரீன்ஷாட்டையும் வழங்கவும். பிரச்சார உரிமையாளர் அல்லது நிர்வாகி அதை மதிப்பாய்வு செய்வார்.",
     "Completed": "நிறைவு செய்யப்பட்டது.",
     "Confirm": "உறுதிப்படுத்தவும்",
     "Confirm PIN": "பின் எண்ணை உறுதிப்படுத்தவும்",
@@ -749,7 +749,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Enter your 4-digit PIN": "உங்கள் 4 இலக்க பின் எண்ணை உள்ளிடவும்.",
     "Enter your 4-digit Security PIN to continue.":
         "தொடர உங்கள் 4 இலக்க பாதுகாப்பு பின் எண்ணை உள்ளிடவும்.",
-    "Enter your Instagram username and choose a screenshot. The campaign owner will review it before you earn coins.": "உங்கள் இன்ஸ்டாகிராம் பயனர்பெயரை உள்ளிட்டு ஒரு ஸ்கிரீன் ஷாட்டைத் தேர்ந்தெடுக்கவும். நீங்கள் நாணயங்களைப் பெறுவதற்கு முன்பு பிரச்சார உரிமையாளர் அதை மதிப்பாய்வு செய்வார்.",
+    "Enter your Instagram username and choose a screenshot. The campaign owner or an administrator will review it before you earn coins.": "உங்கள் Instagram பயனர்பெயரை உள்ளிட்டு ஸ்கிரீன்ஷாட்டைத் தேர்ந்தெடுக்கவும். நாணயங்களைப் பெறுவதற்கு முன் பிரச்சார உரிமையாளர் அல்லது நிர்வாகி அதை மதிப்பாய்வு செய்வார்.",
     "Enter your email first.": "முதலில் உங்கள் மின்னஞ்சலை உள்ளிடவும்.",
     "Enter your password": "உங்கள் கடவுச்சொல்லை உள்ளிடவும்",
     "Evidence unavailable.": "ஆதாரம் கிடைக்கவில்லை.",
@@ -974,7 +974,8 @@ const Map<String, Map<String, String>> userTranslations = {
     "Submit a task": "ஒரு பணியைச் சமர்ப்பிக்கவும்",
     "Submit for review": "மதிப்பாய்வுக்கு சமர்ப்பிக்கவும்",
     "Submit your task": "உங்கள் பணியை சமர்ப்பிக்கவும்",
-    "Submitted. Your coin is awarded after owner approval.": "சமர்ப்பிக்கப்பட்டது. உங்கள் நாணயம் உரிமையாளரின் ஒப்புதலுக்குப் பிறகு வழங்கப்படுகிறது.",
+    "Submitted. Your coin is awarded after approval.":
+        "சமர்ப்பிக்கப்பட்டது. ஒப்புதலுக்குப் பிறகு நாணயம் வழங்கப்படும்.",
     "Supabase is not configured. See the project setup instructions to build this app with a Supabase project.": "சுபாபேஸ் கட்டமைக்கப்படவில்லை. சுபாபேஸ் திட்டத்துடன் இந்த பயன்பாட்டை உருவாக்க திட்ட அமைப்பு வழிமுறைகளைப் பார்க்கவும்.",
     "Supabase provides account and app data services; Cloudflare R2 hosts APK downloads; Firebase supports push delivery; Instamojo handles payment checkout. Opening Instagram or checkout uses those services. The app stores preferences locally and uses secure storage when login is saved. Android balance audio is played locally.": "சுபாபேஸ் கணக்கு மற்றும் பயன்பாட்டு தரவு சேவைகளை வழங்குகிறது; கிளவுட்ஃப்ளேர் ஆர்2 APK பதிவிறக்கங்களை வழங்குகிறது; ஃபயர்பேஸ் புஷ் டெலிவரியை ஆதரிக்கிறது; இன்ஸ்டாமோஜோ கட்டண செக்அவுட்டைக் கையாளுகிறது. இன்ஸ்டாகிராம் அல்லது செக்அவுட்டைத் திறப்பது அந்த சேவைகளைப் பயன்படுத்துகிறது. பயன்பாடு விருப்பங்களை உள்ளூரில் சேமித்து வைக்கிறது மற்றும் உள்நுழைவு சேமிக்கப்படும்போது பாதுகாப்பான சேமிப்பகத்தைப் பயன்படுத்துகிறது. ஆண்ட்ராய்டு சமநிலை ஆடியோ உள்ளூரில் இயக்கப்படுகிறது.",
     "Support": "ஆதரவு",
@@ -983,7 +984,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Task estimates unavailable. Refresh to retry.":
         "பணி மதிப்பீடுகள் கிடைக்கவில்லை. மீண்டும் முயற்சிக்க புதுப்பிக்கவும்.",
     "Tasks": "பணிகள்.",
-    "Tasks are reviewed by campaign owners. Instagram activity is not automatically verified or guaranteed.": "பணிகள் பிரச்சார உரிமையாளர்களால் மதிப்பாய்வு செய்யப்படுகின்றன. இன்ஸ்டாகிராம் செயல்பாடு தானாக சரிபார்க்கப்படுவதில்லை அல்லது உத்தரவாதம் அளிக்கப்படுவதில்லை.",
+    "Tasks are reviewed by campaign owners or administrators. Instagram activity is not automatically verified or guaranteed.": "பணிகளை பிரச்சார உரிமையாளர்கள் அல்லது நிர்வாகிகள் மதிப்பாய்வு செய்கிறார்கள். Instagram செயல்பாடு தானாகச் சரிபார்க்கப்படுவதில்லை அல்லது உறுதி செய்யப்படுவதில்லை.",
     "Terms of Service": "சேவை விதிமுறைகள்",
     "The app download link is not available yet. Please contact support.": "பயன்பாட்டு பதிவிறக்க இணைப்பு இன்னும் கிடைக்கவில்லை. தயவுசெய்து ஆதரவைத் தொடர்பு கொள்ளவும்.",
     "The app uses account and profile details, saved Instagram usernames, wallet balances, coin transactions, campaign submissions and screenshots, support messages, and notification preferences. A device push token is registered when notifications are enabled. Photos are provided when you choose to upload them.": "பயன்பாடு கணக்கு மற்றும் சுயவிவர விவரங்கள், சேமிக்கப்பட்ட இன்ஸ்டாகிராம் பயனர்பெயர்கள், பணப்பை நிலுவைகள், நாணய பரிவர்த்தனைகள், பிரச்சார சமர்ப்பிப்புகள் மற்றும் ஸ்கிரீன் ஷாட்கள், ஆதரவு செய்திகள் மற்றும் அறிவிப்பு விருப்பத்தேர்வுகள் ஆகியவற்றைப் பயன்படுத்துகிறது. அறிவிப்புகள் இயக்கப்பட்டால் ஒரு சாதன புஷ் டோக்கன் பதிவு செய்யப்படுகிறது. நீங்கள் அவற்றைப் பதிவேற்றத் தேர்ந்தெடுக்கும்போது புகைப்படங்கள் வழங்கப்படுகின்றன.",
@@ -1165,7 +1166,7 @@ const Map<String, Map<String, String>> userTranslations = {
         "تم إلغاء الحملة واسترداد العملات غير المستخدمة.",
     "Campaign created.": "تم إنشاء الحملة.",
     "Campaign information is visible to signed-in members as needed to perform tasks. Submission evidence is available to the submitting member, the campaign owner and administrators. Support conversations are available to you and authorized administrators. Wallet numbers are identifiers you can share to receive coins; they are not login credentials.": "معلومات الحملة مرئية للأعضاء الذين قاموا بتسجيل الدخول حسب الحاجة لأداء المهام. تتوفر أدلة التقديم للعضو المقدم ومالك الحملة والمسؤولين. تتوفر محادثات الدعم لك وللمسؤولين المعتمدين. أرقام المحفظة هي معرفات يمكنك مشاركتها لتلقي العملات المعدنية ؛ فهي ليست بيانات اعتماد تسجيل الدخول.",
-    "Campaign owners review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.": "يقوم مالكو الحملة بمراجعة الأدلة المقدمة. لا يتم التحقق من إجراءات Instagram أو ضمانها تلقائيًا. اتبع قواعد Instagram عند استخدام خدمتها. يتم إدخال أسماء المستخدمين المحفوظة من قبل الأعضاء ولا تثبت ملكية الحساب.",
+    "Campaign owners or administrators review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.": "يراجع مالكو الحملات أو المسؤولون الأدلة المقدمة. لا يتم التحقق من إجراءات Instagram أو ضمانها تلقائيًا. اتبع قواعد Instagram عند استخدام الخدمة. أسماء المستخدمين التي يدخلها الأعضاء لا تثبت ملكية الحساب.",
     "Campaign refund": "استرداد الحملة",
     "Campaigns": "الحملات الدعائية",
     "Campaigns and reviews": "الحملات والمراجعات",
@@ -1226,7 +1227,7 @@ const Map<String, Map<String, String>> userTranslations = {
         "إكمال المهام سهلة إينستاجرام وكسب النقود في حين تنمو مجتمعنا.",
     "Complete installation in the Android installer.":
         "التثبيت الكامل في مثبت Android.",
-    "Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner reviews it.": "أكمل الإجراء ، وأدخل اسم مستخدم Instagram الخاص بك وقدم لقطة الشاشة ذات الصلة. يقوم مالك الحملة بمراجعته.",
+    "Complete the action, enter your Instagram username and provide the relevant screenshot. The campaign owner or an administrator reviews it.": "أكمل الإجراء وأدخل اسم مستخدم Instagram وقدم لقطة الشاشة المناسبة. يراجعها مالك الحملة أو أحد المسؤولين.",
     "Completed": "أُنجز",
     "Confirm": "تأكيد",
     "Confirm PIN": "تأكيد PIN",
@@ -1306,7 +1307,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Enter your 4-digit PIN": "أدخل رقم التعريف الشخصي المكون من 4 أرقام",
     "Enter your 4-digit Security PIN to continue.":
         "أدخل رقم PIN الأمني المكون من 4 أرقام للمتابعة.",
-    "Enter your Instagram username and choose a screenshot. The campaign owner will review it before you earn coins.": "أدخل اسم مستخدم Instagram الخاص بك واختر لقطة شاشة. سيقوم مالك الحملة بمراجعته قبل كسب العملات المعدنية.",
+    "Enter your Instagram username and choose a screenshot. The campaign owner or an administrator will review it before you earn coins.": "أدخل اسم مستخدم Instagram واختر لقطة شاشة. سيراجعها مالك الحملة أو أحد المسؤولين قبل حصولك على العملات.",
     "Enter your email first.": "أدخل بريدك الإلكتروني أولاً.",
     "Enter your password": "أدخل كلمة المرور الخاصة بك",
     "Evidence unavailable.": "الأدلة غير متوفرة.",
@@ -1530,8 +1531,8 @@ const Map<String, Map<String, String>> userTranslations = {
     "Submit a task": "إرسال مهمة",
     "Submit for review": "تقديم للمراجعة",
     "Submit your task": "أرسل مهمتك",
-    "Submitted. Your coin is awarded after owner approval.":
-        "قدمت. يتم منح العملة الخاصة بك بعد موافقة المالك.",
+    "Submitted. Your coin is awarded after approval.":
+        "تم الإرسال. ستحصل على العملة بعد الموافقة.",
     "Supabase is not configured. See the project setup instructions to build this app with a Supabase project.": "لم يتم تكوين Supabase. راجع تعليمات إعداد المشروع لإنشاء هذا التطبيق باستخدام مشروع Supabase.",
     "Supabase provides account and app data services; Cloudflare R2 hosts APK downloads; Firebase supports push delivery; Instamojo handles payment checkout. Opening Instagram or checkout uses those services. The app stores preferences locally and uses secure storage when login is saved. Android balance audio is played locally.": "يوفر Supabase خدمات بيانات الحساب والتطبيق ؛ Cloudflare R2 تستضيف تنزيلات APK ؛ Firebase يدعم دفع التسليم. يعالج Instamojo الدفع. فتح Instagram أو الخروج يستخدم تلك الخدمات. يقوم التطبيق بتخزين التفضيلات محليًا ويستخدم التخزين الآمن عند حفظ تسجيل الدخول. يتم تشغيل صوت توازن Android محليًا.",
     "Support": "الدعم",
@@ -1540,7 +1541,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "Task estimates unavailable. Refresh to retry.":
         "تقديرات المهمة غير متوفرة. تحديث لإعادة المحاولة.",
     "Tasks": "المهمات",
-    "Tasks are reviewed by campaign owners. Instagram activity is not automatically verified or guaranteed.": "تتم مراجعة المهام من قبل مالكي الحملات. لا يتم التحقق من نشاط Instagram أو ضمانه تلقائيًا.",
+    "Tasks are reviewed by campaign owners or administrators. Instagram activity is not automatically verified or guaranteed.": "يراجع مالكو الحملات أو المسؤولون المهام. لا يتم التحقق من نشاط Instagram أو ضمانه تلقائيًا.",
     "Terms of Service": "شروط الخدمة",
     "The app download link is not available yet. Please contact support.":
         "رابط تنزيل التطبيق غير متوفر بعد. يرجى الاتصال بالدعم.",

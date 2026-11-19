@@ -213,10 +213,11 @@ class SupportConversation extends StatefulWidget {
     required this.subject,
     required this.open,
     this.admin = false,
+    this.canReply = true,
   });
   final SupabaseClient client;
   final String id, subject;
-  final bool open, admin;
+  final bool open, admin, canReply;
   @override
   State<SupportConversation> createState() => _SupportConversationState();
 }
@@ -379,6 +380,8 @@ class _SupportConversationState extends State<SupportConversation>
                             Text(
                               mine
                                   ? supportText(c, 'You', 'നിങ്ങൾ')
+                                  : widget.admin
+                                  ? supportText(c, 'User', 'User')
                                   : supportText(c, 'Support', 'സഹായം'),
                               style: TextStyle(
                                 fontSize: 11,
@@ -419,7 +422,12 @@ class _SupportConversationState extends State<SupportConversation>
                 ),
               ),
             ),
-          if (widget.open)
+          if (widget.open && !widget.canReply)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(supportText(context, 'View only', 'കാണാൻ മാത്രം')),
+            ),
+          if (widget.open && widget.canReply)
             SafeArea(
               top: false,
               child: Padding(

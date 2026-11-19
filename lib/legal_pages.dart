@@ -19,8 +19,8 @@ class LegalPage extends StatelessWidget {
               'സ്വന്തം account ഉപയോഗിച്ച് ശരിയായ വിവരങ്ങൾ നൽകുക. മറ്റുള്ളവരെ അനുകരിക്കരുത്; തെറ്റായ തെളിവുകൾ, spam, വിവരങ്ങളുടെ ദുരുപയോഗം എന്നിവ ഒഴിവാക്കുക.',
             ),
             text('Campaigns and reviews', 'Campaigns, reviews'): text(
-              'Campaign owners review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.',
-              'Campaign ഉടമകൾ തെളിവുകൾ പരിശോധിക്കുന്നു. Instagram പ്രവർത്തനങ്ങൾ സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല. Instagram ഉപയോഗിക്കുമ്പോൾ അതിന്റെ നിയമങ്ങൾ പാലിക്കുക. ചേർത്ത usernames account ownership തെളിയിക്കുന്നില്ല.',
+              'Campaign owners or administrators review submitted evidence. Instagram actions are not automatically verified or guaranteed. Follow Instagram’s rules when using its service. Saved usernames are entered by members and do not prove account ownership.',
+              'Campaign ഉടമകളോ administrators-ഓ തെളിവുകൾ പരിശോധിക്കുന്നു. Instagram പ്രവർത്തനങ്ങൾ സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല. Instagram ഉപയോഗിക്കുമ്പോൾ അതിന്റെ നിയമങ്ങൾ പാലിക്കുക. ചേർത്ത usernames account ownership തെളിയിക്കുന്നില്ല.',
             ),
             text('Coins and transfers', 'Coins, transfers'): text(
               'Coins are app credits for campaigns. Creating a campaign reserves coins; cancellation refunds unused campaign coins. Transfers send credits to the wallet number you confirm and cannot be cancelled in the app. Check the recipient and amount before confirming.',
