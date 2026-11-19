@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'evidence_image.dart';
 import 'design.dart';
+import 'user_tokens.dart';
 import 'user_localization.dart';
 
 String _t(BuildContext context, String english, String malayalam) =>
@@ -321,10 +322,10 @@ class _PersonalInformationPageState extends State<PersonalInformationPage> {
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 3),
+                        border: Border.all(color: userLine, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: growthPurple.withValues(alpha: .25),
+                            color: growthPurple.withValues(alpha: .08),
                             blurRadius: 18,
                           ),
                         ],
@@ -632,9 +633,9 @@ class _EmailChangePageState extends State<EmailChangePage> {
             Container(
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                color: const Color(0xffe8f1ff),
+                color: const Color(0xffedf6f4),
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xffc9dafa)),
+                border: Border.all(color: const Color(0xffcee5df)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -643,14 +644,14 @@ class _EmailChangePageState extends State<EmailChangePage> {
                     children: [
                       const Icon(
                         Icons.mark_email_read_outlined,
-                        color: Color(0xff315db1),
+                        color: userTeal,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _t(context, 'Email verification', 'Email പരിശോധന'),
                           style: const TextStyle(
-                            color: Color(0xff223f79),
+                            color: userTeal,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -658,7 +659,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                       Text(
                         '${step + 1} / 3',
                         style: const TextStyle(
-                          color: Color(0xff315db1),
+                          color: userTeal,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -674,7 +675,7 @@ class _EmailChangePageState extends State<EmailChangePage> {
                             margin: EdgeInsets.only(right: i == 2 ? 0 : 5),
                             decoration: BoxDecoration(
                               color: i <= step
-                                  ? const Color(0xff315db1)
+                                  ? userTeal
                                   : const Color(0xffc4d4f3),
                               borderRadius: BorderRadius.circular(4),
                             ),

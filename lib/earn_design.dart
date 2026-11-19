@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'design.dart';
+import 'user_tokens.dart';
 
 class EarnCategoryTile extends StatelessWidget {
   const EarnCategoryTile({
@@ -19,15 +20,15 @@ class EarnCategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: Colors.white,
-    borderRadius: BorderRadius.circular(20),
+    borderRadius: BorderRadius.circular(16),
     child: InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xffe9e2f2)),
-          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: userLine),
+          borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
@@ -57,8 +58,8 @@ class EarnCategoryTile extends StatelessWidget {
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      color: Color(0xff6d6580),
-                      fontSize: 11,
+                      color: userMuted,
+                      fontSize: 12,
                       height: 1.4,
                     ),
                   ),
@@ -92,114 +93,14 @@ class EarnHero extends StatelessWidget {
   final VoidCallback onAction;
 
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(26),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xff3e1c80).withValues(alpha: .2),
-          blurRadius: 20,
-          offset: const Offset(0, 9),
-        ),
-      ],
-    ),
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(26),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xff38205f), Color(0xff57328c), Color(0xff764bbb)],
-          ),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -45,
-              top: -60,
-              child: ExcludeSemantics(
-                child: IgnorePointer(
-                  child: Container(
-                    width: 175,
-                    height: 175,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: .09),
-                        width: 28,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: const Color(0x26f4dca8),
-                      borderRadius: BorderRadius.circular(13),
-                      border: Border.all(color: const Color(0x66f4dca8)),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Color(0xfff5dfb2),
-                      size: 21,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(
-                      color: Color(0xffeee5f8),
-                      fontSize: 11,
-                      height: 1.45,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextButton.icon(
-                    onPressed: onAction,
-                    icon: const Icon(Icons.grid_view_rounded, size: 17),
-                    label: Text(actionLabel),
-                    style: TextButton.styleFrom(
-                      backgroundColor: const Color(0xfff3dfb4),
-                      foregroundColor: const Color(0xff342044),
-                      minimumSize: const Size(0, 42),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      textStyle: const TextStyle(
-                        fontFamily: 'Poppins',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget build(BuildContext context) => GrowthHero(
+    title: title,
+    subtitle: subtitle,
+    icon: Icons.explore_outlined,
+    action: FilledButton.icon(
+      onPressed: onAction,
+      icon: const Icon(Icons.grid_view_rounded, size: 18),
+      label: Text(actionLabel),
     ),
   );
 }
@@ -226,13 +127,13 @@ class EarnSectionHeader extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: const Color(0xffede5fa),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Text(
             '$count',
             style: const TextStyle(
               color: growthPurple,
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -270,14 +171,7 @@ class EarnTaskCard extends StatelessWidget {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: const Color(0xffe8def3)),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xff3e1c80).withValues(alpha: .07),
-          blurRadius: 14,
-          offset: const Offset(0, 6),
-        ),
-      ],
+      border: Border.all(color: userLine),
     ),
     child: Padding(
       padding: const EdgeInsets.all(16),
@@ -291,9 +185,7 @@ class EarnTaskCard extends StatelessWidget {
                 width: 46,
                 height: 46,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xffeee4fc), Color(0xffe0cff7)],
-                  ),
+                  color: const Color(0xffede8fc),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(icon, color: growthPurple, size: 22),
@@ -325,7 +217,7 @@ class EarnTaskCard extends StatelessWidget {
                         reward,
                         style: const TextStyle(
                           color: Color(0xff78510c),
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -374,7 +266,7 @@ class EarnTaskCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xff57486c),
-                      fontSize: 11,
+                      fontSize: 12,
                       height: 1.45,
                     ),
                   ),

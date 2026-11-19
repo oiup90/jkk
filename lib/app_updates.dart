@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'support_page.dart';
 import 'design.dart';
+import 'user_tokens.dart';
 
 const updateChannel = MethodChannel('growth_circle/app_updates');
 const maxApkBytes = 209715200;
@@ -250,7 +251,7 @@ class _AppUpdateGateState extends State<AppUpdateGate>
         if (blocked)
           Positioned.fill(
             child: Material(
-              color: const Color(0xfff6f3ff),
+              color: userCanvas,
               child: UserPageCanvas(
                 identity: UserPageIdentity.mandatoryUpdate,
                 child: SafeArea(
@@ -332,89 +333,14 @@ class _RequiredUpdateHeader extends StatelessWidget {
   const _RequiredUpdateHeader();
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [Color(0xff311758), Color(0xff6b35bd)],
-      ),
-      borderRadius: BorderRadius.circular(26),
-      boxShadow: [
-        BoxShadow(
-          color: growthPurple.withValues(alpha: .18),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
-        ),
-      ],
+  Widget build(BuildContext context) => GrowthHero(
+    title: supportText(context, 'Update required', 'App update ചെയ്യണം'),
+    subtitle: supportText(
+      context,
+      'Install the latest version to continue using Freelan Space.',
+      'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
     ),
-    child: LayoutBuilder(
-      builder: (context, constraints) {
-        final copy = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: .15),
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: Text(
-                supportText(context, 'NEW RELEASE', 'പുതിയ പതിപ്പ്'),
-                style: const TextStyle(
-                  color: Color(0xffeee2ff),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              supportText(context, 'Update required', 'App update ചെയ്യണം'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 25,
-                height: 1.15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              supportText(
-                context,
-                'Install the latest version to continue using Freelan Space.',
-                'Freelan Space ഉപയോഗിക്കാൻ പുതിയ version install ചെയ്യുക.',
-              ),
-              style: const TextStyle(color: Color(0xffeee2ff), height: 1.4),
-            ),
-          ],
-        );
-        if (constraints.maxWidth < 290 ||
-            MediaQuery.textScalerOf(context).scale(1) > 1.25) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              copy,
-              const Align(
-                alignment: Alignment.centerRight,
-                child: GrowthArt('mandatory_reference', height: 90),
-              ),
-            ],
-          );
-        }
-        return Row(
-          children: [
-            Expanded(child: copy),
-            const SizedBox(width: 8),
-            const SizedBox(
-              width: 108,
-              child: GrowthArt('mandatory_reference', height: 120),
-            ),
-          ],
-        );
-      },
-    ),
+    icon: Icons.system_update_rounded,
   );
 }
 
@@ -701,7 +627,7 @@ class _AppUpdateViewState extends State<AppUpdateView>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 25),
-                      const GrowthArt('update_reference', height: 205),
+                      const Center(child: UserOrbitMark(size: 96)),
                       const SizedBox(height: 20),
                       Text(
                         supportText(

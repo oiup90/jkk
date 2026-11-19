@@ -1,6 +1,8 @@
 import 'user_localization.dart';
 
 import 'user_page_canvas.dart';
+import 'design.dart';
+import 'user_tokens.dart';
 
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -286,40 +288,14 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xff3c2457), Color(0xff8151a4)],
-            ),
-            borderRadius: BorderRadius.circular(24),
+        UserSectionIntro(
+          title: text('Choose a coin plan', 'Coin plan തിരഞ്ഞെടുക്കുക'),
+          subtitle: text(
+            'Pay securely with Instamojo. Coins are added after payment is verified. Return to this page to check your payment.',
+            'Instamojo വഴി പണം അടയ്ക്കാം. Payment സ്ഥിരീകരിച്ചശേഷം coins ചേർക്കും. Payment പരിശോധിക്കാൻ ഈ പേജിൽ മടങ്ങിവരുക.',
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.toll_rounded,
-                color: Color(0xffffdc91),
-                size: 32,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                text('Choose a coin plan', 'Coin plan തിരഞ്ഞെടുക്കുക'),
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                text(
-                  'Pay securely with Instamojo. Coins are added after payment is verified. Return to this page to check your payment.',
-                  'Instamojo വഴി പണം അടയ്ക്കാം. Payment സ്ഥിരീകരിച്ചശേഷം coins ചേർക്കും. Payment പരിശോധിക്കാൻ ഈ പേജിൽ മടങ്ങിവരുക.',
-                ),
-                style: const TextStyle(color: Color(0xfff4eafa), height: 1.4),
-              ),
-            ],
-          ),
+          icon: Icons.toll_outlined,
+          accent: userGold,
         ),
         const SizedBox(height: 12),
         if (busy)
@@ -402,7 +378,14 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
                     ),
                   ),
                   title: Text('${plan.coins} ${text('coins', 'കോയിനുകൾ')}'),
-                  subtitle: Text(plan.price),
+                  subtitle: Text(
+                    plan.price,
+                    style: const TextStyle(
+                      color: userGold,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 17,
+                    ),
+                  ),
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(16),

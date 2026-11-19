@@ -1,4 +1,6 @@
 import 'user_page_canvas.dart';
+import 'design.dart';
+import 'user_tokens.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -319,47 +321,17 @@ class _WalletTransferPageState extends State<WalletTransferPage> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             children: [
-              Container(
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xff39205c), Color(0xff7546bf)],
-                  ),
-                  borderRadius: BorderRadius.circular(24),
+              UserSectionIntro(
+                title: text(
+                  'Send coins securely',
+                  'സുരക്ഷിതമായി coins അയയ്ക്കുക',
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      color: Color(0xfff6ddac),
-                      size: 30,
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      text(
-                        'Send coins securely',
-                        'സുരക്ഷിതമായി coins അയയ്ക്കുക',
-                      ),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      text(
-                        'Enter a wallet number to find the recipient. No transfer fee.',
-                        'സ്വീകരിക്കുന്നയാളെ കണ്ടെത്താൻ wallet നമ്പർ നൽകുക. Transfer fee ഇല്ല.',
-                      ),
-                      style: const TextStyle(
-                        color: Color(0xffeee3fa),
-                        height: 1.4,
-                      ),
-                    ),
-                  ],
+                subtitle: text(
+                  'Enter a wallet number to find the recipient. No transfer fee.',
+                  'സ്വീകരിക്കുന്നയാളെ കണ്ടെത്താൻ wallet നമ്പർ നൽകുക. Transfer fee ഇല്ല.',
                 ),
+                icon: Icons.swap_horiz_rounded,
+                accent: userTeal,
               ),
               const SizedBox(height: 20),
               if (busy) const LinearProgressIndicator(),
@@ -786,13 +758,7 @@ class _PaymentResultPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: .05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  border: Border.all(color: userLine),
                 ),
                 child: Column(
                   children: [

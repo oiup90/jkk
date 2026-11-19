@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'design.dart';
+import 'user_tokens.dart';
 import 'user_localization.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -164,7 +165,7 @@ class _SupportPageState extends State<SupportPage> {
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
           itemCount: rows.length,
           itemBuilder: (c, i) {
             final r = rows[i] as Map;
@@ -363,7 +364,16 @@ class _SupportConversationState extends State<SupportConversation>
                         margin: const EdgeInsets.symmetric(vertical: 5),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: mine ? growthPurple : const Color(0xffeee6ff),
+                          color: mine
+                              ? growthPurple
+                              : widget.admin
+                              ? const Color(0xffeee6ff)
+                              : Colors.white,
+                          border: widget.admin
+                              ? null
+                              : Border.all(
+                                  color: mine ? growthPurple : userLine,
+                                ),
                           borderRadius: widget.admin
                               ? BorderRadius.circular(18)
                               : BorderRadius.only(

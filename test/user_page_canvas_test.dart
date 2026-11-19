@@ -71,6 +71,46 @@ void main() {
     },
   );
 
+  testWidgets('page decoration stays inside its own surface', (tester) async {
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Center(
+          child: RepaintBoundary(
+            key: key,
+            child: const SizedBox(
+              width: 160,
+              height: 180,
+              child: ColoredBox(
+                color: Colors.red,
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: UserPageCanvas(
+                    identity: UserPageIdentity.profile,
+                    child: SizedBox.expand(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final pixels = await tester.runAsync(() async {
+      final image =
+          await (key.currentContext!.findRenderObject()!
+                  as RenderRepaintBoundary)
+              .toImage();
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      image.dispose();
+      return bytes!;
+    });
+    // This point belongs to the surrounding surface, above the page canvas.
+    final offset = (10 * 160 + 135) * 4;
+    expect(pixels!.buffer.asUint8List(offset, 4), [244, 67, 54, 255]);
+  });
+
   testWidgets('redesigned pages fit at narrow width with large text', (
     tester,
   ) async {

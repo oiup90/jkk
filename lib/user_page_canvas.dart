@@ -1,6 +1,6 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
+
+import 'user_theme.dart';
 
 /// Each destination has its own quiet backdrop; controls and page content remain
 /// in the foreground and retain their existing semantics and interactions.
@@ -57,7 +57,14 @@ class UserPageScaffold extends Scaffold {
          body: UserPageCanvas(
            identity: identity,
            enabled: enabled,
-           child: body,
+           child: enabled
+               ? Center(
+                   child: ConstrainedBox(
+                     constraints: const BoxConstraints(maxWidth: 960),
+                     child: body,
+                   ),
+                 )
+               : body,
          ),
          backgroundColor: enabled ? Colors.transparent : null,
        );
@@ -98,99 +105,24 @@ class _PagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    canvas.drawRect(Offset.zero & size, Paint()..color = userCanvas);
+    // A quiet, destination-specific orbit connects the screens to the brand.
+    // Keep the reading area clear; decoration never captures interaction.
     final i = identity.designId;
-    final hue = (255.0 + i * 23.0) % 360;
-    final light = HSLColor.fromAHSL(1, hue, .46, .96).toColor();
-    final tint = HSLColor.fromAHSL(1, hue, .62, .76).toColor();
-    final rect = Offset.zero & size;
-    canvas.drawRect(
-      rect,
+    final center = Offset(size.width * .96, 18.0 + i * 2.5);
+    final radius = 62.0 + i * 2.8;
+    canvas.drawCircle(center, radius, Paint()..color = const Color(0xffefecf8));
+    canvas.drawCircle(
+      center,
+      radius + 18,
       Paint()
-        ..shader = LinearGradient(
-          begin: i.isEven ? Alignment.topLeft : Alignment.topRight,
-          end: i.isEven ? Alignment.bottomRight : Alignment.bottomLeft,
-          colors: [const Color(0xfffbf9ff), light],
-        ).createShader(rect),
+        ..color = const Color(0xffe5e1f2)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1,
     );
-    final fill = Paint()..color = tint.withValues(alpha: .14);
-    final line = Paint()
-      ..color = tint.withValues(alpha: .25)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-    final w = size.width, h = size.height;
-    final x = i.isEven ? w : 0.0;
-    switch (i % 5) {
-      case 0:
-        canvas.drawCircle(Offset(x, h * .08), w * .46, fill);
-        canvas.drawCircle(Offset(x, h * .08), w * .37, line);
-      case 1:
-        final path = Path()
-          ..moveTo(0, h * .1)
-          ..quadraticBezierTo(w * .48, h * .02, w, h * .16)
-          ..lineTo(w, 0)
-          ..lineTo(0, 0)
-          ..close();
-        canvas.drawPath(path, fill);
-        canvas.drawArc(
-          Rect.fromCenter(
-            center: Offset(x, h * .18),
-            width: w * .8,
-            height: w * .5,
-          ),
-          0,
-          math.pi,
-          false,
-          line,
-        );
-      case 2:
-        canvas.save();
-        canvas.translate(x, h * .14);
-        canvas.rotate((i.isEven ? 1 : -1) * .25);
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(
-              center: Offset.zero,
-              width: w * .7,
-              height: w * .35,
-            ),
-            const Radius.circular(36),
-          ),
-          fill,
-        );
-        canvas.drawRRect(
-          RRect.fromRectAndRadius(
-            Rect.fromCenter(
-              center: Offset.zero,
-              width: w * .55,
-              height: w * .25,
-            ),
-            const Radius.circular(28),
-          ),
-          line,
-        );
-        canvas.restore();
-      case 3:
-        for (var row = 0; row < 5; row++) {
-          for (var col = 0; col < 5; col++) {
-            final px = i.isEven ? w - 18.0 - col * 18 : 18.0 + col * 18;
-            canvas.drawCircle(
-              Offset(px, 20.0 + row * 18),
-              2.0 + (i % 3) * .4,
-              fill,
-            );
-          }
-        }
-        canvas.drawCircle(Offset(x, h * .76), w * .33, line);
-      case 4:
-        final path = Path()
-          ..moveTo(0, h * .15)
-          ..lineTo(w, 0)
-          ..lineTo(w, h * .08)
-          ..lineTo(0, h * .25)
-          ..close();
-        canvas.drawPath(path, fill);
-        canvas.drawLine(Offset(0, h * .25), Offset(w, h * .08), line);
-    }
+    canvas.restore();
   }
 
   @override

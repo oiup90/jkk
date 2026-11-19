@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'user_tokens.dart';
+
 const growthPurple = Color(0xff5416e8);
 const growthInk = Color(0xff171047);
 const growthGradient = LinearGradient(
@@ -8,91 +10,13 @@ const growthGradient = LinearGradient(
   colors: [Color(0xff31118f), Color(0xff3c11b6), Color(0xff742aff)],
 );
 
-/// The soft waves frame the content without intercepting taps or scrolling.
+/// A neutral canvas keeps task content, forms and receipts easy to scan.
 class GrowthBackdrop extends StatelessWidget {
   const GrowthBackdrop({super.key, required this.child});
   final Widget child;
-
   @override
-  Widget build(BuildContext context) => ColoredBox(
-    color: const Color(0xfff6f3ff),
-    child: Stack(
-      fit: StackFit.expand,
-      children: [
-        const IgnorePointer(child: CustomPaint(painter: _WavePainter())),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: IgnorePointer(
-            child: Image.asset(
-              'assets/design/bottom_waves.png',
-              fit: BoxFit.fitWidth,
-              excludeFromSemantics: true,
-            ),
-          ),
-        ),
-        child,
-      ],
-    ),
-  );
-}
-
-class _WavePainter extends CustomPainter {
-  const _WavePainter();
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final bounds = Offset.zero & size;
-    canvas.drawRect(
-      bounds,
-      Paint()
-        ..shader = const RadialGradient(
-          center: Alignment.topRight,
-          radius: 1.25,
-          colors: [Color(0xffe8d9fc), Color(0xfff5efff), Color(0xfff5efff)],
-          stops: [0, .5, 1],
-        ).createShader(bounds),
-    );
-    final outer = Path()
-      ..moveTo(w * .32, 0)
-      ..cubicTo(w * .49, w * .44, w * .80, w * .04, w, w * .34)
-      ..lineTo(w, 0)
-      ..close();
-    canvas.drawPath(
-      outer,
-      Paint()
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xffe5d5ff), Color(0xffc8a3fa), Color(0xffa074f3)],
-        ).createShader(Rect.fromLTWH(w * .32, 0, w * .68, w * .34)),
-    );
-    final inner = Path()
-      ..moveTo(w * .52, 0)
-      ..cubicTo(w * .65, w * .26, w * .89, w * .14, w, w * .12)
-      ..lineTo(w, 0)
-      ..close();
-    canvas.drawPath(
-      inner,
-      Paint()
-        ..shader = const RadialGradient(
-          center: Alignment.topRight,
-          radius: 1.1,
-          colors: [Color(0xff4810d2), Color(0xff7d3bf0), Color(0xffc8a1ff)],
-        ).createShader(Rect.fromLTWH(w * .52, -w * .10, w * .48, w * .38)),
-    );
-    canvas.drawPath(
-      inner,
-      Paint()
-        ..color = const Color(0x88ffffff)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) =>
+      ColoredBox(color: userCanvas, child: child);
 }
 
 class GrowthIcon extends StatelessWidget {
@@ -100,22 +24,11 @@ class GrowthIcon extends StatelessWidget {
   final IconData icon;
   @override
   Widget build(BuildContext context) => Container(
-    width: 42,
-    height: 42,
+    width: 44,
+    height: 44,
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xfff3edff), Color(0xffd9c7ff)],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      borderRadius: BorderRadius.circular(13),
-      boxShadow: [
-        BoxShadow(
-          color: growthPurple.withValues(alpha: .12),
-          blurRadius: 7,
-          offset: const Offset(0, 3),
-        ),
-      ],
+      color: const Color(0xffeeebfa),
+      borderRadius: BorderRadius.circular(14),
     ),
     child: Icon(icon, color: growthPurple, size: 22),
   );
@@ -176,32 +89,10 @@ class GrowthActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0xff8c36ff), Color(0xff3a00bc)],
-      ),
-      borderRadius: BorderRadius.circular(32),
-      boxShadow: [
-        BoxShadow(
-          color: growthPurple.withValues(alpha: .25),
-          blurRadius: 14,
-          offset: const Offset(0, 6),
-        ),
-      ],
-    ),
-    child: FilledButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon),
-      label: Text(label),
-      style: FilledButton.styleFrom(
-        backgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
-      ),
-    ),
+  Widget build(BuildContext context) => FilledButton.icon(
+    onPressed: onPressed,
+    icon: Icon(icon, size: 19),
+    label: Text(label, textAlign: TextAlign.center),
   );
 }
 
@@ -216,44 +107,137 @@ class GrowthPrimaryButton extends StatelessWidget {
   final String label;
   final IconData? icon;
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      gradient: LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: onPressed == null
-            ? [const Color(0xffbfb3dd), const Color(0xffaca0ca)]
-            : [const Color(0xff893aff), const Color(0xff3900b8)],
-      ),
-      borderRadius: BorderRadius.circular(32),
-      boxShadow: [
-        BoxShadow(
-          color: growthPurple.withValues(alpha: .20),
-          blurRadius: 14,
-          offset: const Offset(0, 6),
+  Widget build(BuildContext context) => FilledButton(
+    onPressed: onPressed,
+    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
+        if (icon != null) ...[const SizedBox(width: 12), Icon(icon, size: 19)],
+      ],
+    ),
+  );
+}
+
+/// Compact heading for secondary destinations. Content stays left aligned.
+class UserSectionIntro extends StatelessWidget {
+  const UserSectionIntro({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.accent = growthPurple,
+  });
+  final String title, subtitle;
+  final IconData icon;
+  final Color accent;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 8, bottom: 24),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.w700,
+                  color: userInk,
+                  height: 1.25,
+                  letterSpacing: -.7,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.6,
+                  color: userMuted,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Container(
+          width: 48,
+          height: 52,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: .08),
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(16),
+              topRight: Radius.circular(16),
+              bottomRight: Radius.circular(16),
+              bottomLeft: Radius.circular(5),
+            ),
+          ),
+          child: Icon(icon, color: accent, size: 24),
         ),
       ],
     ),
-    child: FilledButton(
-      onPressed: onPressed,
-      style: FilledButton.styleFrom(
-        minimumSize: const Size.fromHeight(50),
-        backgroundColor: Colors.transparent,
-        disabledBackgroundColor: Colors.transparent,
-        shadowColor: Colors.transparent,
-      ),
+  );
+}
+
+/// A native illustration of the four engagement actions used by this app.
+class UserOrbitMark extends StatelessWidget {
+  const UserOrbitMark({super.key, this.size = 92});
+  final double size;
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+    child: SizedBox.square(
+      dimension: size,
       child: Stack(
-        alignment: Alignment.center,
         children: [
-          Center(child: Text(label, textAlign: TextAlign.center)),
-          if (icon != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: Icon(icon, size: 20),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xffd8cff2)),
+              ),
             ),
+          ),
+          Center(
+            child: Container(
+              width: size * .62,
+              height: size * .62,
+              decoration: BoxDecoration(
+                color: const Color(0xffede6ff),
+                borderRadius: BorderRadius.circular(size * .22),
+              ),
+              child: Icon(
+                Icons.bolt_rounded,
+                color: growthPurple,
+                size: size * .4,
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.topRight,
+            child: _action(Icons.favorite_rounded, const Color(0xffb93e70)),
+          ),
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: _action(Icons.chat_bubble_rounded, userTeal),
+          ),
         ],
       ),
     ),
+  );
+  Widget _action(IconData icon, Color color) => Container(
+    width: size * .32,
+    height: size * .32,
+    decoration: BoxDecoration(
+      color: Colors.white,
+      shape: BoxShape.circle,
+      border: Border.all(color: userLine),
+    ),
+    child: Icon(icon, color: color, size: size * .17),
   );
 }
 
@@ -277,64 +261,54 @@ class GrowthHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     constraints: BoxConstraints(minHeight: minHeight),
-    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+    padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
-      gradient: growthGradient,
-      image: background == null
-          ? null
-          : DecorationImage(
-              image: AssetImage('assets/design/$background.png'),
-              fit: BoxFit.fill,
-            ),
-      borderRadius: BorderRadius.circular(22),
-      boxShadow: [
-        BoxShadow(
-          color: growthPurple.withValues(alpha: .22),
-          blurRadius: 20,
-          offset: const Offset(0, 8),
-        ),
-      ],
+      color: const Color(0xffede8fc),
+      border: Border.all(color: const Color(0xffe0d6f8)),
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(24),
+        topRight: Radius.circular(24),
+        bottomRight: Radius.circular(24),
+        bottomLeft: Radius.circular(8),
+      ),
     ),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Icon(icon, color: growthPurple, size: 25),
+              const SizedBox(height: 16),
               Text(
                 title,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  color: userInk,
+                  fontSize: 24,
+                  height: 1.25,
+                  letterSpacing: -.6,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 5),
+              const SizedBox(height: 8),
               Text(
                 subtitle,
                 style: const TextStyle(
-                  color: Colors.white70,
-                  height: 1.35,
-                  fontSize: 11,
+                  color: Color(0xff615476),
+                  height: 1.55,
+                  fontSize: 12,
                 ),
               ),
-              if (action != null) ...[const SizedBox(height: 8), action!],
+              if (action != null) ...[const SizedBox(height: 16), action!],
             ],
           ),
         ),
         const SizedBox(width: 12),
-        if (background != null)
-          const SizedBox(width: 112, height: 82)
-        else if (art != null)
-          Image.asset(
-            'assets/design/$art.png',
-            height: 82,
-            width: 112,
-            fit: BoxFit.contain,
-            excludeFromSemantics: true,
-          )
-        else
-          Icon(icon, color: const Color(0xffe3d4ff), size: 62),
+        const Padding(
+          padding: EdgeInsets.only(top: 10),
+          child: UserOrbitMark(size: 64),
+        ),
       ],
     ),
   );
@@ -365,83 +339,86 @@ class GrowthNavigation extends StatelessWidget {
       Icons.campaign,
       Icons.person,
     ];
-    return SafeArea(
-      top: false,
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(12, 4, 12, 12),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(36),
-          boxShadow: [
-            BoxShadow(
-              color: growthPurple.withValues(alpha: .16),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            for (var i = 0; i < labels.length; i++)
-              Expanded(
-                child: Semantics(
-                  button: true,
-                  selected: selected == i,
-                  label: labels[i],
-                  child: InkWell(
-                    onTap: () => onSelected(i),
-                    borderRadius: BorderRadius.circular(30),
-                    child: Container(
-                      height: 46,
-                      decoration: BoxDecoration(
-                        gradient: selected == i
-                            ? const LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Color(0xff762aff), Color(0xff3500b6)],
-                              )
-                            : null,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Icon(
-                              selected == i ? active[i] : icons[i],
-                              size: 21,
-                              color: selected == i ? Colors.white : growthInk,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              labels[i],
-                              maxLines: 1,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: selected == i ? Colors.white : growthInk,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: userLine)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Center(
+          heightFactor: 1,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: Row(
+                children: [
+                  for (var i = 0; i < labels.length; i++)
+                    Expanded(
+                      child: Semantics(
+                        button: true,
+                        selected: selected == i,
+                        label: labels[i],
+                        excludeSemantics: true,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => onSelected(i),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 6,
+                                horizontal: 2,
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: selected == i
+                                          ? const Color(0xffede6ff)
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      selected == i ? active[i] : icons[i],
+                                      size: 23,
+                                      color: selected == i
+                                          ? growthPurple
+                                          : userMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    labels[i],
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      height: 1.3,
+                                      fontWeight: selected == i
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: selected == i
+                                          ? growthPurple
+                                          : userMuted,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                ],
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -463,18 +440,39 @@ class GrowthEmpty extends StatelessWidget {
   final double artHeight;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+    padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        GrowthArt(art, height: artHeight),
-        const SizedBox(height: 12),
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            color: const Color(0xffece8f8),
+            borderRadius: BorderRadius.circular(26),
+            border: Border.all(color: const Color(0xffe1daf2)),
+          ),
+          child: Icon(
+            switch (art) {
+              'support' => Icons.forum_outlined,
+              'notification_empty' ||
+              'notifications' => Icons.notifications_none_rounded,
+              'coins' => Icons.toll_outlined,
+              _ => Icons.inbox_outlined,
+            },
+            size: 34,
+            color: growthPurple,
+          ),
+        ),
+        const SizedBox(height: 20),
         Text(
           title,
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: growthInk,
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
+            color: userInk,
+            fontSize: 17,
+            height: 1.35,
+            fontWeight: FontWeight.w600,
           ),
         ),
         if (subtitle != null) ...[
@@ -482,11 +480,7 @@ class GrowthEmpty extends StatelessWidget {
           Text(
             subtitle!,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xff696184),
-              height: 1.4,
-              fontSize: 11,
-            ),
+            style: const TextStyle(color: userMuted, height: 1.6, fontSize: 12),
           ),
         ],
         if (action != null) ...[const SizedBox(height: 18), action!],
