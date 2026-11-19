@@ -28,19 +28,24 @@ class _AdminUsersSupportPageState extends State<AdminUsersSupportPage> {
   late Future<List<dynamic>> tickets;
   Timer? timer;
   bool closing = false;
+  int pendingLoads = 0;
 
   @override
   void initState() {
     super.initState();
     load();
     timer = Timer.periodic(const Duration(seconds: 15), (_) {
-      if (mounted && ModalRoute.of(context)?.isCurrent == true && !closing) {
+      if (mounted &&
+          ModalRoute.of(context)?.isCurrent == true &&
+          !closing &&
+          pendingLoads == 0) {
         refresh();
       }
     });
   }
 
   void load() {
+    pendingLoads++;
     tickets =
         (widget.userId == null
                 ? widget.client.rpc('admin_support_tickets')
@@ -48,7 +53,8 @@ class _AdminUsersSupportPageState extends State<AdminUsersSupportPage> {
                     'admin_support_tickets_for_user',
                     params: {'p_user': widget.userId},
                   ))
-            .then((v) => v as List);
+            .then((v) => v as List)
+            .whenComplete(() => pendingLoads--);
   }
 
   void refresh() => setState(load);

@@ -5,6 +5,47 @@ import 'package:growth_circle/earn_design.dart';
 import 'package:growth_circle/main.dart';
 
 void main() {
+  testWidgets('cancelling a campaign report is safe', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TaskList(
+            uid: 'preview',
+            controlsStream: Stream.value([
+              {'action_type': 'follow', 'enabled': true},
+            ]),
+            presenceStream: Stream.value([]),
+            claimsStream: Stream.value([]),
+            campaignsStream: Stream.value([
+              {
+                'id': 'campaign',
+                'ownerId': 'other',
+                'status': 'active',
+                'type': 'follow',
+                'link': 'https://instagram.com/example/',
+                'reward_per_task': 1,
+              },
+            ]),
+            loadSavedIds: () async => [],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final report = find.widgetWithText(TextButton, 'Report');
+    await tester.ensureVisible(report);
+    await tester.pumpAndSettle();
+    await tester.tap(report);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byType(TextField),
+      'Please check this campaign',
+    );
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('task view renders injected data and filters without a backend', (
     tester,
   ) async {
