@@ -6,6 +6,28 @@ import 'package:growth_circle/admin_main.dart';
 import 'admin_test.dart' show FakeAdmin;
 
 void main() {
+  testWidgets('campaign form starts with the selected category', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CreateCampaign(
+          initialType: 'comment',
+          loadAccounts: () async => ['example'],
+          loadRates: () async => [
+            {'key': 'comment', 'amount': 2},
+          ],
+          controls: Stream.value([
+            {'action_type': 'comment', 'enabled': true},
+          ]),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Comment'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('campaign form rejects invalid post URLs before reserving', (
     tester,
   ) async {

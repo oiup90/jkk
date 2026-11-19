@@ -121,7 +121,6 @@ void main() {
                   {'balance': 4},
                 ]),
                 onBrowse: () {},
-                onCreate: () {},
                 onBrowseType: selected.add,
               ),
             ),
