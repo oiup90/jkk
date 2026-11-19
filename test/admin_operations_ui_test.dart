@@ -9,6 +9,90 @@ import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  for (final (security, save) in [
+    (false, false),
+    (false, true),
+    (true, false),
+  ]) {
+    testWidgets(
+      '${save ? 'saving' : 'cancelling'} ${security ? 'MFA setup' : 'threshold edit'} is safe',
+      (tester) async {
+        final calls = <http.Request>[];
+        final client = (await tester.runAsync(
+          () async => SupabaseClient(
+            'https://example.test',
+            'synthetic',
+            authOptions: const AuthClientOptions(autoRefreshToken: false),
+            httpClient: MockClient((request) async {
+              calls.add(request);
+              dynamic response = [
+                {'key': 'pending_hours', 'value': 24},
+              ];
+              if (request.url.path.endsWith('/factors')) {
+                response = {
+                  'id': 'factor',
+                  'type': 'totp',
+                  'totp': {'secret': 'synthetic', 'qr_code': '', 'uri': ''},
+                };
+              } else if (request.method == 'DELETE') {
+                response = {'id': 'factor'};
+              }
+              return http.Response(
+                jsonEncode(response),
+                200,
+                request: request,
+                headers: {'content-type': 'application/json'},
+              );
+            }),
+          ),
+        ))!;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: AdminOperationsPage(
+              client: client,
+              canEdit: true,
+              initialPage: security ? 'security' : 'alerts',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(
+          security ? find.text('Set up authenticator') : find.byTooltip('Edit'),
+        );
+        await tester.pumpAndSettle();
+        if (!security) {
+          expect(
+            tester.widget<TextField>(find.byType(TextField)).controller!.text,
+            '24',
+          );
+        }
+        await tester.enterText(
+          find.byType(TextField),
+          security ? '123456' : '48',
+        );
+        await tester.tap(find.text(save ? 'Continue' : 'Cancel'));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        if (security) {
+          expect(calls.where((r) => r.method == 'DELETE').length, 1);
+        }
+        final writes = calls.where(
+          (r) => r.url.path.endsWith('admin_set_alert_setting'),
+        );
+        if (save) {
+          expect(jsonDecode(writes.single.body), {
+            'p_key': 'pending_hours',
+            'p_value': 48,
+          });
+        } else {
+          expect(writes, isEmpty);
+        }
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.runAsync(client.dispose);
+      },
+    );
+  }
+
   testWidgets('support ticket opens conversation and sends reply', (
     tester,
   ) async {

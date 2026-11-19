@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,41 @@ import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() {
+  testWidgets('inbox polling waits for a slow request to finish', (
+    tester,
+  ) async {
+    final response = Completer<void>();
+    var loads = 0;
+    final client = (await tester.runAsync(
+      () async => SupabaseClient(
+        'https://example.test',
+        'synthetic',
+        authOptions: const AuthClientOptions(autoRefreshToken: false),
+        httpClient: MockClient((request) async {
+          loads++;
+          await response.future;
+          return http.Response(
+            '[]',
+            200,
+            request: request,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      ),
+    ))!;
+    await tester.pumpWidget(
+      MaterialApp(home: AdminUsersSupportPage(client: client, canEdit: true)),
+    );
+    await tester.pump(const Duration(seconds: 31));
+    final concurrentLoads = loads;
+    response.complete();
+    await tester.pumpAndSettle();
+    expect(concurrentLoads, 1);
+    expect(find.text('No support chats yet.'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.runAsync(client.dispose);
+  });
+
   testWidgets('desktop menu opens Users Supports', (tester) async {
     tester.view.physicalSize = const Size(1440, 900);
     tester.view.devicePixelRatio = 1;

@@ -262,9 +262,9 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
     List<String> labels, {
     List<String>? initial,
   }) async {
-    final controllers = List.generate(
+    final values = List.generate(
       labels.length,
-      (i) => TextEditingController(text: initial == null ? '' : initial[i]),
+      (i) => initial == null ? '' : initial[i],
     );
     final result = await showDialog<List<String>>(
       context: context,
@@ -275,8 +275,9 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               for (var i = 0; i < labels.length; i++)
-                TextField(
-                  controller: controllers[i],
+                TextFormField(
+                  initialValue: values[i],
+                  onChanged: (value) => values[i] = value,
                   maxLength: i == labels.length - 1 ? 1000 : 100,
                   decoration: InputDecoration(labelText: labels[i]),
                 ),
@@ -290,7 +291,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
           ),
           FilledButton(
             onPressed: () {
-              final vals = controllers.map((x) => x.text.trim()).toList();
+              final vals = values.map((x) => x.trim()).toList();
               if (vals.every((v) => v.isNotEmpty)) Navigator.pop(c, vals);
             },
             child: Text(op(c, 'Continue', 'തുടരുക')),
@@ -298,9 +299,6 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
         ],
       ),
     );
-    for (final c in controllers) {
-      c.dispose();
-    }
     return result;
   }
 
@@ -346,7 +344,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
         await widget.client.auth.mfa.unenroll(result.id);
         return;
       }
-      final code = TextEditingController();
+      var code = '';
       final entered = await showDialog<String>(
         context: context,
         barrierDismissible: false,
@@ -370,7 +368,7 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
                 SelectableText(result.totp?.secret ?? ''),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: code,
+                  onChanged: (value) => code = value,
                   keyboardType: TextInputType.number,
                   obscureText: true,
                   decoration: InputDecoration(
@@ -390,13 +388,12 @@ class _AdminOperationsPageState extends State<AdminOperationsPage> {
               child: Text(op(c, 'Cancel', 'റദ്ദാക്കുക')),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(c, code.text.trim()),
+              onPressed: () => Navigator.pop(c, code.trim()),
               child: Text(op(c, 'Verify', 'സ്ഥിരീകരിക്കുക')),
             ),
           ],
         ),
       );
-      code.dispose();
       if (entered == null || entered.isEmpty) {
         await widget.client.auth.mfa.unenroll(result.id);
         pendingFactor = null;

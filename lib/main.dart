@@ -3747,13 +3747,13 @@ class _TaskListState extends State<TaskList> {
                           ),
                           TextButton(
                             onPressed: () async {
-                              final controller = TextEditingController();
+                              var reportReason = '';
                               final reason = await showDialog<String>(
                                 context: context,
                                 builder: (c) => AlertDialog(
                                   title: Text(tr(c, 'reportCampaign')),
                                   content: TextField(
-                                    controller: controller,
+                                    onChanged: (value) => reportReason = value,
                                     maxLength: 1000,
                                     maxLines: 3,
                                     decoration: InputDecoration(
@@ -3771,11 +3771,8 @@ class _TaskListState extends State<TaskList> {
                                     ),
                                     FilledButton(
                                       onPressed: () {
-                                        if (controller.text.trim().isNotEmpty) {
-                                          Navigator.pop(
-                                            c,
-                                            controller.text.trim(),
-                                          );
+                                        if (reportReason.trim().isNotEmpty) {
+                                          Navigator.pop(c, reportReason.trim());
                                         }
                                       },
                                       child: Text(
@@ -3785,7 +3782,6 @@ class _TaskListState extends State<TaskList> {
                                   ],
                                 ),
                               );
-                              controller.dispose();
                               if (reason == null || !context.mounted) {
                                 return;
                               }

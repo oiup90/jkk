@@ -36,7 +36,7 @@ class _SupportPageState extends State<SupportPage> {
 
   void refresh() => setState(load);
   Future<void> create() async {
-    final message = TextEditingController();
+    var message = '';
     final result = await showDialog<List<String>>(
       context: context,
       builder: (c) => AlertDialog(
@@ -47,7 +47,7 @@ class _SupportPageState extends State<SupportPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: message,
+              onChanged: (value) => message = value,
               maxLength: 2000,
               maxLines: 4,
               decoration: InputDecoration(
@@ -63,10 +63,10 @@ class _SupportPageState extends State<SupportPage> {
           ),
           FilledButton(
             onPressed: () {
-              if (message.text.trim().isNotEmpty) {
+              if (message.trim().isNotEmpty) {
                 Navigator.pop(c, [
-                  String.fromCharCodes(message.text.trim().runes.take(80)),
-                  message.text.trim(),
+                  String.fromCharCodes(message.trim().runes.take(80)),
+                  message.trim(),
                 ]);
               }
             },
@@ -75,7 +75,6 @@ class _SupportPageState extends State<SupportPage> {
         ],
       ),
     );
-    message.dispose();
     if (result == null || !mounted) return;
     try {
       final id = await widget.client.rpc(
