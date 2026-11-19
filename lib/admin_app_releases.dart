@@ -47,10 +47,8 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
 
   void load() {
     releases = widget.client
-        .from('app_releases')
-        .select()
-        .order('version_code', ascending: false)
-        .limit(20);
+        .rpc('admin_app_release_history')
+        .then((rows) => List<Map<String, dynamic>>.from(rows as List));
   }
 
   @override
@@ -199,6 +197,41 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
       if (mounted) {
         setState(() {
           error = 'Unable to confirm publication. Refresh releases before retrying. Check increasing version code, editor access, R2 setup and connection.';
+          load();
+          referralRevision++;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> promote(String releaseId) async {
+    setState(() {
+      busy = true;
+      error = null;
+    });
+    try {
+      if (!await verifyAdminMfa(context, widget.client)) return;
+      await widget.client.rpc(
+        'admin_promote_app_release',
+        params: {'p_release': releaseId},
+      );
+      if (mounted) {
+        setState(() {
+          load();
+          referralRevision++;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Update published to all active users.'),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          error = 'Unable to confirm publication. Refresh releases before retrying. A newer release may already be available to everyone.';
           load();
           referralRevision++;
         });
@@ -403,6 +436,14 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
                                     : 'Specific user · ${row['target_user_id']}',
                               ),
                               Text('${row['notes']}\n${row['created_at']}'),
+                              if (widget.canEdit &&
+                                  row['target_user_id'] != null)
+                                AdminReleasePromoteButton(
+                                  versionName: row['version_name'] as String,
+                                  versionCode: row['version_code'] as int,
+                                  enabled: !busy,
+                                  onConfirm: () => promote(row['id'] as String),
+                                ),
                               AdminReleaseActivity(
                                 client: widget.client,
                                 releaseId: row['id'] as String,
@@ -419,5 +460,49 @@ class _AdminAppReleasesPageState extends State<AdminAppReleasesPage> {
         ),
       ),
     ),
+  );
+}
+
+class AdminReleasePromoteButton extends StatelessWidget {
+  const AdminReleasePromoteButton({
+    super.key,
+    required this.versionName,
+    required this.versionCode,
+    required this.enabled,
+    required this.onConfirm,
+  });
+  final String versionName;
+  final int versionCode;
+  final bool enabled;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) => TextButton.icon(
+    onPressed: !enabled
+        ? null
+        : () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (dialogContext) => AlertDialog(
+                title: const Text('Publish to all users?'),
+                content: Text(
+                  'Version $versionName (build $versionCode) will be offered to all active users using the same APK.',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogContext, false),
+                    child: const Text('Cancel'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext, true),
+                    child: const Text('Publish to all'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true && context.mounted) onConfirm();
+          },
+    icon: const Icon(Icons.public),
+    label: const Text('Publish to all users'),
   );
 }
