@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/admin_main.dart';
 import 'package:growth_circle/brand_wordmark.dart';
 
-class FakeAdmin implements AdminGateway {
+class FakeAdmin implements AdminGateway, AdminDecisionGateway {
   FakeAdmin({this.allowed = true});
   final bool allowed;
   final amounts = {
@@ -74,10 +74,22 @@ class FakeAdmin implements AdminGateway {
         ]
         .where(
           (u) =>
-              u.email.contains(query) ||
-              u.name.toLowerCase().contains(query.toLowerCase()),
+              !u.isAdmin &&
+              (u.email.contains(query) ||
+                  u.name.toLowerCase().contains(query.toLowerCase())),
         )
         .toList();
+  }
+
+  final decisions = <String>[];
+  @override
+  Future<void> decideSubmission(
+    AdminSubmission submission,
+    bool approve,
+  ) async {
+    decisions.add(
+      '${submission.campaignId}:${submission.userId}:${submission.submissionId}:$approve',
+    );
   }
 
   final endedReviews = <String>[];
@@ -298,7 +310,7 @@ void main() {
     await tester.pumpWidget(AdminApp(gateway: fake));
     await login(tester);
     expect(find.text('Users'), findsOneWidget);
-    expect(find.text('Administrator'), findsOneWidget);
+    expect(find.text('Administrator'), findsNothing);
     expect(find.text('Block app access'), findsOneWidget);
     await tester.tap(find.text('Block app access'));
     await tester.pumpAndSettle();
@@ -426,6 +438,30 @@ void main() {
     await tester.tap(find.text('Close'));
     await tester.pumpAndSettle();
     expect(fake.endedReviews, ['session']);
+  });
+  testWidgets('editor can approve inspected evidence', (tester) async {
+    final fake = FakeAdmin();
+    const submission = AdminSubmission(
+      campaignId: 'c',
+      userId: 'u',
+      submissionId: 's',
+      type: 'like',
+      link: 'https://instagram.com/p/ABC/',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AdminInspectionDialog(gateway: fake, submission: submission),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Approve'));
+    await tester.pumpAndSettle();
+    expect(fake.decisions, ['c:u:s:true']);
   });
   testWidgets('inspection hides evidence when presence renewal fails', (
     tester,

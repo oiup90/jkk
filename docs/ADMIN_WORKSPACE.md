@@ -2,7 +2,19 @@
 
 # Administrator workspace
 
-Apply `supabase/migrations/20261107110000_admin_workspace.sql` after all earlier migrations, then distribute the updated administrator app. The migration does not apply itself when code is published. The workspace loads current counts, recent user history, activity, daily UTC reports and review signals from administrator-only RPCs. Submission approval remains with the campaign owner.
+Apply `supabase/migrations/20261107110000_admin_workspace.sql` after all earlier migrations, then distribute the updated administrator app. The migration does not apply itself when code is published. The workspace loads current counts, recent user history, activity, daily UTC reports and review signals from administrator-only RPCs. <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:bb0f7e056a6513688a543c0d48cf7e6da96a6497610a2a6c8d60ce79f2089d69 -->
+
+<!-- coderabbit-ai-generated-section:v1:71dfab655065c1d163e8712297e5baf57223081c118f1b26747b417960e40218 -->
+
+Campaign owners can approve submissions with their PIN. After `20261119074241_admin_users_and_submission_decisions.sql`, MFA-verified editors can also approve or reject them without the owner’s PIN.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 -->
 
 ## Roles
 

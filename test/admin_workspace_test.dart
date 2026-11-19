@@ -113,6 +113,30 @@ void main() {
     expect(find.text('Active campaigns'), findsOneWidget);
     expect(find.text('20'), findsOneWidget);
   });
+  testWidgets('viewer may inspect evidence but cannot decide', (tester) async {
+    final fake = WorkspaceFake(role: 'viewer');
+    const submission = AdminSubmission(
+      campaignId: 'c',
+      userId: 'u',
+      submissionId: 's',
+      type: 'like',
+      link: 'https://instagram.com/p/ABC/',
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AdminInspectionDialog(gateway: fake, submission: submission),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 200)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Instagram username: @sample'), findsOneWidget);
+    expect(find.text('Approve'), findsNothing);
+    expect(find.text('Reject'), findsNothing);
+  });
   testWidgets('user details and server filtered submissions are accessible', (
     tester,
   ) async {

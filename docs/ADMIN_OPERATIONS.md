@@ -6,7 +6,25 @@ Apply `supabase/migrations/20261107120000_admin_operations.sql` after all earlie
 
 ## Support and reports
 
-Members can create support tickets, view replies and report an active campaign from the task list. Administrators see tickets and reports under **Workspace → Admin operations**. Editors can reply or close tickets and dismiss reports. An editor may cancel a reported active campaign: its pending submissions are cancelled, evidence is removed and the owner's unused reserved coins are refunded using the campaign's saved rate. The campaign owner still makes submission approval decisions. These administrator actions are recorded in the activity log. Both ticket and report lists show the latest 100 records.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:066e9a7c2d36e4658bc32d0c88f04fadb467795c4e47ebee03d239f9b7853587 -->
+
+Members can start support chats and view replies. The updated admin application shows these conversations under **Users Supports**, where editors can reply or close chats. The former Admin operations sections, including campaign reports and alert settings, are no longer in that menu. Existing records and server APIs are retained.
+
+<!-- /coderabbit-ai-generated:v1 --> <!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:9216ac734a46e33bba67e2202c2bebb73b695d1a3a8e69c4655c6f80ac3ba082 -->
+
+<!-- coderabbit-ai-generated-section:v1:4ade141373a4b3d5a9bdc6c1483da45006b7026a2bd8eed6bc6e7fc4a7801cc9 -->
+
+Campaign owners can decide submissions; after `20261119074241_admin_users_and_submission_decisions.sql`, MFA-verified editors can also approve or reject them independently.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
+<!-- /coderabbit-ai-generated:v1 --> These administrator actions are recorded in the activity log. Both ticket and report lists show the latest 100 records.
 
 ## Notifications, alerts and analytics
 

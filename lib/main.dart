@@ -217,8 +217,8 @@ const words = <String, List<String>>{
   'browse': ['Browse tasks', 'Task-ുകൾ കാണുക'],
   'create': ['Create campaign', 'Campaign തുടങ്ങുക'],
   'disclaimer': [
-    'Tasks are reviewed by campaign owners. Instagram activity is not automatically verified or guaranteed.',
-    'Task campaign ഉടമ പരിശോധിക്കും. Instagram പ്രവർത്തനം സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല.',
+    'Tasks are reviewed by campaign owners or administrators. Instagram activity is not automatically verified or guaranteed.',
+    'Task campaign ഉടമയോ administrator-ഓ പരിശോധിക്കും. Instagram പ്രവർത്തനം സ്വയമേവ പരിശോധിക്കുകയോ ഉറപ്പുനൽകുകയോ ചെയ്യുന്നില്ല.',
   ],
   'allTasks': ['All', 'എല്ലാം'],
   'noFilteredTasks': [
@@ -242,8 +242,8 @@ const words = <String, List<String>>{
   'submitProof': ['Submit for review', 'പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofTitle': ['Submit your task', 'Task പരിശോധനയ്ക്ക് അയയ്ക്കുക'],
   'proofInfo': [
-    'Enter your Instagram username and choose a screenshot. The campaign owner will review it before you earn coins.',
-    'Instagram username-ഉം screenshot-ഉം നൽകുക. Campaign ഉടമ പരിശോധിച്ച ശേഷമേ coin ലഭിക്കൂ.',
+    'Enter your Instagram username and choose a screenshot. The campaign owner or an administrator will review it before you earn coins.',
+    'Instagram username-ഉം screenshot-ഉം നൽകുക. Campaign ഉടമയോ administrator-ഓ പരിശോധിച്ച ശേഷമേ coin ലഭിക്കൂ.',
   ],
   'proofHandle': ['Instagram username', 'Instagram username'],
   'proofSelect': ['Choose screenshot', 'Screenshot തിരഞ്ഞെടുക്കുക'],
@@ -257,8 +257,8 @@ const words = <String, List<String>>{
     'ശരിയായ Instagram username നൽകുക.',
   ],
   'proofSubmitted': [
-    'Submitted. Your coin is awarded after owner approval.',
-    'അയച്ചു. ഉടമ അംഗീകരിച്ച ശേഷം coin ലഭിക്കും.',
+    'Submitted. Your coin is awarded after approval.',
+    'അയച്ചു. അംഗീകരിച്ച ശേഷം coin ലഭിക്കും.',
   ],
   'pending': ['Awaiting review', 'പരിശോധനയ്ക്കായി കാത്തിരിക്കുന്നു'],
   'adminReviewing': [

@@ -26,6 +26,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(FreelanMark), findsOneWidget);
       expect(find.byType(DataTable), findsOneWidget);
+      expect(find.text('admin@example.test'), findsNothing);
+      await tester.tap(find.widgetWithText(ListTile, 'Admin users'));
+      await tester.pumpAndSettle();
+      expect(find.text('admin@example.test'), findsOneWidget);
+      await tester.tap(find.widgetWithText(ListTile, 'Users'));
+      await tester.pumpAndSettle();
       await tester.ensureVisible(find.text('Details').last);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Details').last);
