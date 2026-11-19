@@ -13,10 +13,12 @@ class AdminUsersSupportPage extends StatefulWidget {
     super.key,
     required this.client,
     required this.canEdit,
+    this.userId,
   });
 
   final SupabaseClient client;
   final bool canEdit;
+  final String? userId;
 
   @override
   State<AdminUsersSupportPage> createState() => _AdminUsersSupportPageState();
@@ -39,7 +41,14 @@ class _AdminUsersSupportPageState extends State<AdminUsersSupportPage> {
   }
 
   void load() {
-    tickets = widget.client.rpc('admin_support_tickets').then((v) => v as List);
+    tickets =
+        (widget.userId == null
+                ? widget.client.rpc('admin_support_tickets')
+                : widget.client.rpc(
+                    'admin_support_tickets_for_user',
+                    params: {'p_user': widget.userId},
+                  ))
+            .then((v) => v as List);
   }
 
   void refresh() => setState(load);

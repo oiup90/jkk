@@ -17,9 +17,14 @@ abstract class AdminWalletGateway {
 }
 
 class SupabaseAdminWalletGateway implements AdminWalletGateway {
-  SupabaseAdminWalletGateway(this.client) : owner = client.auth.currentUser!.id;
+  SupabaseAdminWalletGateway(
+    this.client, {
+    this.targetUserId,
+    this.targetWalletNumber,
+  }) : owner = client.auth.currentUser!.id;
   final SupabaseClient client;
   final String owner;
+  final String? targetUserId, targetWalletNumber;
   @override
   String get sessionKey => 'admin_wallet_${client.rest.url}_$owner';
   void checkSession() {
@@ -34,6 +39,15 @@ class SupabaseAdminWalletGateway implements AdminWalletGateway {
   @override
   Future<List<Map<String, dynamic>>> search(String query, int offset) async {
     checkSession();
+    if (targetUserId != null && query == targetWalletNumber) {
+      if (offset > 0) return [];
+      return rows(
+        await client.rpc(
+          'admin_wallet_for_user',
+          params: {'p_user': targetUserId},
+        ),
+      );
+    }
     return rows(
       await client.rpc(
         'admin_wallets',
@@ -79,9 +93,11 @@ class AdminWalletsPage extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.canEdit,
+    this.initialQuery = '',
   });
   final AdminWalletGateway gateway;
   final bool canEdit;
+  final String initialQuery;
   @override
   State<AdminWalletsPage> createState() => _AdminWalletsPageState();
 }
@@ -96,6 +112,8 @@ class _AdminWalletsPageState extends State<AdminWalletsPage> {
   @override
   void initState() {
     super.initState();
+    query = widget.initialQuery;
+    search.text = query;
     load();
     restore();
   }

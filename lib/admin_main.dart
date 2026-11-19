@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'evidence_image.dart';
 import 'admin_operations.dart';
+import 'admin_overview.dart';
 import 'admin_users_support.dart';
 import 'admin_wallets.dart';
 import 'official_social_links.dart';
@@ -70,6 +71,37 @@ const labels = <String, List<String>>{
   'coinSettings': ['Coin settings', 'Coin settings'],
   'sendNotifications': ['Send notification', 'Notification അയയ്ക്കുക'],
   'workspaceMenu': ['Workspace', 'Workspace'],
+  'allUsersFilter': ['All users', 'എല്ലാ users'],
+  'joinDateFilter': ['Join date (UTC)', 'ചേർന്ന തീയതി (UTC)'],
+  'lastLoginFilter': ['Last login (UTC)', 'അവസാന login (UTC)'],
+  'sortJoinDate': ['Sort: Join date', 'ക്രമം: ചേർന്ന തീയതി'],
+  'sortLastLogin': ['Sort: Last login', 'ക്രമം: അവസാന login'],
+  'newestFirst': ['Newest first', 'പുതിയത് ആദ്യം'],
+  'oldestFirst': ['Oldest first', 'പഴയത് ആദ്യം'],
+  'clearFilters': ['Clear filters', 'Filters മാറ്റുക'],
+  'chooseColumns': ['Choose columns', 'Columns തിരഞ്ഞെടുക്കുക'],
+  'blockReason': ['Reason for blocking', 'Block ചെയ്യാനുള്ള കാരണം'],
+  'restoreReason': [
+    'Reason for restoring (optional)',
+    'Restore ചെയ്യാനുള്ള കാരണം (optional)',
+  ],
+  'userSummary': ['User summary', 'User വിവരങ്ങൾ'],
+  'walletDetails': ['Wallet', 'Wallet'],
+  'noWallet': ['No wallet available.', 'Wallet ലഭ്യമല്ല.'],
+  'walletActive': ['Wallet active', 'Wallet സജീവം'],
+  'walletInactive': ['Wallet inactive', 'Wallet നിഷ്ക്രിയം'],
+  'quickActions': ['Quick actions', 'വേഗത്തിൽ തുറക്കാം'],
+  'openWallet': ['Open wallet', 'Wallet തുറക്കുക'],
+  'supportChats': ['Support chats', 'Support chats'],
+  'blockHistory': ['Block history', 'Block history'],
+  'noAccessChanges': [
+    'No access changes recorded.',
+    'Access മാറ്റങ്ങൾ രേഖപ്പെടുത്തിയിട്ടില്ല.',
+  ],
+  'reasonNotRecorded': ['Reason not recorded', 'കാരണം രേഖപ്പെടുത്തിയിട്ടില്ല'],
+  'restored': ['Restored', 'Restore ചെയ്തു'],
+  'collapseMenu': ['Collapse menu', 'മെനു ചുരുക്കുക'],
+  'expandMenu': ['Expand menu', 'മെനു വികസിപ്പിക്കുക'],
   'overview': ['Overview', 'അവലോകനം'],
   'activity': ['Admin activity', 'Admin പ്രവർത്തനങ്ങൾ'],
   'reports': ['Reports & CSV', 'റിപ്പോർട്ടുകളും CSV-യും'],
@@ -189,7 +221,10 @@ const labels = <String, List<String>>{
     'Unable to load or update action controls.',
     'Action നിയന്ത്രണങ്ങൾ ലഭ്യമാക്കാനോ മാറ്റാനോ കഴിഞ്ഞില്ല.',
   ],
-  'search': ['Search email or name', 'ഇമെയിൽ അല്ലെങ്കിൽ പേര് തിരയുക'],
+  'search': [
+    'Search email, name or user ID',
+    'ഇമെയിൽ, പേര് അല്ലെങ്കിൽ user ID തിരയുക',
+  ],
   'searchButton': ['Search', 'തിരയുക'],
   'refresh': ['Refresh', 'പുതുക്കുക'],
   'logout': ['Sign out', 'ലോഗൗട്ട്'],
@@ -265,8 +300,10 @@ class AdminUser {
     required this.coins,
     required this.blocked,
     required this.isAdmin,
+    this.lastSignIn,
   });
   final String id, email, name, joined;
+  final String? lastSignIn;
   final String? publicId;
   final int? coins;
   final bool blocked, isAdmin;
@@ -276,6 +313,7 @@ class AdminUser {
     email: row['email'] as String? ?? '',
     name: row['display_name'] as String? ?? '',
     joined: row['created_at'] as String? ?? '',
+    lastSignIn: row['last_sign_in_at'] as String?,
     coins: row['coins'] as int?,
     blocked: row['blocked'] as bool? ?? false,
     isAdmin: row['is_admin'] as bool? ?? false,
@@ -355,6 +393,24 @@ abstract class AdminDecisionGateway {
   Future<void> decideSubmission(AdminSubmission submission, bool approve);
 }
 
+abstract class AdminUserDirectoryGateway {
+  Future<List<AdminUser>> filteredUsers(
+    String query,
+    String status,
+    DateTimeRange? joined,
+    DateTimeRange? login,
+    String sort,
+    bool descending,
+    int offset,
+    int limit,
+  );
+  Future<void> setBlockedWithReason(
+    String userId,
+    bool blocked,
+    String? reason,
+  );
+}
+
 abstract class AdminWorkspaceGateway {
   Future<String> workspaceRole();
   Future<Map<String, dynamic>> overview();
@@ -374,7 +430,11 @@ abstract class AdminWorkspaceGateway {
 }
 
 class SupabaseAdminGateway
-    implements AdminGateway, AdminWorkspaceGateway, AdminDecisionGateway {
+    implements
+        AdminGateway,
+        AdminWorkspaceGateway,
+        AdminDecisionGateway,
+        AdminUserDirectoryGateway {
   SupabaseAdminGateway(this.client, {this.projectUrl, this.publicKey});
   final String? projectUrl, publicKey;
   final SupabaseClient client;
@@ -391,7 +451,7 @@ class SupabaseAdminGateway
   @override
   Future<Map<String, dynamic>> userDetails(String userId) async =>
       Map<String, dynamic>.from(
-        await client.rpc('admin_user_details', params: {'p_user_id': userId})
+        await client.rpc('admin_user_details_v2', params: {'p_user_id': userId})
             as Map,
       );
   List<Map<String, dynamic>> _rows(dynamic value) => (value as List)
@@ -464,6 +524,49 @@ class SupabaseAdminGateway
   );
   @override
   Future<bool> isAdmin() async => (await client.rpc('admin_is_admin')) == true;
+  @override
+  Future<List<AdminUser>> filteredUsers(
+    String query,
+    String status,
+    DateTimeRange? joined,
+    DateTimeRange? login,
+    String sort,
+    bool descending,
+    int offset,
+    int limit,
+  ) async {
+    final rows = await client.rpc(
+      'admin_list_users_v3',
+      params: {
+        'p_query': query,
+        'p_status': status,
+        'p_join_from': joined == null ? null : _dateOnly(joined.start),
+        'p_join_to': joined == null ? null : _dateOnly(joined.end),
+        'p_login_from': login == null ? null : _dateOnly(login.start),
+        'p_login_to': login == null ? null : _dateOnly(login.end),
+        'p_sort': sort,
+        'p_desc': descending,
+        'p_offset': offset,
+        'p_limit': limit,
+      },
+    ) as List;
+    return rows
+        .map((row) => AdminUser.fromJson(Map<String, dynamic>.from(row as Map)))
+        .toList();
+  }
+
+  @override
+  Future<void> setBlockedWithReason(
+    String userId,
+    bool blocked,
+    String? reason,
+  ) async {
+    await client.rpc(
+      'admin_set_blocked_with_reason',
+      params: {'p_user_id': userId, 'p_blocked': blocked, 'p_reason': reason},
+    );
+  }
+
   @override
   Future<List<AdminUser>> users(String query, int offset, int limit) async {
     final rows = await client.rpc(
@@ -1524,11 +1627,59 @@ class _AdminDashboardState extends State<AdminDashboard> {
   String search = '';
   bool changing = false;
   bool canEdit = false;
+  String status = 'all', sort = 'joined';
+  bool descending = true;
+  DateTimeRange? joinedRange, loginRange;
+  final Set<String> columns = {
+    'email',
+    'id',
+    'joined',
+    'login',
+    'coins',
+    'status',
+  };
   static const pageSize = 50;
+  Future<List<AdminUser>> fetchUsers() {
+    final gateway = widget.gateway;
+    if (gateway is AdminUserDirectoryGateway) {
+      return (gateway as AdminUserDirectoryGateway).filteredUsers(
+        search,
+        status,
+        joinedRange,
+        loginRange,
+        sort,
+        descending,
+        offset,
+        pageSize,
+      );
+    }
+    return gateway.users(search, offset, pageSize);
+  }
+
+  Future<void> dateFilter(bool joined) async {
+    final result = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      initialDateRange: joined ? joinedRange : loginRange,
+    );
+    if (result != null && mounted) {
+      setState(() {
+        if (joined) {
+          joinedRange = result;
+        } else {
+          loginRange = result;
+        }
+        offset = 0;
+        results = fetchUsers();
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    results = widget.gateway.users(search, offset, pageSize);
+    results = fetchUsers();
     final gateway = widget.gateway;
     if (gateway is AdminWorkspaceGateway) {
       (gateway as AdminWorkspaceGateway)
@@ -1554,39 +1705,61 @@ class _AdminDashboardState extends State<AdminDashboard> {
       offset = 0;
     }
     if (page != null) offset = page;
-    results = widget.gateway.users(search, offset, pageSize);
+    results = fetchUsers();
   });
   Future<void> change(AdminUser user) async {
     final block = !user.blocked;
+    final advanced = widget.gateway is AdminUserDirectoryGateway;
+    var reason = '';
     final accept = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(at(context, block ? 'confirmBlock' : 'confirmUnblock')),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(user.email),
-            const SizedBox(height: 12),
-            Text(at(context, 'blockNote')),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(at(context, block ? 'confirmBlock' : 'confirmUnblock')),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(user.email),
+              const SizedBox(height: 12),
+              Text(at(context, 'blockNote')),
+              if (advanced)
+                TextField(
+                  maxLength: 1000,
+                  onChanged: (value) => setDialogState(() => reason = value),
+                  decoration: InputDecoration(
+                    labelText: at(
+                      context,
+                      block ? 'blockReason' : 'restoreReason',
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(at(context, 'cancel')),
+            ),
+            FilledButton(
+              onPressed: advanced && block && reason.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(context, true),
+              child: Text(at(context, 'confirm')),
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(at(context, 'cancel')),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(at(context, 'confirm')),
-          ),
-        ],
       ),
     );
     if (accept != true || !mounted || changing) return;
     setState(() => changing = true);
     try {
-      await widget.gateway.setBlocked(user.id, block);
+      if (advanced) {
+        await (widget.gateway as AdminUserDirectoryGateway)
+            .setBlockedWithReason(user.id, block, reason.trim());
+      } else {
+        await widget.gateway.setBlocked(user.id, block);
+      }
       if (mounted) reload();
     } catch (_) {
       if (mounted) {
@@ -1596,6 +1769,138 @@ class _AdminDashboardState extends State<AdminDashboard> {
     } finally {
       if (mounted) setState(() => changing = false);
     }
+  }
+
+  Widget directoryTable(List<AdminUser> users) {
+    final advanced = widget.gateway is AdminUserDirectoryGateway;
+    bool show(String key) => !advanced || columns.contains(key);
+    String date(String? value) {
+      if (value == null || value.isEmpty) return '—';
+      final parsed = DateTime.tryParse(value);
+      return parsed == null ? value : _dateOnly(parsed.toUtc());
+    }
+
+    return SingleChildScrollView(
+      child: Card(
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(
+                  const Color(0xfff2edf9),
+                ),
+                columns: [
+                  const DataColumn(label: Text('Name')),
+                  if (show('email')) const DataColumn(label: Text('Email')),
+                  if (show('id'))
+                    const DataColumn(label: Text('User ID (8 digits)')),
+                  if (show('joined'))
+                    DataColumn(label: Text(at(context, 'joined'))),
+                  if (advanced && show('login'))
+                    DataColumn(label: Text(at(context, 'lastLoginFilter'))),
+                  if (show('coins'))
+                    DataColumn(
+                      label: Text(at(context, 'coins')),
+                      numeric: true,
+                    ),
+                  if (show('status'))
+                    DataColumn(
+                      label: Text(advanced ? 'Status' : at(context, 'role')),
+                    ),
+                  DataColumn(label: Text(at(context, 'details'))),
+                  DataColumn(label: Text(at(context, 'actionsLabel'))),
+                ],
+                rows: [
+                  for (final user in users)
+                    DataRow(
+                      cells: [
+                        DataCell(
+                          AdminCopyField(label: 'Name', value: user.name),
+                        ),
+                        if (show('email'))
+                          DataCell(
+                            AdminCopyField(label: 'Email', value: user.email),
+                          ),
+                        if (show('id'))
+                          DataCell(
+                            AdminCopyField(
+                              label: 'User ID',
+                              value: user.publicId ?? '—',
+                            ),
+                          ),
+                        if (show('joined')) DataCell(Text(date(user.joined))),
+                        if (advanced && show('login'))
+                          DataCell(Text(date(user.lastSignIn))),
+                        if (show('coins'))
+                          DataCell(Text('${user.coins ?? '—'}')),
+                        if (show('status'))
+                          DataCell(
+                            Chip(
+                              label: Text(
+                                at(
+                                  context,
+                                  user.isAdmin
+                                      ? 'admin'
+                                      : user.blocked
+                                      ? 'blocked'
+                                      : 'active',
+                                ),
+                              ),
+                              side: BorderSide.none,
+                              backgroundColor: user.blocked
+                                  ? const Color(0xffffeceb)
+                                  : const Color(0xffeaf5f0),
+                            ),
+                          ),
+                        DataCell(
+                          widget.gateway is AdminWorkspaceGateway
+                              ? TextButton.icon(
+                                  onPressed: () => Navigator.push(
+                                    context,
+                                    MaterialPageRoute<void>(
+                                      builder: (_) => AdminUserDetails(
+                                        gateway:
+                                            widget.gateway
+                                                as AdminWorkspaceGateway,
+                                        user: user,
+                                        canEdit: canEdit,
+                                      ),
+                                    ),
+                                  ),
+                                  icon: const Icon(
+                                    Icons.visibility_outlined,
+                                    size: 18,
+                                  ),
+                                  label: Text(at(context, 'details')),
+                                )
+                              : const Text('—'),
+                        ),
+                        DataCell(
+                          !user.isAdmin
+                              ? OutlinedButton(
+                                  onPressed: changing || !canEdit
+                                      ? null
+                                      : () => change(user),
+                                  child: Text(
+                                    at(
+                                      context,
+                                      user.blocked ? 'unblock' : 'block',
+                                    ),
+                                  ),
+                                )
+                              : const Text('—'),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _navigationAction(
@@ -1819,6 +2124,132 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   ),
                 ],
               ),
+              if (widget.gateway is AdminUserDirectoryGateway)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      DropdownButton<String>(
+                        value: status,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'all',
+                            child: Text(at(context, 'allUsersFilter')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'active',
+                            child: Text(at(context, 'active')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'blocked',
+                            child: Text(at(context, 'blocked')),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() {
+                          status = v!;
+                          offset = 0;
+                          results = fetchUsers();
+                        }),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => dateFilter(true),
+                        icon: const Icon(Icons.date_range),
+                        label: Text(
+                          joinedRange == null
+                              ? at(context, 'joinDateFilter')
+                              : 'Joined: ${_dateOnly(joinedRange!.start)} – ${_dateOnly(joinedRange!.end)}',
+                        ),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => dateFilter(false),
+                        icon: const Icon(Icons.login),
+                        label: Text(
+                          loginRange == null
+                              ? at(context, 'lastLoginFilter')
+                              : 'Login: ${_dateOnly(loginRange!.start)} – ${_dateOnly(loginRange!.end)}',
+                        ),
+                      ),
+                      DropdownButton<String>(
+                        value: sort,
+                        items: [
+                          DropdownMenuItem(
+                            value: 'joined',
+                            child: Text(at(context, 'sortJoinDate')),
+                          ),
+                          DropdownMenuItem(
+                            value: 'last_login',
+                            child: Text(at(context, 'sortLastLogin')),
+                          ),
+                        ],
+                        onChanged: (v) => setState(() {
+                          sort = v!;
+                          offset = 0;
+                          results = fetchUsers();
+                        }),
+                      ),
+                      IconButton(
+                        tooltip: at(
+                          context,
+                          descending ? 'newestFirst' : 'oldestFirst',
+                        ),
+                        icon: Icon(descending ? Icons.south : Icons.north),
+                        onPressed: () => setState(() {
+                          descending = !descending;
+                          offset = 0;
+                          results = fetchUsers();
+                        }),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() {
+                          status = 'all';
+                          joinedRange = null;
+                          loginRange = null;
+                          sort = 'joined';
+                          descending = true;
+                          offset = 0;
+                          results = fetchUsers();
+                        }),
+                        child: Text(at(context, 'clearFilters')),
+                      ),
+                      if (widget.embedded)
+                        PopupMenuButton<String>(
+                          tooltip: at(context, 'chooseColumns'),
+                          onSelected: (key) => setState(() {
+                            if (!columns.add(key)) columns.remove(key);
+                          }),
+                          itemBuilder: (_) => [
+                            for (final entry in const [
+                              ('email', 'Email'),
+                              ('id', 'User ID'),
+                              ('joined', 'Join date'),
+                              ('login', 'Last login'),
+                              ('coins', 'Coins'),
+                              ('status', 'Status'),
+                            ])
+                              CheckedPopupMenuItem(
+                                value: entry.$1,
+                                checked: columns.contains(entry.$1),
+                                child: Text(entry.$2),
+                              ),
+                          ],
+                          child: const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.view_column_outlined),
+                                SizedBox(width: 6),
+                                Text('Columns'),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
               if (!widget.embedded && widget.gateway is AdminWorkspaceGateway)
                 Align(
                   alignment: Alignment.centerLeft,
@@ -1935,182 +2366,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           child: users.isEmpty
                               ? Center(child: Text(at(context, 'empty')))
                               : widget.embedded
-                              ? SingleChildScrollView(
-                                  child: Card(
-                                    child: LayoutBuilder(
-                                      builder: (context, constraints) => SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: ConstrainedBox(
-                                          constraints: BoxConstraints(
-                                            minWidth: constraints.maxWidth,
-                                          ),
-                                          child: DataTable(
-                                            columns: [
-                                              const DataColumn(
-                                                label: Text('Name'),
-                                              ),
-                                              const DataColumn(
-                                                label: Text('Email'),
-                                              ),
-                                              const DataColumn(
-                                                label: Text(
-                                                  'User ID (8 digits)',
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text(
-                                                  at(context, 'joined'),
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text(
-                                                  at(context, 'coins'),
-                                                ),
-                                                numeric: true,
-                                              ),
-                                              DataColumn(
-                                                label: Text(
-                                                  at(context, 'role'),
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text(
-                                                  at(context, 'details'),
-                                                ),
-                                              ),
-                                              DataColumn(
-                                                label: Text(
-                                                  at(context, 'actionsLabel'),
-                                                ),
-                                              ),
-                                            ],
-                                            rows: [
-                                              for (final user in users)
-                                                DataRow(
-                                                  cells: [
-                                                    DataCell(
-                                                      AdminCopyField(
-                                                        label: 'Name',
-                                                        value: user.name,
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      AdminCopyField(
-                                                        label: 'Email',
-                                                        value: user.email,
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      AdminCopyField(
-                                                        label: 'User ID',
-                                                        value:
-                                                            user.publicId ??
-                                                            '—',
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      Text(
-                                                        user.joined.length >= 10
-                                                            ? user.joined
-                                                                  .substring(
-                                                                    0,
-                                                                    10,
-                                                                  )
-                                                            : user.joined,
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      Text(
-                                                        '${user.coins ?? '—'}',
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      Chip(
-                                                        label: Text(
-                                                          at(
-                                                            context,
-                                                            user.isAdmin
-                                                                ? 'admin'
-                                                                : user.blocked
-                                                                ? 'blocked'
-                                                                : 'active',
-                                                          ),
-                                                        ),
-                                                        side: BorderSide.none,
-                                                        backgroundColor:
-                                                            user.blocked
-                                                            ? const Color(
-                                                                0xffffeceb,
-                                                              )
-                                                            : const Color(
-                                                                0xffeaf5f0,
-                                                              ),
-                                                      ),
-                                                    ),
-                                                    DataCell(
-                                                      widget.gateway
-                                                              is AdminWorkspaceGateway
-                                                          ? TextButton.icon(
-                                                              onPressed: () => Navigator.push(
-                                                                context,
-                                                                MaterialPageRoute<
-                                                                  void
-                                                                >(
-                                                                  builder: (_) =>
-                                                                      AdminUserDetails(
-                                                                        gateway:
-                                                                            widget.gateway
-                                                                                as AdminWorkspaceGateway,
-                                                                        user:
-                                                                            user,
-                                                                      ),
-                                                                ),
-                                                              ),
-                                                              icon: const Icon(
-                                                                Icons
-                                                                    .visibility_outlined,
-                                                                size: 18,
-                                                              ),
-                                                              label: Text(
-                                                                at(
-                                                                  context,
-                                                                  'details',
-                                                                ),
-                                                              ),
-                                                            )
-                                                          : const Text('—'),
-                                                    ),
-                                                    DataCell(
-                                                      !user.isAdmin
-                                                          ? OutlinedButton(
-                                                              onPressed:
-                                                                  changing ||
-                                                                      !canEdit
-                                                                  ? null
-                                                                  : () =>
-                                                                        change(
-                                                                          user,
-                                                                        ),
-                                                              child: Text(
-                                                                at(
-                                                                  context,
-                                                                  user.blocked
-                                                                      ? 'unblock'
-                                                                      : 'block',
-                                                                ),
-                                                              ),
-                                                            )
-                                                          : const Text('—'),
-                                                    ),
-                                                  ],
-                                                ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
+                              ? directoryTable(users)
                               : ListView.builder(
                                   itemCount: users.length,
                                   itemBuilder: (context, i) {
@@ -2134,6 +2390,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                                       widget.gateway
                                                           as AdminWorkspaceGateway,
                                                   user: user,
+                                                  canEdit: canEdit,
                                                 ),
                                               ),
                                             )
@@ -3373,9 +3630,11 @@ class AdminWorkspacePage extends StatefulWidget {
     super.key,
     required this.gateway,
     required this.page,
+    this.onNavigate,
   });
   final AdminWorkspaceGateway gateway;
   final String page;
+  final ValueChanged<String>? onNavigate;
   @override
   State<AdminWorkspacePage> createState() => _AdminWorkspacePageState();
 }
@@ -3392,8 +3651,15 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
   }
 
   void load() {
+    final today = DateTime.now().toUtc();
     data = switch (widget.page) {
-      'overview' => widget.gateway.overview(),
+      'overview' => Future.wait<dynamic>([
+        widget.gateway.overview(),
+        widget.gateway.dailyReport(
+          today.subtract(const Duration(days: 29)),
+          today,
+        ),
+      ]),
       'activity' => widget.gateway.activity(offset),
       'reports' => widget.gateway.dailyReport(start, end),
       'alerts' => widget.gateway.alerts(),
@@ -3402,6 +3668,45 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
   }
 
   void reload() => setState(load);
+
+  Future<void> navigateOverview(String destination) async {
+    if (widget.onNavigate != null) {
+      widget.onNavigate!(destination);
+      return;
+    }
+    final gateway = widget.gateway;
+    if (gateway is! AdminGateway) return;
+    final admin = gateway as AdminGateway;
+    if (destination == 'submissions') {
+      await Navigator.push(
+        context,
+        MaterialPageRoute<void>(
+          builder: (_) => AdminSubmissions(gateway: admin),
+        ),
+      );
+      return;
+    }
+    if (gateway is! SupabaseAdminGateway) return;
+    var canEdit = false;
+    try {
+      canEdit = await gateway.workspaceRole() == 'editor';
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => destination == 'operations'
+            ? AdminUsersSupportPage(client: gateway.client, canEdit: canEdit)
+            : AdminWalletsPage(
+                gateway: SupabaseAdminWalletGateway(gateway.client),
+                canEdit: canEdit,
+              ),
+      ),
+    );
+  }
+
   Future<void> dateRange() async {
     final result = await showDateRangePicker(
       context: context,
@@ -3518,78 +3823,12 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
                 );
               }
               if (widget.page == 'overview') {
-                final values = snapshot.data as Map<String, dynamic>;
-                final metrics = <(String, String, IconData)>[
-                  (at(context, 'users'), 'users', Icons.people_outline),
-                  (
-                    at(context, 'activeCampaigns'),
-                    'active_campaigns',
-                    Icons.campaign_outlined,
-                  ),
-                  (
-                    at(context, 'submissions'),
-                    'pending_submissions',
-                    Icons.fact_check_outlined,
-                  ),
-                  (
-                    at(context, 'coinsCredited'),
-                    'coins_credited',
-                    Icons.toll_outlined,
-                  ),
-                ];
-                return ListView(
-                  padding: const EdgeInsets.all(24),
-                  children: [
-                    LayoutBuilder(
-                      builder: (context, constraints) => Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          for (final metric in metrics)
-                            SizedBox(
-                              width: constraints.maxWidth >= 800
-                                  ? (constraints.maxWidth - 36) / 4
-                                  : 190,
-                              child: Card(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 28,
-                                        backgroundColor: const Color(
-                                          0xffeee6fc,
-                                        ),
-                                        child: Icon(
-                                          metric.$3,
-                                          color: adminViolet,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        '${values[metric.$2] ?? 0}',
-                                        style: const TextStyle(
-                                          fontSize: 36,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      Text(
-                                        metric.$1,
-                                        style: const TextStyle(
-                                          color: adminMuted,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+                final result = snapshot.data as List<dynamic>;
+                return AdminOverviewDashboard(
+                  values: result[0] as Map<String, dynamic>,
+                  trends: result[1] as List<Map<String, dynamic>>,
+                  onNavigate: navigateOverview,
+                  canOpenSupport: widget.gateway is SupabaseAdminGateway,
                 );
               }
               final rows = (snapshot.data as List).cast<Map<String, dynamic>>();
@@ -3719,20 +3958,59 @@ class _AdminWorkspacePageState extends State<AdminWorkspacePage> {
   }
 }
 
-class AdminUserDetails extends StatelessWidget {
+class AdminUserDetails extends StatefulWidget {
   const AdminUserDetails({
     super.key,
     required this.gateway,
     required this.user,
+    this.canEdit = false,
   });
   final AdminWorkspaceGateway gateway;
   final AdminUser user;
+  final bool canEdit;
+  @override
+  State<AdminUserDetails> createState() => _AdminUserDetailsState();
+}
+
+class _AdminUserDetailsState extends State<AdminUserDetails> {
+  AdminWorkspaceGateway get gateway => widget.gateway;
+  AdminUser get user => widget.user;
+  bool get canEdit => widget.canEdit;
+  late Future<Map<String, dynamic>> details;
+
+  @override
+  void initState() {
+    super.initState();
+    details = gateway.userDetails(user.id);
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminUserDetails oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.gateway != widget.gateway ||
+        oldWidget.user.id != widget.user.id) {
+      details = gateway.userDetails(user.id);
+    }
+  }
+
+  Future<void> open(Widget page) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(builder: (_) => page),
+    );
+    if (mounted) {
+      setState(() {
+        details = gateway.userDetails(user.id);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) => AdminDestinationScaffold(
     destination: AdminDestination.userDetails,
     appBar: AppBar(title: Text(user.name.isEmpty ? user.email : user.name)),
     body: FutureBuilder<Map<String, dynamic>>(
-      future: gateway.userDetails(user.id),
+      future: details,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
@@ -3741,9 +4019,14 @@ class AdminUserDetails extends StatelessWidget {
           return Center(child: Text(at(context, 'detailsFailure')));
         }
         final data = snapshot.data!;
+        final wallet = data['wallet'] as Map?;
+        final history = (data['block_history'] as List?) ?? const [];
+        final client = gateway is SupabaseAdminGateway
+            ? (gateway as SupabaseAdminGateway).client
+            : null;
         return Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 850),
+            constraints: const BoxConstraints(maxWidth: 1050),
             child: ListView(
               padding: const EdgeInsets.all(24),
               children: [
@@ -3763,6 +4046,161 @@ class AdminUserDetails extends StatelessWidget {
                   "${at(context, 'referredBy')}: ${at(context, data['referred'] == true ? 'yes' : 'no')}",
                   style: const TextStyle(color: adminMuted),
                 ),
+                if (data.containsKey('campaign_count')) ...[
+                  const SizedBox(height: 20),
+                  Text(
+                    at(context, 'userSummary'),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: adminText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      Chip(
+                        avatar: const Icon(Icons.campaign_outlined),
+                        label: Text("Campaigns: ${data['campaign_count']}"),
+                      ),
+                      Chip(
+                        avatar: const Icon(Icons.fact_check_outlined),
+                        label: Text("Submissions: ${data['submission_count']}"),
+                      ),
+                      Chip(
+                        avatar: const Icon(Icons.group_outlined),
+                        label: Text("Referrals: ${data['referrals']}"),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    at(context, 'walletDetails'),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: adminText,
+                    ),
+                  ),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: wallet == null
+                          ? Text(at(context, 'noWallet'))
+                          : Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text("Wallet: ${wallet['wallet_number']}"),
+                                Text(
+                                  "Balance: ${wallet['balance']}   ·   Held: ${wallet['held_balance']}   ·   Available: ${wallet['available_balance']}",
+                                ),
+                                Text(
+                                  wallet['is_active'] == true
+                                      ? at(context, 'walletActive')
+                                      : at(context, 'walletInactive'),
+                                ),
+                              ],
+                            ),
+                    ),
+                  ),
+                  if (client != null) ...[
+                    const SizedBox(height: 20),
+                    Text(
+                      at(context, 'quickActions'),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: adminText,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        OutlinedButton.icon(
+                          onPressed: wallet == null
+                              ? null
+                              : () => open(
+                                  AdminWalletsPage(
+                                    gateway: SupabaseAdminWalletGateway(
+                                      client,
+                                      targetUserId: user.id,
+                                      targetWalletNumber:
+                                          wallet['wallet_number'] as String,
+                                    ),
+                                    canEdit: canEdit,
+                                    initialQuery:
+                                        wallet['wallet_number'] as String,
+                                  ),
+                                ),
+                          icon: const Icon(
+                            Icons.account_balance_wallet_outlined,
+                          ),
+                          label: Text(at(context, 'openWallet')),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => open(
+                            AdminUsersSupportPage(
+                              client: client,
+                              canEdit: canEdit,
+                              userId: user.id,
+                            ),
+                          ),
+                          icon: const Icon(Icons.support_agent),
+                          label: Text(at(context, 'supportChats')),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: !canEdit
+                              ? null
+                              : () => open(
+                                  AdminSendNotificationPage(
+                                    gateway: SupabaseAdminNotificationGateway(
+                                      client,
+                                    ),
+                                    canEdit: canEdit,
+                                    initialRecipient: {
+                                      'id': user.id,
+                                      'email': user.email,
+                                      'display_name': user.name,
+                                      'public_id': user.publicId,
+                                    },
+                                  ),
+                                ),
+                          icon: const Icon(Icons.notifications_outlined),
+                          label: Text(at(context, 'sendNotifications')),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Text(
+                    at(context, 'blockHistory'),
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: adminText,
+                    ),
+                  ),
+                  if (history.isEmpty) Text(at(context, 'noAccessChanges')),
+                  for (final item in history)
+                    Card(
+                      child: ListTile(
+                        leading: Icon(
+                          item['blocked'] == true
+                              ? Icons.block
+                              : Icons.check_circle_outline,
+                        ),
+                        title: Text(
+                          at(
+                            context,
+                            item['blocked'] == true ? 'blocked' : 'restored',
+                          ),
+                        ),
+                        subtitle: Text(
+                          "${item['actor']} · ${item['created_at']}\n${item['reason'] ?? at(context, 'reasonNotRecorded')}",
+                        ),
+                      ),
+                    ),
+                ],
                 const SizedBox(height: 16),
                 AdminNotice(text: at(context, 'recentRecords')),
                 for (final section in [
@@ -3830,6 +4268,7 @@ class AdminDesktopConsole extends StatefulWidget {
 class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
   final navigator = GlobalKey<NavigatorState>();
   String selected = 'users';
+  bool menuCollapsed = false;
   String? role;
   @override
   void initState() {
@@ -3890,6 +4329,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
     _ => AdminWorkspacePage(
       gateway: widget.gateway as AdminWorkspaceGateway,
       page: key,
+      onNavigate: select,
     ),
   };
 
@@ -3930,47 +4370,57 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       body: Row(
         children: [
           SizedBox(
-            width: 230,
+            key: const Key('admin_sidebar'),
+            width: menuCollapsed ? 72 : 230,
             child: Material(
               color: const Color(0xff180d38),
               child: SafeArea(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(24, 26, 24, 4),
-                      child: Column(
-                        children: [
-                          FreelanMark(size: 54),
-                          SizedBox(height: 8),
-                          Text(
-                            'Freelan Space',
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 19,
-                              fontWeight: FontWeight.w800,
+                    if (menuCollapsed)
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(8, 26, 8, 24),
+                        child: FreelanMark(size: 36),
+                      )
+                    else ...[
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(24, 26, 24, 4),
+                        child: Column(
+                          children: [
+                            FreelanMark(size: 54),
+                            SizedBox(height: 8),
+                            Text(
+                              'Freelan Space',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
-                      child: Text(
-                        at(context, 'workspace'),
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Color(0xff9895b5),
-                          fontSize: 10,
-                          letterSpacing: 1.8,
-                          fontWeight: FontWeight.w700,
+                          ],
                         ),
                       ),
-                    ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+                        child: Text(
+                          at(context, 'workspace'),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Color(0xff9895b5),
+                            fontSize: 10,
+                            letterSpacing: 1.8,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: menuCollapsed ? 8 : 12,
+                        ),
                         children: [
                           for (final entry in entries)
                             Padding(
@@ -3998,36 +4448,57 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                                 ),
                                 child: Material(
                                   color: Colors.transparent,
-                                  child: ListTile(
-                                    dense: true,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    selected: selected == entry.$1,
-                                    selectedTileColor: Colors.transparent,
-                                    leading: Icon(
-                                      entry.$2,
-                                      size: 20,
-                                      color: selected == entry.$1
-                                          ? Colors.white
-                                          : const Color(0xffa6a3bf),
-                                    ),
-                                    title: Text(
-                                      entry.$1 == 'updates'
-                                          ? 'App releases'
-                                          : entry.$1 == 'operations'
-                                          ? 'Users Supports'
-                                          : at(context, entry.$1),
-                                      style: TextStyle(
-                                        color: selected == entry.$1
-                                            ? Colors.white
-                                            : const Color(0xffc4c1d5),
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    onTap: () => select(entry.$1),
-                                  ),
+                                  child: menuCollapsed
+                                      ? Semantics(
+                                          selected: selected == entry.$1,
+                                          child: IconButton(
+                                            tooltip: entry.$1 == 'updates'
+                                                ? 'App releases'
+                                                : entry.$1 == 'operations'
+                                                ? 'Users Supports'
+                                                : at(context, entry.$1),
+                                            onPressed: () => select(entry.$1),
+                                            icon: Icon(
+                                              entry.$2,
+                                              size: 20,
+                                              color: selected == entry.$1
+                                                  ? Colors.white
+                                                  : const Color(0xffa6a3bf),
+                                            ),
+                                          ),
+                                        )
+                                      : ListTile(
+                                          dense: true,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              10,
+                                            ),
+                                          ),
+                                          selected: selected == entry.$1,
+                                          selectedTileColor: Colors.transparent,
+                                          leading: Icon(
+                                            entry.$2,
+                                            size: 20,
+                                            color: selected == entry.$1
+                                                ? Colors.white
+                                                : const Color(0xffa6a3bf),
+                                          ),
+                                          title: Text(
+                                            entry.$1 == 'updates'
+                                                ? 'App releases'
+                                                : entry.$1 == 'operations'
+                                                ? 'Users Supports'
+                                                : at(context, entry.$1),
+                                            style: TextStyle(
+                                              color: selected == entry.$1
+                                                  ? Colors.white
+                                                  : const Color(0xffc4c1d5),
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          onTap: () => select(entry.$1),
+                                        ),
                                 ),
                               ),
                             ),
@@ -4039,42 +4510,57 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                       indent: 24,
                       endIndent: 24,
                     ),
-                    Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        children: [
-                          const CircleAvatar(
+                    if (menuCollapsed)
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Tooltip(
+                          message: '${at(context, 'admin')} · ${role ?? '…'}',
+                          child: const CircleAvatar(
                             backgroundColor: Color(0xff35314e),
                             child: Icon(
                               Icons.verified_user_outlined,
                               color: Color(0xffcec4ff),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  at(context, 'admin'),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                Text(
-                                  role ?? '…',
-                                  style: const TextStyle(
-                                    color: Color(0xffa6a3bf),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
+                        ),
+                      )
+                    else
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          children: [
+                            const CircleAvatar(
+                              backgroundColor: Color(0xff35314e),
+                              child: Icon(
+                                Icons.verified_user_outlined,
+                                color: Color(0xffcec4ff),
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    at(context, 'admin'),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  Text(
+                                    role ?? '…',
+                                    style: const TextStyle(
+                                      color: Color(0xffa6a3bf),
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -4094,6 +4580,18 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
                   ),
                   child: Row(
                     children: [
+                      IconButton(
+                        tooltip: at(
+                          context,
+                          menuCollapsed ? 'expandMenu' : 'collapseMenu',
+                        ),
+                        onPressed: () =>
+                            setState(() => menuCollapsed = !menuCollapsed),
+                        icon: Icon(
+                          menuCollapsed ? Icons.menu : Icons.menu_open,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       const Icon(
                         Icons.space_dashboard_outlined,
                         color: adminViolet,

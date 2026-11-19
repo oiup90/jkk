@@ -47,6 +47,45 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('collapsed menu keeps the current route and can navigate', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1100, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: adminTheme(),
+        home: AdminDesktopConsole(
+          gateway: WorkspaceFake(),
+          onLogout: () async {},
+          onLanguage: () {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final sidebar = find.byKey(const Key('admin_sidebar'));
+    expect(tester.getSize(sidebar).width, 230);
+    await tester.ensureVisible(find.text('Details').last);
+    await tester.tap(find.text('Details').last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Referrals: 1'), findsOneWidget);
+    await tester.tap(find.byTooltip('Collapse menu'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(sidebar).width, 72);
+    expect(find.textContaining('Referrals: 1'), findsOneWidget);
+    expect(find.byTooltip('Reports & CSV'), findsOneWidget);
+    await tester.tap(find.byTooltip('Reports & CSV'));
+    await tester.pumpAndSettle();
+    expect(find.text('Export CSV'), findsOneWidget);
+    await tester.tap(find.byTooltip('Expand menu'));
+    await tester.pumpAndSettle();
+    expect(tester.getSize(sidebar).width, 230);
+    expect(find.text('Export CSV'), findsOneWidget);
+    expect(find.widgetWithText(ListTile, 'Reports & CSV'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('desktop viewer cannot change access from directory table', (
     tester,
   ) async {
