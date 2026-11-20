@@ -218,6 +218,87 @@ void main() {
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox());
   });
+  testWidgets('editor confirms deletion of built-in and uploaded slides', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final client = SupabaseClient(
+      'https://example.test',
+      'public-test-key',
+      authOptions: const AuthClientOptions(autoRefreshToken: false),
+    );
+    addTearDown(() {
+      client.dispose();
+    });
+    final gateway = FakeSlides(client);
+    gateway.rows.add(
+      const HomeSlide(id: 'custom', kind: 'image', title: 'Custom slide'),
+    );
+    var allow = false;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: AdminHomeSlidesPage(
+          client: client,
+          canEdit: true,
+          gateway: gateway,
+          verifyChange: () async => allow,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final builtin = find
+        .ancestor(
+          of: find.text('Referral rewards'),
+          matching: find.byType(Card),
+        )
+        .first;
+    await tester.tap(
+      find.descendant(of: builtin, matching: find.text('Delete')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.textContaining('permanently?'), findsOneWidget);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(gateway.rows.length, 3);
+    await tester.tap(
+      find.descendant(of: builtin, matching: find.text('Delete')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+    expect(gateway.rows.length, 3);
+    allow = true;
+    await tester.tap(
+      find.descendant(of: builtin, matching: find.text('Delete')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+    expect(
+      gateway.rows.map((s) => s.id),
+      isNot(contains(HomeSlide.defaults.first.id)),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Custom slide'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final custom = find
+        .ancestor(of: find.text('Custom slide'), matching: find.byType(Card))
+        .first;
+    await tester.tap(
+      find.descendant(of: custom, matching: find.text('Delete')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+    expect(gateway.rows.map((s) => s.id), isNot(contains('custom')));
+    expect(gateway.rows.single.kind, 'earnings');
+    expect(tester.takeException(), isNull);
+  });
   testWidgets('viewer can download but cannot mutate', (tester) async {
     final client = SupabaseClient(
       'https://example.test',
@@ -239,6 +320,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Add slide'), findsNothing);
     expect(find.text('Hide'), findsNothing);
+    expect(find.text('Delete'), findsNothing);
     expect(find.text('Download'), findsWidgets);
   });
 }

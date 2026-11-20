@@ -1,5 +1,6 @@
 import 'admin_destination.dart';
 import 'admin_home_slides.dart';
+import 'admin_deleted_accounts.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -156,6 +157,7 @@ const labels = <String, List<String>>{
     'The most recent 100 records in each section are shown.',
     'ഓരോ വിഭാഗത്തിലെയും ഏറ്റവും പുതിയ 100 വിവരങ്ങൾ കാണിക്കുന്നു.',
   ],
+  'deletedAccounts': ['Deleted accounts audit', 'Deleted accounts audit'],
   'referrals': ['Referrals', 'Referrals'],
   'role': ['Role', 'Role'],
   'member': ['Member', 'അംഗം'],
@@ -2356,8 +2358,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       context,
                       MaterialPageRoute<void>(
                         builder: (_) =>
-                            page == 'homeSlides' &&
+                            page == 'deletedAccounts' &&
                                 widget.gateway is SupabaseAdminGateway
+                            ? AdminDeletedAccounts(
+                                client: (widget.gateway as SupabaseAdminGateway)
+                                    .client,
+                              )
+                            : page == 'homeSlides' &&
+                                  widget.gateway is SupabaseAdminGateway
                             ? AdminHomeSlidesPage(
                                 client: (widget.gateway as SupabaseAdminGateway)
                                     .client,
@@ -2385,6 +2393,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       ),
                     ),
                     itemBuilder: (_) => [
+                      if (widget.gateway is SupabaseAdminGateway)
+                        const PopupMenuItem(
+                          value: 'deletedAccounts',
+                          child: Text('Deleted accounts audit'),
+                        ),
                       if (widget.gateway is SupabaseAdminGateway)
                         const PopupMenuItem(
                           value: 'homeSlides',
@@ -4591,6 +4604,9 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       gateway: widget.gateway,
       canEdit: role == 'editor',
     ),
+    'deletedAccounts' => AdminDeletedAccounts(
+      client: (widget.gateway as SupabaseAdminGateway).client,
+    ),
     'homeSlides' => AdminHomeSlidesPage(
       client: (widget.gateway as SupabaseAdminGateway).client,
       canEdit: role == 'editor',
@@ -4653,6 +4669,7 @@ class _AdminDesktopConsoleState extends State<AdminDesktopConsole> {
       if (widget.gateway is SupabaseAdminGateway) ...[
         ('sendNotifications', Icons.send_outlined),
         ('updates', Icons.system_update),
+        ('deletedAccounts', Icons.inventory_2_outlined),
         ('homeSlides', Icons.view_carousel_outlined),
         ('walletsManagement', Icons.account_balance_wallet_outlined),
         ('socialLinks', Icons.public),

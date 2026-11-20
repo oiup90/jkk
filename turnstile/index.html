@@ -6,25 +6,30 @@
   <meta name="referrer" content="no-referrer">
   <title>Security check</title>
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <style>body{font:16px system-ui,sans-serif;margin:8px;color:#24202e} #status{margin-bottom:16px}</style>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 210px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px; background: #fff; color: #544a68; font: 14px/1.4 system-ui, sans-serif; }
+    #status { margin: 0 0 10px; text-align: center; }
+    #challenge { display: flex; justify-content: center; max-width: 100%; }
+  </style>
 </head>
 <body>
-  <p id="status">Complete the security check to continue.</p>
+  <p id="status">Complete the check below.</p>
   <div id="challenge"></div>
   <script>
     // The site key is public. The verification secret remains in Supabase.
     const siteKey = '0x4AAAAAAGGqmh6aNhxMsLsE';
     function renderChallenge() {
       if (!window.turnstile) {
-        document.getElementById('status').textContent = 'Security check could not load. Close and try again.';
+        document.getElementById('status').textContent = 'Security check could not load. Try again below.';
         return;
       }
       turnstile.render('#challenge', {
         sitekey: siteKey,
         size: 'compact',
         callback: token => { window.__freelanCaptchaToken = token; },
-        'error-callback': () => { document.getElementById('status').textContent = 'Security check failed. Close and try again.'; },
-        'expired-callback': () => { window.__freelanCaptchaToken = null; document.getElementById('status').textContent = 'Security check expired. Close and try again.'; }
+        'error-callback': () => { document.getElementById('status').textContent = 'Security check failed. Try again below.'; },
+        'expired-callback': () => { window.__freelanCaptchaToken = null; document.getElementById('status').textContent = 'Security check expired. Try again below.'; }
       });
     }
     window.addEventListener('load', renderChallenge);

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 // Match Supabase Auth's letters/digits/symbols option for new passwords.
 const passwordMinimumLength = 12;
@@ -17,3 +18,22 @@ bool meetsPasswordPolicy(String password) =>
     password.runes.any(
       (rune) => passwordSymbols.contains(String.fromCharCode(rune)),
     );
+
+String generateStrongPassword() {
+  final random = Random.secure();
+  const groups = [
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    'abcdefghijklmnopqrstuvwxyz',
+    '0123456789',
+    '!@#%*+-=?',
+  ];
+  final chars = [
+    for (final group in groups) group[random.nextInt(group.length)],
+  ];
+  final all = groups.join();
+  while (chars.length < 20) {
+    chars.add(all[random.nextInt(all.length)]);
+  }
+  chars.shuffle(random);
+  return chars.join();
+}

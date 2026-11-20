@@ -340,6 +340,8 @@ class _AdminHomeSlidesPageState extends State<AdminHomeSlidesPage> {
                 child: const Text('Retry'),
               )
             else ...[
+              if (slides.isEmpty)
+                const Text('No slides. Add an image to show on Home.'),
               for (final slide in slides)
                 Card(
                   child: Padding(
@@ -399,33 +401,32 @@ class _AdminHomeSlidesPageState extends State<AdminHomeSlidesPage> {
                                 ),
                                 label: Text(slide.enabled ? 'Hide' : 'Show'),
                               ),
-                            if (widget.canEdit && slide.kind == 'image')
+                            if (widget.canEdit)
                               TextButton.icon(
                                 onPressed: busy
                                     ? null
                                     : () async {
-                                        final confirmed =
-                                            await showDialog<bool>(
-                                              context: context,
-                                              builder: (c) => AlertDialog(
-                                                title: const Text(
-                                                  'Delete slide?',
-                                                ),
-                                                content: Text(slide.title),
-                                                actions: [
-                                                  TextButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(c, false),
-                                                    child: const Text('Cancel'),
-                                                  ),
-                                                  FilledButton(
-                                                    onPressed: () =>
-                                                        Navigator.pop(c, true),
-                                                    child: const Text('Delete'),
-                                                  ),
-                                                ],
+                                        final confirmed = await showDialog<bool>(
+                                          context: context,
+                                          builder: (c) => AlertDialog(
+                                            title: const Text('Delete slide?'),
+                                            content: Text(
+                                              'Delete "${slide.title}" permanently? You can hide it instead if you may need it again.',
+                                            ),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(c, false),
+                                                child: const Text('Cancel'),
                                               ),
-                                            );
+                                              FilledButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(c, true),
+                                                child: const Text('Delete'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
                                         if (confirmed == true && mounted) {
                                           await change(
                                             () => gateway.delete(slide),
