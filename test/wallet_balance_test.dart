@@ -215,7 +215,7 @@ void main() {
           await tester.pump(const Duration(seconds: 5));
           await tester.pumpAndSettle();
           final buyButton = find.text(
-            locale == 'en' ? 'Buy coins' : 'Coins വാങ്ങുക',
+            locale == 'en' ? 'Add coins' : 'Coins ചേർക്കുക',
           );
           final transferButton = find.text(
             locale == 'en' ? 'Transfer coins' : 'Coins അയയ്ക്കുക',

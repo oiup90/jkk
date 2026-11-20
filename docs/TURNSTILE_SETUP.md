@@ -26,7 +26,13 @@ The public site key is used by `turnstile/index.html`. The app opens that page i
 2. For a staging project and staging widget, use that widget's site key in its own copy of the HTML page. Build the updated Android and Windows apps with `--dart-define=AUTH_CAPTCHA_ENABLED=true` and, if the staging page uses a different address, `--dart-define=AUTH_CAPTCHA_PAGE=https://your-staging-host/`. The page URL must use HTTPS without a query or fragment. Preserve the existing Android Supabase config and signing options. The Windows app also requires the Microsoft WebView2 runtime. The WebView plugin is a beta release chosen for compatibility with the repository's Android Gradle version; verify its Windows and Android behavior before release.
 
 <!-- /coderabbit-ai-generated:v1 -->
-3. Test login, signup, resend, recovery, cancellation, expired challenge, network failure and existing session refresh on real Android and Windows devices. Confirm the challenge loads from the intended hostname and the correct Supabase project.
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:27676195043a2d9fe39d391a407a9823d06a4275f720a1c189d60554239dd3e2 -->
+
+3. Test login, signup, resend, recovery, the system Back action, expired challenge, network failure, retry and existing session refresh on real Android and Windows devices. Confirm the challenge loads from the intended hostname and the correct Supabase project. The new dialog has no Cancel button. A Retry action appears on load failure or after a 25-second delay; it starts a fresh challenge. A successful challenge still returns a fresh token to Auth. The hosted HTML layout must be published separately from distributing the updated apps.
+
+<!-- /coderabbit-ai-generated:v1 -->
 4. In the staging Supabase project, configure Cloudflare Turnstile and the secret key in Authentication → Bot and Abuse Protection. Verify token validation, including a direct Auth call without a CAPTCHA token. The temporary site key alone does not protect Auth.
 
 ## Production rollout

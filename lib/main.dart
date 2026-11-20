@@ -5,6 +5,8 @@ import 'dart:convert';
 
 import 'design.dart';
 import 'home_slides.dart';
+import 'user_saved_login.dart';
+import 'delete_account.dart';
 import 'user_theme.dart';
 import 'brand_wordmark.dart';
 import 'account_block_guard.dart';
@@ -21,7 +23,6 @@ import 'referral_download.dart';
 import 'wallet_balance.dart';
 import 'wallet_transfer.dart';
 import 'legal_pages.dart';
-import 'coin_purchase.dart';
 import 'safe_error_widget.dart';
 import 'secure_transport.dart';
 import 'password_policy.dart';
@@ -1176,7 +1177,9 @@ class AuthScreen extends StatefulWidget {
     this.blockedNotice = false,
     this.captchaProvider,
     this.socialLinks,
+    this.savedLogin,
   });
+  final UserSavedLogin? savedLogin;
   final LoadSocialLinks? socialLinks;
   final AuthActions? actions;
   final AuthCaptchaProvider? captchaProvider;
@@ -1198,6 +1201,52 @@ class _AuthScreenState extends State<AuthScreen> {
   late final LoadSocialLinks? socialLinks =
       widget.socialLinks ??
       (widget.actions == null ? () => loadOfficialSocialLinks(db) : null);
+
+  UserSavedLogin get savedLogin =>
+      widget.savedLogin ?? UserSavedLogin(supabaseUrl);
+  bool saveLogin = true;
+  Future<void> fillSavedLogin() async {
+    if (registering || busy) return;
+    try {
+      final saved = await savedLogin.load();
+      if (!mounted || saved == null || registering) return;
+      final use = await showDialog<bool>(
+        context: context,
+        builder: (c) => AlertDialog(
+          title: Text(uf(c, 'Saved login', 'സൂക്ഷിച്ച login')),
+          content: Text(saved['email']!),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await savedLogin.forget();
+                if (c.mounted) Navigator.pop(c, false);
+              },
+              child: const Text('Forget saved login'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(c, true),
+              child: Text(uf(c, 'Use saved login', 'Login ഉപയോഗിക്കുക')),
+            ),
+          ],
+        ),
+      );
+      if (use == true && mounted && !registering && !busy) {
+        email.text = saved['email']!;
+        password.text = saved['password']!;
+      }
+    } catch (_) {
+      if (mounted) {
+        toast(
+          context,
+          uf(
+            context,
+            'Saved login unavailable on this device.',
+            'Saved login ലഭ്യമല്ല.',
+          ),
+        );
+      }
+    }
+  }
 
   void startCooldown() {
     timer?.cancel();
@@ -1275,7 +1324,26 @@ class _AuthScreenState extends State<AuthScreen> {
         setState(() => pendingEmail = address);
         startCooldown();
       } else {
-        await actions.login(address, password.text, captchaToken: captchaToken);
+        final secret = password.text;
+        await actions.login(address, secret, captchaToken: captchaToken);
+        try {
+          if (saveLogin) {
+            await savedLogin.save(address, secret);
+          } else {
+            await savedLogin.forget();
+          }
+        } catch (_) {
+          if (mounted) {
+            toast(
+              context,
+              uf(
+                context,
+                'Signed in, but unable to save login securely.',
+                'Login വിജയിച്ചു; സുരക്ഷിതമായി സൂക്ഷിക്കാനായില്ല.',
+              ),
+            );
+          }
+        }
       }
     });
   }
@@ -1499,6 +1567,7 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
                     TextField(
                       key: const Key('email'),
+                      onTap: registering ? null : fillSavedLogin,
                       controller: email,
                       enabled: !busy,
                       keyboardType: TextInputType.emailAddress,
@@ -1547,6 +1616,39 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       ),
                     ),
+                    if (registering)
+                      TextButton.icon(
+                        onPressed: busy
+                            ? null
+                            : () {
+                                password.text = generateStrongPassword();
+                                setState(() => showPassword = true);
+                              },
+                        icon: const Icon(Icons.password),
+                        label: Text(
+                          uf(
+                            context,
+                            'Generate strong password',
+                            'Strong password ഉണ്ടാക്കുക',
+                          ),
+                        ),
+                      ),
+                    if (!registering)
+                      CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          uf(
+                            context,
+                            'Save login securely on this device',
+                            'ഈ device-ൽ login സുരക്ഷിതമായി സൂക്ഷിക്കുക',
+                          ),
+                        ),
+                        value: saveLogin,
+                        onChanged: busy
+                            ? null
+                            : (value) =>
+                                  setState(() => saveLogin = value ?? false),
+                      ),
                     if (!registering)
                       Align(
                         alignment: Alignment.centerRight,
@@ -2290,19 +2392,17 @@ class _BalanceCardState extends State<BalanceCard> {
     onTransfer: () => Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => WalletTransferPage(client: db)),
     ),
-    onBuyCoins: () => Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => CoinPurchasePage(
-          source: SupabaseCoinPurchases(db),
-          loadRates: () async {
-            final rows = await db.from('coin_settings').select();
-            return {
-              for (final row in rows)
-                row['key'] as String: row['amount'] as int,
-            };
-          },
-          isMalayalam: language.value.languageCode == 'ml',
-        ),
+    onBuyCoins: () => showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(uf(c, 'Add coins', 'Coins ചേർക്കുക')),
+        content: Text(uf(c, 'Service coming soon', 'Service ഉടൻ ലഭ്യമാകും')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     ),
     isMalayalam: language.value.languageCode == 'ml',
@@ -7121,6 +7221,27 @@ class _UserSettingsPageState extends State<UserSettingsPage>
                     context,
                     'We value your privacy',
                     'നിങ്ങളുടെ സ്വകാര്യത പ്രധാനമാണ്',
+                  ),
+                ),
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.delete_forever, color: Colors.red),
+                title: Text(
+                  uf(
+                    context,
+                    'Permanently delete account',
+                    'Account സ്ഥിരമായി നീക്കുക',
+                  ),
+                ),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => DeleteAccountPage(
+                      client: db,
+                      savedLogin: UserSavedLogin(supabaseUrl),
+                    ),
                   ),
                 ),
               ),

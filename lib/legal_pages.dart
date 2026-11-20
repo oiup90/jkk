@@ -55,6 +55,13 @@ class LegalPage extends StatelessWidget {
               'Supabase account/app data services നൽകുന്നു; Cloudflare R2 APK downloads host ചെയ്യുന്നു; Firebase push delivery-യും Instamojo payment checkout-ഉം നൽകുന്നു. Instagram/checkout തുറക്കുമ്പോൾ അവയുടെ services ഉപയോഗിക്കുന്നു. Preferences device-ൽ സൂക്ഷിക്കും; saved login secure storage ഉപയോഗിക്കുന്നു. Balance audio device-ലാണ് play ചെയ്യുന്നത്.',
             ),
             text(
+              'Account deletion and audit archive',
+              'Account deletion, audit archive',
+            ): text(
+              'Deleting your account removes login access and forfeits coins. Authorized administrators retain a separate archive of profile details and app activity, including campaigns, evidence, wallet transactions and support messages, for audit. The archive has no automatic expiry. Passwords, PIN hashes and login tokens are excluded. Contact Support for questions about retained information.',
+              'Account delete ചെയ്താൽ login access നീങ്ങുകയും coins നഷ്ടമാകുകയും ചെയ്യും. Profile, campaigns, evidence, wallet transactions, support messages തുടങ്ങിയ വിവരങ്ങൾ authorized admin audit archive-ൽ നിലനിർത്തും. Archive സ്വയം കാലഹരണപ്പെടില്ല. Password, PIN hashes, login tokens എന്നിവ ഉൾപ്പെടില്ല. നിലനിർത്തുന്ന വിവരങ്ങളെക്കുറിച്ച് Support-ൽ ചോദിക്കാം.',
+            ),
+            text(
               'Your choices and requests',
               'നിങ്ങളുടെ തിരഞ്ഞെടുപ്പുകൾ',
             ): text(

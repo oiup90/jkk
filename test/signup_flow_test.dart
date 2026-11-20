@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/brand_wordmark.dart';
@@ -74,6 +75,7 @@ Future<void> openSignup(WidgetTester tester, FakeAuth actions) async {
 }
 
 void main() {
+  setUp(() => FlutterSecureStorage.setMockInitialValues({}));
   testWidgets(
     'login passes a fresh challenge and cancellation sends no request',
     (tester) async {
@@ -253,6 +255,7 @@ void main() {
           home: AuthScreen(actions: FakeAuth()),
         ),
       );
+      await tester.ensureVisible(find.text(words['noAccount']![1]));
       await tester.tap(find.text(words['noAccount']![1]));
       await tester.pump();
       expect(find.text(words['authName']![1]), findsOneWidget);

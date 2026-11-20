@@ -55,11 +55,20 @@ class HomeSlides(unittest.TestCase):
         self.assertEqual(sql('select count(*) from public.home_slides()',USER),'2')
         self.assertEqual(sql('select count(*) from public.admin_home_slides()',VIEWER),'3')
         sql(f"select public.admin_delete_home_slide('{slide}')",VIEWER,fails=True)
-        sql("select public.admin_delete_home_slide('00000000-0000-4000-8000-000000000001')",EDITOR,fails=True)
+        # Built-in slides are now deletable; editor/MFA checks still apply.
+        builtin='00000000-0000-4000-8000-000000000001'
+        sql(f"select public.admin_delete_home_slide('{builtin}')",USER,fails=True)
+        sql(f"select public.admin_delete_home_slide('{builtin}')",VIEWER,fails=True)
+        sql(f"select public.admin_delete_home_slide('{builtin}')",EDITOR,aal='aal1',fails=True)
+        sql(f"select public.admin_delete_home_slide('{builtin}')",EDITOR)
+        self.assertEqual(sql(f"select count(*) from public.home_slides() where id='{builtin}'",USER),'0')
+        self.assertEqual(sql(f"select count(*) from public.admin_home_slides() where id='{builtin}'",VIEWER),'0')
+        sql(f"select public.admin_delete_home_slide('{builtin}')",EDITOR,fails=True)
         sql(f"select public.admin_delete_home_slide('{slide}')",EDITOR)
         for i in range(8): sql(f"select public.admin_add_home_slide('slide {i}','image/png','{PNG}')",EDITOR)
         sql(add,EDITOR,fails=True)
         self.assertEqual(sql("select count(*) from growth_internal.home_slides where kind='image'",role=None),'8')
+        self.assertEqual(sql("select count(*) from growth_internal.admin_operations_audit where action='Home slide deleted'",role=None),'2')
         sql('select * from growth_internal.home_slides',USER,fails=True)
         sql("insert into growth_internal.home_slides(kind,title,sort_order,image_data,mime) values ('image','invalid',999,decode('89504e470d0a1a0a'||repeat('61',40),'hex'),null)",role=None,fails=True)
 

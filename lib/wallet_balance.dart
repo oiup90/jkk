@@ -368,7 +368,7 @@ class _WalletBalanceState extends State<WalletBalance>
                         if (widget.onBuyCoins != null)
                           _WalletActionButton(
                             icon: Icons.add_circle_outline,
-                            label: text('Buy coins', 'Coins വാങ്ങുക'),
+                            label: text('Add coins', 'Coins ചേർക്കുക'),
                             onPressed: widget.onBuyCoins!,
                           ),
                         if (widget.onTransfer != null)
