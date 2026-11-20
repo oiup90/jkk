@@ -27,6 +27,39 @@ class BrandingAssets(unittest.TestCase):
         fills = {path.get(ANDROID + 'fillColor') for path in icon.findall('path')}
         self.assertEqual(fills, {'#FFFFFFFF', '@android:color/transparent'})
 
+    def test_launch_logo_is_selected_for_both_android_splash_apis(self):
+        resources = ROOT / 'android/app/src/main/res'
+        manifest = ET.parse(ROOT / 'android/app/src/main/AndroidManifest.xml').getroot()
+        activity = manifest.find("application/activity[@" + ANDROID + "name='.MainActivity']")
+        self.assertEqual(activity.get(ANDROID + 'theme'), '@style/LaunchTheme')
+        for qualifier in ('values', 'values-night'):
+            styles = ET.parse(resources / qualifier / 'styles.xml').getroot()
+            launch = styles.find("style[@name='LaunchTheme']")
+            base = styles.find("style[@name='LaunchThemeBase']")
+            self.assertEqual(launch.get('parent'), 'LaunchThemeBase')
+            self.assertEqual(base.find("item[@name='android:windowBackground']").text,
+                             '@drawable/launch_background')
+        for qualifier in ('drawable', 'drawable-v21'):
+            layers = ET.parse(resources / qualifier / 'launch_background.xml').getroot().findall('item')
+            self.assertEqual(layers[0].get(ANDROID + 'drawable'), '@color/launch_background')
+            self.assertEqual(layers[1].get(ANDROID + 'drawable'), '@drawable/ic_freelan_launcher')
+            self.assertEqual(layers[1].get(ANDROID + 'gravity'), 'center')
+        for qualifier in ('values-v31', 'values-night-v31'):
+            launch = ET.parse(resources / qualifier / 'styles.xml').getroot().find("style[@name='LaunchTheme']")
+            self.assertEqual(launch.get('parent'), 'LaunchThemeBase')
+            items = {item.get('name'): item.text for item in launch.findall('item')}
+            self.assertEqual(items['android:windowSplashScreenBackground'], '@color/launch_background')
+            self.assertEqual(items['android:windowSplashScreenAnimatedIcon'], '@drawable/ic_freelan_splash')
+        # Match the existing brand and keep it within the Android 12 circular safe zone.
+        launcher = ET.parse(resources / 'drawable/ic_freelan_launcher.xml').getroot()
+        splash = ET.parse(resources / 'drawable/ic_freelan_splash.xml').getroot()
+        group = splash.find('group')
+        self.assertEqual([path.attrib for path in launcher.findall('path')],
+                         [path.attrib for path in group.findall('path')])
+        self.assertEqual((splash.get(ANDROID + 'viewportWidth'), splash.get(ANDROID + 'viewportHeight')), ('288', '288'))
+        self.assertEqual((group.get(ANDROID + 'translateX'), group.get(ANDROID + 'translateY'),
+                          group.get(ANDROID + 'scaleX'), group.get(ANDROID + 'scaleY')), ('72', '72', '3', '3'))
+
     def test_windows_icon_contains_standard_png_sizes(self):
         data = (ROOT / 'windows/runner/resources/app_icon.ico').read_bytes()
         reserved, kind, count = struct.unpack_from('<HHH', data)
