@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'design.dart';
+import 'home_slides.dart';
 import 'user_theme.dart';
 import 'brand_wordmark.dart';
 import 'account_block_guard.dart';
@@ -2193,6 +2194,16 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           ),
         ),
         uid: widget.user.id,
+        slideshowGateway: HomeSlidesGateway(db),
+        onReferrals: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => ProfileDetailsPage(
+              uid: widget.user.id,
+              gateway: SupabaseProfileGateway(db),
+              accounts: false,
+            ),
+          ),
+        ),
       ),
       EarnLanding(uid: widget.user.id),
       Campaigns(uid: widget.user.id),
@@ -2306,11 +2317,15 @@ class Dashboard extends StatelessWidget {
     this.balanceStream,
     this.historyStream,
     this.onBrowseType,
+    this.slideshowGateway,
+    this.onReferrals,
   });
   final Stream<List<Map<String, dynamic>>>? balanceStream;
   final Stream<List<Map<String, dynamic>>>? historyStream;
   final ValueChanged<String>? onBrowseType;
   final VoidCallback onBrowse;
+  final VoidCallback? onReferrals;
+  final HomeSlidesGateway? slideshowGateway;
   final String uid;
   @override
   Widget build(BuildContext context) => AppListView(
@@ -2320,6 +2335,12 @@ class Dashboard extends StatelessWidget {
         uid: uid,
         balanceStream: balanceStream,
         historyStream: historyStream,
+      ),
+      const SizedBox(height: 20),
+      HomeSlideshow(
+        gateway: slideshowGateway,
+        onReferral: onReferrals,
+        onEarnings: onBrowse,
       ),
       const SizedBox(height: 26),
       Text(
