@@ -11,7 +11,8 @@ const authLanguages = <String, String>{
 // Authentication-specific translations; other user pages use user_translations.dart.
 const authTranslations = <String, Map<String, String>>{
   'hi': {
-    'accountBlocked': 'आपकी ऐप पहुँच रोक दी गई है। व्यवस्थापक से संपर्क करें।',
+    'accountBlocked':
+        'आपकी ऐप पहुँच रोक दी गई है। ग्राहक सहायता से संपर्क करें।',
     'confirmationRequired':
         'पंजीकरण से पहले ऐप स्वामी को ईमेल सत्यापन चालू करना होगा।',
     'emailNotAuthorized': 'ईमेल भेजना प्रतिबंधित है। ऐप स्वामी से संपर्क करें।',
@@ -67,8 +68,7 @@ const authTranslations = <String, Map<String, String>>{
     'serviceUnavailable': 'सेवा अभी उपलब्ध नहीं है। बाद में प्रयास करें।',
   },
   'ta': {
-    'accountBlocked':
-        'உங்கள் அணுகல் தடுக்கப்பட்டுள்ளது. நிர்வாகியைத் தொடர்புகொள்ளவும்.',
+    'accountBlocked': 'உங்கள் அணுகல் தடுக்கப்பட்டுள்ளது. வாடிக்கையாளர் ஆதரவைத் தொடர்புகொள்ளவும்.',
     'confirmationRequired': 'பதிவு செய்வதற்கு முன் மின்னஞ்சல் உறுதிப்படுத்தலை ஆப் உரிமையாளர் இயக்க வேண்டும்.',
     'emailNotAuthorized': 'மின்னஞ்சல் அனுப்புவது தடைசெய்யப்பட்டுள்ளது. ஆப் உரிமையாளரைத் தொடர்புகொள்ளவும்.',
     'signupUnavailable':
@@ -125,7 +125,7 @@ const authTranslations = <String, Map<String, String>>{
     'serviceUnavailable': 'சேவை தற்போது கிடைக்கவில்லை. பின்னர் முயற்சிக்கவும்.',
   },
   'ar': {
-    'accountBlocked': 'تم حظر وصولك إلى التطبيق. تواصل مع المسؤول.',
+    'accountBlocked': 'تم حظر وصولك إلى التطبيق. تواصل مع دعم العملاء.',
     'confirmationRequired':
         'يجب أن يفعّل مالك التطبيق تأكيد البريد قبل التسجيل.',
     'emailNotAuthorized': 'إرسال البريد مقيد. تواصل مع مالك التطبيق.',

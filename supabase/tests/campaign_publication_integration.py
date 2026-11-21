@@ -23,8 +23,8 @@ def sql(query, user=None, fails=False):
 
 
 sql(f"insert into auth.users(id) values('{OWNER}'),('{OTHER}'); insert into public.wallets(id,balance) values('{OWNER}',1000),('{OTHER}',10)")
-def create(_=0):
-    return sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)", OWNER)
+def create(owner=OWNER):
+    return sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)", owner)
 
 campaign = create()
 order_id = sql(f"select order_id from public.campaigns where id='{campaign}'", OWNER)
@@ -40,6 +40,7 @@ sql(f"select public.cancel_campaign('{campaign}')", OWNER)
 assert sql(f"select balance from public.wallets where id='{OWNER}'") == '1000'
 assert sql(f"select status from public.campaigns where id='{campaign}'", OWNER) == 'cancelled'
 
+sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '25 hours' where id='{campaign}'")
 published = create()
 sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '61 seconds' where id='{published}'")
 assert sql(f"select count(*) from public.campaigns where id='{published}'", OTHER) == '1'
@@ -50,6 +51,7 @@ assert sql(f"select status from public.campaign_claims where campaign_id='{publi
 
 # A request begun before the deadline must still fail if it acquires the row
 # lock only after the deadline has passed.
+sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '25 hours' where id='{published}'")
 waiting = create()
 sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '59 seconds' where id='{waiting}'")
 locker = subprocess.Popen(['psql', '-X', '-qAt', '-v', 'ON_ERROR_STOP=1', '-d', DB, '-c',
@@ -59,8 +61,11 @@ time.sleep(0.3)
 assert 'cancellation period has ended' in sql(f"select public.cancel_campaign('{waiting}')", OWNER, fails=True)
 assert locker.wait(timeout=5) == 0, locker.stderr.read()
 
+owners = [str(uuid.uuid4()) for _ in range(40)]
+sql('insert into auth.users(id) values ' + ','.join(f"('{owner}')" for owner in owners))
+sql('insert into public.wallets(id,balance) values ' + ','.join(f"('{owner}',10)" for owner in owners))
 with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-    campaigns = list(pool.map(create, range(40)))
+    campaigns = list(pool.map(create, owners))
 ids = [sql(f"select order_id from public.campaigns where id='{c}'") for c in campaigns]
 assert len(set(ids + [order_id])) == 41
 assert all(re.fullmatch(r'[1-9][0-9]{11}', item) for item in ids)

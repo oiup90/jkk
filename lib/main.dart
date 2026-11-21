@@ -15,11 +15,13 @@ import 'user_page_design.dart';
 import 'app_updates.dart';
 import 'evidence_image.dart';
 import 'support_page.dart';
+import 'guest_support_page.dart';
 import 'user_features.dart';
 import 'push_notifications.dart';
 import 'personal_information.dart';
 import 'secure_auth_storage.dart';
 import 'referral_download.dart';
+import 'referral_history.dart';
 import 'wallet_balance.dart';
 import 'wallet_transfer.dart';
 import 'legal_pages.dart';
@@ -161,8 +163,8 @@ const words = <String, List<String>>{
     'ഒരുമിച്ച് വളരാം, ഓരോ ബന്ധത്തിലൂടെയും.',
   ],
   'accountBlocked': [
-    'Your app access is blocked. Contact the administrator.',
-    'നിങ്ങളുടെ app access തടഞ്ഞിരിക്കുന്നു. Administrator-നെ ബന്ധപ്പെടുക.',
+    'Your app access is blocked. Contact Customer Support.',
+    'നിങ്ങളുടെ app access തടഞ്ഞിരിക്കുന്നു. Customer Support-നെ ബന്ധപ്പെടുക.',
   ],
   'email': ['Email', 'ഇമെയിൽ'],
   'authWelcome': ['Welcome back', 'വീണ്ടും സ്വാഗതം'],
@@ -332,7 +334,6 @@ const words = <String, List<String>>{
   'count': ['Number of tasks', 'Task എണ്ണം'],
   'perTask': ['per task', 'ഓരോ task-നും'],
   'totalCost': ['Total cost', 'ആകെ ചെലവ്'],
-  'cost': ['1–100 tasks', '1–100 task-ുകൾ'],
   'submit': ['Create campaign', 'Campaign തുടങ്ങുക'],
   'created': ['Campaign created.', 'Campaign ആരംഭിച്ചു.'],
   'myCampaigns': ['Your campaigns', 'നിങ്ങളുടെ campaign-ുകൾ'],
@@ -509,10 +510,6 @@ const words = <String, List<String>>{
     'പ്രശ്നം സംഭവിച്ചു. വീണ്ടും ശ്രമിക്കുക.',
   ],
   'required': ['This field is required.', 'ഈ വിവരങ്ങൾ നൽകുക.'],
-  'validCount': [
-    'Enter a number from 1 to 100.',
-    '1 മുതൽ 100 വരെയുള്ള സംഖ്യ നൽകുക.',
-  ],
   'openError': ['Could not open Instagram.', 'Instagram തുറക്കാൻ കഴിഞ്ഞില്ല.'],
   'loading': ['Loading…', 'ലോഡ് ചെയ്യുന്നു…'],
   'retry': ['Retry', 'വീണ്ടും ശ്രമിക്കുക'],
@@ -633,6 +630,20 @@ String friendlyError(BuildContext context, Object e) {
   }
   if (e is TimeoutException) return tr(context, 'connectionError');
   if (e is PostgrestException) {
+    if (e.code == 'P0C01') {
+      return uf(
+        context,
+        'Your campaign plan limit has been reached.',
+        'നിങ്ങളുടെ campaign plan പരിധിയിലെത്തി.',
+      );
+    }
+    if (e.code == 'P0C02') {
+      return uf(
+        context,
+        'Task count exceeds your campaign plan limit.',
+        'Task എണ്ണം നിങ്ങളുടെ campaign പരിധി കടന്നു.',
+      );
+    }
     if (e.message.contains('Account access is blocked')) {
       return tr(context, 'accountBlocked');
     }
@@ -1460,7 +1471,34 @@ class _AuthScreenState extends State<AuthScreen> {
                     const SizedBox(height: 18),
                     const Center(child: UserOrbitMark(size: 88)),
                   ] else
-                    const SizedBox(height: 42),
+                    SizedBox(
+                      height: 42,
+                      child: registering
+                          ? null
+                          : Align(
+                              alignment: Alignment.centerRight,
+                              child: IconButton(
+                                tooltip: uf(
+                                  context,
+                                  'Customer Support',
+                                  'Customer Support',
+                                ),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => GuestSupportPage(
+                                      client: db,
+                                      project: supabaseUrl,
+                                    ),
+                                  ),
+                                ),
+                                icon: const Icon(
+                                  Icons.support_agent,
+                                  color: growthPurple,
+                                ),
+                              ),
+                            ),
+                    ),
                   if (pendingEmail == null)
                     Row(
                       children: [
@@ -4434,6 +4472,7 @@ class CreateCampaign extends StatefulWidget {
     super.key,
     this.loadRates,
     this.loadAccounts,
+    this.loadPlan,
     this.controls,
     this.reserve,
     this.initialType = 'follow',
@@ -4445,6 +4484,7 @@ class CreateCampaign extends StatefulWidget {
        );
   final Future<List<Map<String, dynamic>>> Function()? loadRates;
   final Future<List<String>> Function()? loadAccounts;
+  final Future<CampaignPlan> Function()? loadPlan;
   final Stream<List<Map<String, dynamic>>>? controls;
   final String initialType;
   final Future<void> Function(String type, String link, int count, int reward)?
@@ -4474,7 +4514,22 @@ class _CreateCampaignState extends State<CreateCampaign> {
       ? 'https://www.instagram.com/$selectedUsername/'
       : link.text.trim();
   bool busy = false;
-  late Future<List<Map<String, dynamic>>> rates = loadRates();
+  late Future<(List<Map<String, dynamic>>, CampaignPlan)> options =
+      loadOptions();
+
+  Future<(List<Map<String, dynamic>>, CampaignPlan)> loadOptions() async {
+    final (prices, plan) = await (
+      loadRates(),
+      widget.loadPlan?.call() ??
+          (widget.reserve == null
+              ? db
+                    .rpc('campaign_plan_limits')
+                    .then((value) => CampaignPlan.fromJson(value as Map))
+              : Future.value(const CampaignPlan(maxTasks: 3))),
+    ).wait;
+    return (prices, plan);
+  }
+
   Future<List<Map<String, dynamic>>> loadRates() async =>
       widget.loadRates != null
       ? widget.loadRates!()
@@ -4520,7 +4575,7 @@ class _CreateCampaignState extends State<CreateCampaign> {
       if (mounted) {
         toast(context, friendlyError(context, e));
         setState(() {
-          rates = loadRates();
+          options = loadOptions();
         });
       }
     } finally {
@@ -4532,14 +4587,14 @@ class _CreateCampaignState extends State<CreateCampaign> {
   Widget build(BuildContext context) => UserPageScaffold(
     identity: UserPageIdentity.createCampaign,
     appBar: AppBar(title: Text(tr(context, 'create'))),
-    body: FutureBuilder<List<Map<String, dynamic>>>(
-      future: rates,
+    body: FutureBuilder<(List<Map<String, dynamic>>, CampaignPlan)>(
+      future: options,
       builder: (context, prices) {
         if (prices.hasError) {
           return Center(
             child: TextButton(
               onPressed: () => setState(() {
-                rates = loadRates();
+                options = loadOptions();
               }),
               child: Text(tr(context, 'retry')),
             ),
@@ -4549,8 +4604,13 @@ class _CreateCampaignState extends State<CreateCampaign> {
           return const Center(child: CircularProgressIndicator());
         }
         final reward =
-            prices.data!.firstWhere((row) => row['key'] == type)['amount']
+            prices.data!.$1.firstWhere((row) => row['key'] == type)['amount']
                 as int;
+        final refreshing = prices.connectionState != ConnectionState.done;
+        final plan = prices.data!.$2;
+        final next = plan.nextCampaignAt?.toLocal();
+        final coolingDown = next != null && next.isAfter(DateTime.now());
+        final locale = MaterialLocalizations.of(context);
         return StreamBuilder<List<Map<String, dynamic>>>(
           stream: controlsStream,
           builder: (context, controls) {
@@ -4594,6 +4654,23 @@ class _CreateCampaignState extends State<CreateCampaign> {
                       'ഒരു മിനിറ്റിന് ശേഷം campaign മറ്റുള്ളവർക്ക് ലഭ്യമാകും. ആദ്യ മിനിറ്റിൽ മാത്രം റദ്ദാക്കാം.',
                     ),
                   ),
+                  if (coolingDown) ...[
+                    Text(
+                      '${uf(context, 'Next campaign available:', 'അടുത്ത campaign തുടങ്ങാവുന്ന സമയം:')} '
+                      '${locale.formatMediumDate(next)} · ${locale.formatTimeOfDay(TimeOfDay.fromDateTime(next))}',
+                      key: const Key('campaign-cooldown'),
+                    ),
+                    TextButton(
+                      onPressed: refreshing
+                          ? null
+                          : () => setState(() {
+                              options = loadOptions();
+                            }),
+                      child: Text(
+                        uf(context, 'Refresh limits', 'പരിധികൾ പുതുക്കുക'),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     isExpanded: true,
@@ -4622,7 +4699,9 @@ class _CreateCampaignState extends State<CreateCampaign> {
                         return TextButton(
                           onPressed: busy
                               ? null
-                              : () => setState(() => accounts = loadAccounts()),
+                              : () => setState(() {
+                                  accounts = loadAccounts();
+                                }),
                           child: Text(tr(c, 'retry')),
                         );
                       }
@@ -4712,7 +4791,9 @@ class _CreateCampaignState extends State<CreateCampaign> {
                             ? null
                             : () => setState(() {
                                 final n = int.tryParse(count.text) ?? 1;
-                                count.text = (n - 1).clamp(1, 100).toString();
+                                count.text = (n - 1)
+                                    .clamp(1, plan.maxTasks)
+                                    .toString();
                               }),
                         icon: const Icon(Icons.remove_circle_outline),
                       ),
@@ -4722,17 +4803,19 @@ class _CreateCampaignState extends State<CreateCampaign> {
                             ? null
                             : () => setState(() {
                                 final n = int.tryParse(count.text) ?? 1;
-                                count.text = (n + 1).clamp(1, 100).toString();
+                                count.text = (n + 1)
+                                    .clamp(1, plan.maxTasks)
+                                    .toString();
                               }),
                         icon: const Icon(Icons.add_circle_outline),
                       ),
                       helperText:
-                          '$reward ${tr(context, 'coins')} ${tr(context, 'perTask')} · ${tr(context, 'cost')}',
+                          '$reward ${tr(context, 'coins')} ${tr(context, 'perTask')} · 1–${plan.maxTasks}',
                     ),
                     validator: (v) {
                       final n = int.tryParse(v ?? '');
-                      return n == null || n < 1 || n > 100
-                          ? tr(context, 'validCount')
+                      return n == null || n < 1 || n > plan.maxTasks
+                          ? '${uf(context, 'Allowed task count:', 'അനുവദിച്ച task എണ്ണം:')} 1–${plan.maxTasks}'
                           : null;
                     },
                   ),
@@ -4757,7 +4840,12 @@ class _CreateCampaignState extends State<CreateCampaign> {
                   const Notice(),
                   const SizedBox(height: 14),
                   GrowthPrimaryButton(
-                    onPressed: busy || !enabled || selectedUsername == null
+                    onPressed:
+                        busy ||
+                            refreshing ||
+                            coolingDown ||
+                            !enabled ||
+                            selectedUsername == null
                         ? null
                         : () => submit(reward),
                     label: tr(context, 'submit'),
@@ -5317,12 +5405,28 @@ abstract class ProfileGateway {
   Future<void> signOut();
 }
 
-class SupabaseProfileGateway implements ProfileGateway {
+class SupabaseProfileGateway
+    implements ProfileGateway, ReferralHistoryGateway, CampaignPlanGateway {
   const SupabaseProfileGateway(this.client);
   final SupabaseClient client;
   @override
   Future<String?> latestAppDownloadUrl() =>
       ReferralDownloadGateway(client).load();
+
+  @override
+  Future<CampaignPlan> loadCampaignPlan() async =>
+      CampaignPlan.fromJson(await client.rpc('campaign_plan_limits') as Map);
+
+  @override
+  Future<List<ReferralHistoryEntry>> loadReferralHistory(int offset) async {
+    final rows = await client.rpc(
+      'referral_history',
+      params: {'p_offset': offset},
+    );
+    return [
+      for (final row in rows as List) ReferralHistoryEntry.fromRow(row as Map),
+    ];
+  }
 
   @override
   Future<ProfileInfo> load(String uid) async {
@@ -5572,6 +5676,9 @@ class _ProfileFeaturesState extends State<ProfileFeatures> {
                 );
                 if (mounted) reload();
               },
+        loadCampaignPlan: gateway is CampaignPlanGateway
+            ? (gateway as CampaignPlanGateway).loadCampaignPlan
+            : () => Future.error(StateError('Campaign limits unavailable')),
         onAccounts: () => openDetails(true),
         onReferrals: () => openDetails(false),
         onPin: details.hasData ? () => openPin(details.data!.pinSet) : null,
@@ -5601,7 +5708,9 @@ class ProfileLayout extends StatelessWidget {
     required this.onLanguage,
     this.onNotifications,
     this.notifications,
+    this.loadCampaignPlan,
   });
+  final Future<CampaignPlan> Function()? loadCampaignPlan;
   final VoidCallback? onNotifications;
   final Stream<List<Map<String, dynamic>>>? notifications;
   final User user;
@@ -5884,6 +5993,28 @@ class ProfileLayout extends StatelessWidget {
                             onTap: onReferrals,
                           ),
                           ProfileMenuTile(
+                            icon: Icons.speed_outlined,
+                            title: uf(
+                              context,
+                              'Campaign Limits',
+                              'Campaign പരിധികൾ',
+                            ),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute<void>(
+                                builder: (_) => CampaignLimitsPage(
+                                  loadPlan:
+                                      loadCampaignPlan ??
+                                      () => Future.error(
+                                        StateError(
+                                          'Campaign limits unavailable',
+                                        ),
+                                      ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          ProfileMenuTile(
                             icon: Icons.help_outline,
                             title: tr(context, 'helpGuide'),
                             onTap: () => Navigator.push(
@@ -6020,6 +6151,8 @@ class ProfileMenuTile extends StatelessWidget {
   );
 }
 
+enum ReferralSection { menu, code, enter }
+
 class ProfileDetailsPage extends StatefulWidget {
   const ProfileDetailsPage({
     super.key,
@@ -6028,10 +6161,12 @@ class ProfileDetailsPage extends StatefulWidget {
     required this.accounts,
     this.authorizeChange,
     this.shareReferral,
+    this.referralSection = ReferralSection.menu,
   });
   final String uid;
   final ProfileGateway gateway;
   final bool accounts;
+  final ReferralSection referralSection;
   final Future<bool> Function()? authorizeChange;
   final Future<void> Function(String text)? shareReferral;
   @override
@@ -6116,10 +6251,9 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     data = widget.gateway.load(widget.uid);
   });
   Future<void> input() async {
-    final title = widget.accounts ? 'addAccount' : 'referralEnter';
     final value = await showDialog<String>(
       context: context,
-      builder: (_) => ProfileInputDialog(titleKey: title),
+      builder: (_) => ProfileInputDialog(titleKey: 'addAccount'),
     );
     if (value == null || value.isEmpty || !mounted) return;
     if (!await (widget.authorizeChange?.call() ??
@@ -6127,21 +6261,13 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       return;
     }
     try {
-      if (widget.accounts) {
-        await widget.gateway.addAccount(value);
-      } else {
-        await widget.gateway.applyReferral(value);
-      }
+      await widget.gateway.addAccount(value);
       if (!mounted) return;
-      if (!widget.accounts) toast(context, tr(context, 'referralApplied'));
       reload();
     } catch (e) {
       if (mounted) {
         final message = e is PostgrestException && e.code == '23505'
-            ? tr(
-                context,
-                widget.accounts ? 'duplicateAccount' : 'referralJoined',
-              )
+            ? tr(context, 'duplicateAccount')
             : friendlyError(context, e);
         toast(context, message);
       }
@@ -6189,6 +6315,101 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
     }
   }
 
+  Future<void> openReferral(ReferralSection section) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => ProfileDetailsPage(
+          uid: widget.uid,
+          gateway: widget.gateway,
+          accounts: false,
+          authorizeChange: widget.authorizeChange,
+          shareReferral: widget.shareReferral,
+          referralSection: section,
+        ),
+      ),
+    );
+  }
+
+  Widget referralMenu(BuildContext context) => AppListView(
+    panel: false,
+    padding: const EdgeInsets.all(14),
+    children: [
+      GrowthHero(
+        title: uf(context, 'Refer & Earn', 'Refer & Earn'),
+        subtitle: uf(
+          context,
+          'Invite your friends and earn rewards',
+          'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക',
+        ),
+        icon: Icons.card_giftcard_rounded,
+        background: 'referral_background',
+      ),
+      const SizedBox(height: 16),
+      Card(
+        child: Column(
+          children: [
+            ProfileMenuTile(
+              icon: Icons.qr_code,
+              title: tr(context, 'referralCode'),
+              onTap: () => openReferral(ReferralSection.code),
+            ),
+            ProfileMenuTile(
+              icon: Icons.history,
+              title: uf(context, 'Referral History', 'Referral ചരിത്രം'),
+              onTap: () {
+                final gateway = widget.gateway;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => ReferralHistoryPage(
+                      load: gateway is ReferralHistoryGateway
+                          ? (gateway as ReferralHistoryGateway)
+                                .loadReferralHistory
+                          : (_) => Future.error(
+                              StateError('Referral history unavailable'),
+                            ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            ProfileMenuTile(
+              icon: Icons.link,
+              title: tr(context, 'referralEnter'),
+              onTap: () => openReferral(ReferralSection.enter),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  Widget referralEntry(BuildContext context, ProfileInfo info) => AppListView(
+    panel: false,
+    padding: const EdgeInsets.all(14),
+    children: [
+      if (info.referralJoined)
+        Text(tr(context, 'referralJoined'))
+      else ...[
+        TextField(
+          controller: referralCodeInput,
+          enabled: !applyingReferral,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.link),
+            labelText: tr(context, 'referralEnter'),
+          ),
+          onSubmitted: (_) => submitReferral(),
+        ),
+        const SizedBox(height: 12),
+        FilledButton(
+          onPressed: applyingReferral ? null : submitReferral,
+          child: Text(uf(context, 'Submit', 'നൽകുക')),
+        ),
+      ],
+    ],
+  );
+
   @override
   Widget build(BuildContext context) => UserPageScaffold(
     identity: widget.accounts
@@ -6196,12 +6417,22 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
         : UserPageIdentity.referrals,
     appBar: AppBar(
       title: Text(
-        tr(context, widget.accounts ? 'instagramAccounts' : 'referrals'),
+        tr(
+          context,
+          widget.accounts
+              ? 'instagramAccounts'
+              : switch (widget.referralSection) {
+                  ReferralSection.menu => 'referrals',
+                  ReferralSection.code => 'referralCode',
+                  ReferralSection.enter => 'referralEnter',
+                },
+        ),
       ),
     ),
     body: FutureBuilder<ProfileInfo>(
-      future: data,
+      future: isReferralMenu ? null : data,
       builder: (context, snapshot) {
+        if (isReferralMenu) return referralMenu(context);
         if (snapshot.hasError) {
           return Center(
             child: Column(
@@ -6220,23 +6451,14 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final info = snapshot.data!;
+        if (!widget.accounts &&
+            widget.referralSection == ReferralSection.enter) {
+          return referralEntry(context, info);
+        }
         return AppListView(
           panel: false,
           padding: const EdgeInsets.all(14),
           children: [
-            if (!widget.accounts) ...[
-              GrowthHero(
-                title: uf(context, 'Refer & Earn', 'Refer & Earn'),
-                subtitle: uf(
-                  context,
-                  'Invite your friends and earn rewards',
-                  'സുഹൃത്തുക്കളെ ക്ഷണിച്ച് rewards നേടുക',
-                ),
-                icon: Icons.card_giftcard_rounded,
-                background: 'referral_background',
-              ),
-              const SizedBox(height: 16),
-            ],
             if (widget.accounts)
               UserSectionIntro(
                 title: tr(context, 'instagramAccounts'),
@@ -6561,15 +6783,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                           ),
                         ),
                       const SizedBox(height: 10),
-                      Text(
-                        tr(context, 'referralCode'),
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: growthPurple,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
                       Container(
                         alignment: Alignment.center,
                         padding: const EdgeInsets.all(10),
@@ -6673,39 +6886,6 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
                           ],
                         ),
                       ),
-                      if (info.referralJoined)
-                        Text(tr(context, 'referralJoined'))
-                      else ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: referralCodeInput,
-                                style: const TextStyle(fontSize: 11),
-                                enabled: !applyingReferral,
-                                decoration: InputDecoration(
-                                  prefixIcon: const Icon(Icons.link),
-                                  hintText: tr(context, 'referralEnter'),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 10,
-                                  ),
-                                  isDense: true,
-                                ),
-                                onSubmitted: (_) => submitReferral(),
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            FilledButton(
-                              onPressed: applyingReferral
-                                  ? null
-                                  : submitReferral,
-                              child: Text(uf(context, 'Submit', 'നൽകുക')),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),
@@ -6716,6 +6896,9 @@ class _ProfileDetailsPageState extends State<ProfileDetailsPage> {
       },
     ),
   );
+
+  bool get isReferralMenu =>
+      !widget.accounts && widget.referralSection == ReferralSection.menu;
 }
 
 class ProfileInputDialog extends StatefulWidget {

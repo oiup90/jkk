@@ -1,11 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
+import 'package:growth_circle/referral_history.dart';
 import 'package:growth_circle/admin_main.dart';
 
 import 'admin_test.dart' show FakeAdmin;
 
 void main() {
+  testWidgets('campaign form applies the server task cap and cooldown', (
+    tester,
+  ) async {
+    var limits = const CampaignPlan(maxTasks: 8);
+    var reservations = 0;
+    Future<void> mount(Key key) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: CreateCampaign(
+            key: key,
+            loadPlan: () async => limits,
+            loadAccounts: () async => ['example'],
+            loadRates: () async => [
+              {'key': 'follow', 'amount': 1},
+            ],
+            controls: Stream.value([
+              {'action_type': 'follow', 'enabled': true},
+            ]),
+            reserve: (_, _, _, _) async {
+              reservations++;
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('@example').last);
+      await tester.pumpAndSettle();
+    }
+
+    final submit = find.widgetWithText(FilledButton, 'Create campaign');
+    await mount(const Key('available'));
+    await tester.enterText(find.byType(TextFormField).last, '9');
+    await tester.ensureVisible(submit);
+    await tester.pumpAndSettle();
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+    expect(find.text('Allowed task count: 1–8'), findsOneWidget);
+    expect(reservations, 0);
+    limits = CampaignPlan(
+      maxTasks: 8,
+      nextCampaignAt: DateTime.now().add(const Duration(hours: 1)),
+    );
+    await mount(const Key('cooldown'));
+    expect(find.byKey(const Key('campaign-cooldown')), findsOneWidget);
+    expect(tester.widget<FilledButton>(submit).onPressed, isNull);
+  });
+
   testWidgets('campaign form starts with the selected category', (
     tester,
   ) async {
@@ -13,6 +63,7 @@ void main() {
       MaterialApp(
         home: CreateCampaign(
           initialType: 'comment',
+          loadPlan: () async => const CampaignPlan(maxTasks: 3),
           loadAccounts: () async => ['example'],
           loadRates: () async => [
             {'key': 'comment', 'amount': 2},

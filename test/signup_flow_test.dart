@@ -139,6 +139,11 @@ void main() {
       MaterialApp(home: AuthScreen(actions: FakeAuth(), blockedNotice: true)),
     );
     expect(find.text(words['accountBlocked']![0]), findsOneWidget);
+    expect(
+      find.text('Your app access is blocked. Contact Customer Support.'),
+      findsOneWidget,
+    );
+    expect(find.byTooltip('Customer Support'), findsOneWidget);
   });
 
   testWidgets(

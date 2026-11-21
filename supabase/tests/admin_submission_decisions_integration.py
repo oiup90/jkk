@@ -34,6 +34,8 @@ class AdminDecisions(unittest.TestCase):
             sql('select public.initialize_wallet()', user)
 
     def campaign_and_claim(self, actor=ACTOR):
+        # Each fixture represents a separate 24-hour campaign window.
+        sql(f"""update public.campaigns set "createdAt"=clock_timestamp()-interval '25 hours' where "ownerId"='{OWNER}'""")
         campaign = sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)", OWNER)
         sql(f'''update public.campaigns set "createdAt"=now()-interval '61 seconds' where id='{campaign}' ''')
         sql(f"select public.submit_claim('{campaign}','participant','image/png','{PNG}')", actor)

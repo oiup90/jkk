@@ -4,6 +4,10 @@
 // Reviewed overrides cover payment confirmations and common wallet terms.
 const Map<String, Map<String, String>> userTranslations = {
   "hi": {
+    "Customer Support": "ग्राहक सहायता",
+    "Include your account email if needed. Never send your password or Security PIN. This chat is available on this device.": "ज़रूरत हो तो अपने खाते का ईमेल दें। अपना पासवर्ड या सुरक्षा पिन कभी न भेजें। यह चैट इसी डिवाइस पर उपलब्ध है।",
+    "Unable to load messages. Tap refresh to retry.":
+        "संदेश लोड नहीं हुए। फिर से कोशिश करने के लिए रिफ्रेश करें।",
     "ACCOUNT": "खाता",
     "OR": "या",
     "NEW RELEASE": "नया संस्करण",
@@ -526,8 +530,8 @@ const Map<String, Map<String, String>> userTranslations = {
         "आप पहले से ही इस कार्य का दावा कर चुके हैं।",
     "You have no campaigns yet.": "आपके पास अभी तक कोई अभियान नहीं है।",
     "You're all caught up!": "आपकी सभी सूचनाएँ देख ली गई हैं!",
-    "Your app access is blocked. Contact the administrator.":
-        "आपके ऐप तक पहुँच अवरुद्ध है। प्रशासक से संपर्क करें।",
+    "Your app access is blocked. Contact Customer Support.":
+        "आपके ऐप तक पहुँच अवरुद्ध है। ग्राहक सहायता से संपर्क करें।",
     "Your app is up to date.": "आपका ऐप अद्यतित है।",
     "Your campaigns": "आपके अभियान",
     "Your choices and requests": "आपके विकल्प और अनुरोध",
@@ -560,6 +564,10 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ta": {
+    "Customer Support": "வாடிக்கையாளர் ஆதரவு",
+    "Include your account email if needed. Never send your password or Security PIN. This chat is available on this device.": "தேவைப்பட்டால் உங்கள் கணக்கின் மின்னஞ்சலைக் குறிப்பிடவும். உங்கள் கடவுச்சொல் அல்லது பாதுகாப்பு பின்னை அனுப்ப வேண்டாம். இந்த அரட்டை இந்த சாதனத்தில் கிடைக்கும்.",
+    "Unable to load messages. Tap refresh to retry.":
+        "செய்திகளை ஏற்ற முடியவில்லை. மீண்டும் முயற்சிக்க புதுப்பிக்கவும்.",
     "ACCOUNT": "கணக்கு",
     "OR": "அல்லது",
     "NEW RELEASE": "புதிய பதிப்பு",
@@ -1080,7 +1088,7 @@ const Map<String, Map<String, String>> userTranslations = {
     "You have no campaigns yet.":
         "உங்களிடம் இன்னும் பிரச்சாரங்கள் எதுவும் இல்லை.",
     "You're all caught up!": "அனைத்து அறிவிப்புகளையும் பார்த்துவிட்டீர்கள்!",
-    "Your app access is blocked. Contact the administrator.": "உங்கள் பயன்பாட்டு அணுகல் தடுக்கப்பட்டுள்ளது. நிர்வாகியைத் தொடர்பு கொள்ளுங்கள்.",
+    "Your app access is blocked. Contact Customer Support.": "உங்கள் பயன்பாட்டு அணுகல் தடுக்கப்பட்டுள்ளது. வாடிக்கையாளர் ஆதரவைத் தொடர்பு கொள்ளுங்கள்.",
     "Your app is up to date.": "உங்கள் பயன்பாடு புதுப்பித்த நிலையில் உள்ளது.",
     "Your campaigns": "உங்கள் பிரச்சாரங்கள்",
     "Your choices and requests": "உங்கள் தேர்வுகள் மற்றும் கோரிக்கைகள்",
@@ -1113,6 +1121,10 @@ const Map<String, Map<String, String>> userTranslations = {
     "you@example.com": "you@example.com",
   },
   "ar": {
+    "Customer Support": "دعم العملاء",
+    "Include your account email if needed. Never send your password or Security PIN. This chat is available on this device.": "أضف بريد حسابك الإلكتروني عند الحاجة. لا ترسل كلمة المرور أو رمز الأمان أبداً. تتوفر هذه المحادثة على هذا الجهاز.",
+    "Unable to load messages. Tap refresh to retry.":
+        "تعذر تحميل الرسائل. اضغط على تحديث للمحاولة مجدداً.",
     "ACCOUNT": "الحساب",
     "OR": "أو",
     "NEW RELEASE": "إصدار جديد",
@@ -1638,8 +1650,8 @@ const Map<String, Map<String, String>> userTranslations = {
     "You already claimed this task.": "لقد قمت بالفعل بالمطالبة بهذه المهمة.",
     "You have no campaigns yet.": "ليس لديك حملات حتى الآن.",
     "You're all caught up!": "لقد اطلعت على جميع الإشعارات!",
-    "Your app access is blocked. Contact the administrator.":
-        "الوصول إلى التطبيق الخاص بك محظور. اتصل بالمسؤول.",
+    "Your app access is blocked. Contact Customer Support.":
+        "الوصول إلى التطبيق الخاص بك محظور. اتصل بدعم العملاء.",
     "Your app is up to date.": "تطبيقك محدّث إلى أحدث إصدار.",
     "Your campaigns": "حملاتك",
     "Your choices and requests": "اختياراتك وطلباتك",

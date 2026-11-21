@@ -69,7 +69,9 @@ assert balance() == 110
 assert sql(f"select available_balance from public.admin_wallets('{wallet[A]}')", E) == '10'
 op('deduct', 11, fails=True)
 op('transfer', 11, recipient=B, fails=True)
-sql("select public.create_campaign_for_account('like','alice.wallet','https://instagram.com/p/TEST/',11,1)", A, fails=True)
+sql("update public.coin_settings set amount=4 where key='like'")
+sql("select public.create_campaign_for_account('like','alice.wallet','https://instagram.com/p/TEST/',3,4)", A, fails=True)
+sql("update public.coin_settings set amount=1 where key='like'")
 failed = payment(11)
 assert failed['status'] == 'failure' and failed['failure_code'] == 'insufficient_balance'
 op('release', 20)

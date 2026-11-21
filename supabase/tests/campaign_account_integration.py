@@ -17,6 +17,7 @@ assert sql(f"select link||':'||instagram_username from public.campaigns where id
 sql("select public.create_campaign_for_account('like','my.account','https://www.instagram.com/my.account/',1,1)",A,True)
 for link in ['http://instagram.com/p/abc', 'https://instagram.com.evil.test/p/abc', 'https://instagram.com@evil.test/p/abc', 'https://instagram.com/p/<script>', "https://instagram.com/p/abc'';select 1--"]:
     sql(f"select public.create_campaign_for_account('like','my.account','{link}',1,1)",A,True)
+sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '25 hours' where id='{campaign}'")
 post=sql("select public.create_campaign_for_account('like','my.account','https://instagram.com/p/Abc123/?utm=1#fragment',1,1)",A)
 assert sql(f"select link from public.campaigns where id='{post}'")=='https://www.instagram.com/p/Abc123/'
 sql("select public.create_campaign_for_account('follow','my.account',null,1,999)",A,True)

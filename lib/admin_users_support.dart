@@ -202,7 +202,7 @@ class _AdminUsersSupportPageState extends State<AdminUsersSupportPage> {
                     ),
                     title: Text('${ticket['subject']}'),
                     subtitle: Text(
-                      '${ticket['email'] ?? 'User'} · ${ticket['status']}',
+                      '${ticket['email'] ?? 'Sign-in visitor'} · ${ticket['status']}',
                     ),
                     onTap: () => openTicket(ticket),
                     trailing: widget.canEdit && ticket['status'] == 'open'
