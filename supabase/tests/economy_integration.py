@@ -126,12 +126,14 @@ class EconomyTests(unittest.TestCase):
         self.assertEqual(balance(OWNER),7)
         self.assertEqual(balance(OWNER)+balance(ACTOR),20)
         self.assertEqual(sql(f"select reward_per_task from public.campaigns where id='{campaign}'",OWNER),'3')
+        sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '25 hours' where id='{campaign}'")
         for action in ['follow','comment','share']:
             setting(action,2)
             link='https://instagram.com/example/' if action=='follow' else 'https://instagram.com/p/XYZ/'
             cid=sql(f"select public.create_campaign_at_rate('{action}','{link}',1,2)",OWNER)
             sql(f"select public.cancel_campaign('{cid}')",OWNER)
             self.assertEqual(balance(OWNER),7)
+            sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '25 hours' where id='{cid}'")
         sql("select public.admin_set_action_enabled('like',false)",ADMIN)
         sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,5)",OWNER,fails=True)
         sql("select public.admin_set_action_enabled('like',true)",ADMIN)

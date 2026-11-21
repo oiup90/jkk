@@ -57,7 +57,9 @@ class SecurityTests(unittest.TestCase):
     def test_01_permissions_and_email_factor(self):
         self.assertEqual(sql("select has_schema_privilege('authenticated','growth_internal','USAGE')"),'f')
         self.assertEqual(sql("select count(*) from pg_tables t join pg_class c on c.relname=t.tablename join pg_namespace n on n.oid=c.relnamespace and n.nspname=t.schemaname where t.schemaname='public' and not c.relrowsecurity"),'0')
-        self.assertEqual(sql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef and has_function_privilege('anon',p.oid,'EXECUTE')"),'0')
+        # Sign-in support explicitly permits only these capability-checked functions.
+        self.assertEqual(sql("select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.prosecdef and has_function_privilege('anon',p.oid,'EXECUTE') and p.oid not in ('public.guest_support_get(text)'::regprocedure,'public.guest_support_send(text,text,boolean)'::regprocedure)"),'0')
+        self.assertEqual(sql("select count(*) from pg_proc p where p.oid in ('public.guest_support_get(text)'::regprocedure,'public.guest_support_send(text,text,boolean)'::regprocedure) and p.prosecdef and has_function_privilege('anon',p.oid,'EXECUTE')"),'2')
         # Metadata supplied by the user cannot substitute for a verified email.
         sql("select public.set_release_pin_reauthenticated('1234','123456')",UNCONFIRMED,proof(user_metadata={'email_verified':True}),fails=True)
         sql('select public.initialize_wallet()',UNCONFIRMED,fails=True)
@@ -103,6 +105,7 @@ class SecurityTests(unittest.TestCase):
         submit(PNG)
         sql(f"select public.cancel_campaign('{cid}')",OWNER,fails=True)
         self.assertEqual(sql('select balance from public.wallets',OWNER),'9')
+        sql(f"update public.campaigns set \"createdAt\"=clock_timestamp()-interval '25 hours' where id='{cid}'")
         early=sql("select public.create_campaign_at_rate('like','https://instagram.com/p/ABC/',1,1)",OWNER)
         sql(f"select public.cancel_campaign('{early}')",OWNER)
         self.assertEqual(sql('select balance from public.wallets',OWNER),'9')

@@ -1,3 +1,4 @@
+import 'admin_campaign_plan.dart';
 import 'admin_destination.dart';
 import 'admin_home_slides.dart';
 import 'admin_deleted_accounts.dart';
@@ -437,7 +438,8 @@ class SupabaseAdminGateway
         AdminGateway,
         AdminWorkspaceGateway,
         AdminDecisionGateway,
-        AdminUserDirectoryGateway {
+        AdminUserDirectoryGateway,
+        AdminCampaignPlanGateway {
   SupabaseAdminGateway(this.client, {this.projectUrl, this.publicKey});
   final String? projectUrl, publicKey;
   final SupabaseClient client;
@@ -501,6 +503,23 @@ class SupabaseAdminGateway
       },
     ),
   ).map(AdminSubmission.fromJson).toList();
+
+  @override
+  Future<Map<String, dynamic>> loadCampaignPlan() async =>
+      Map<String, dynamic>.from(await client.rpc('admin_campaign_plan') as Map);
+
+  @override
+  Future<void> saveCampaignPlan(Map<String, int> settings) async {
+    await client.rpc(
+      'admin_set_campaign_plan',
+      params: {
+        'p_campaign_count': settings['campaign_count'],
+        'p_window_hours': settings['window_hours'],
+        'p_base_tasks': settings['base_tasks'],
+        'p_referral_bonus': settings['referral_bonus'],
+      },
+    );
+  }
 
   @override
   Future<List<Map<String, dynamic>>> coinSettings() async =>
@@ -3822,6 +3841,24 @@ class _AdminCoinSettingsState extends State<AdminCoinSettings> {
                   text: 'Changes apply to future registrations, new campaigns and future referral events. Existing campaign rewards stay fixed. Referral rewards require an initialized inviter wallet.',
                 ),
                 const SizedBox(height: 16),
+                if (widget.gateway is AdminCampaignPlanGateway)
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.speed_outlined),
+                      title: const Text('Campaign Limits'),
+                      subtitle: const Text('Free Plan settings'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => AdminCampaignPlanPage(
+                            gateway: widget.gateway as AdminCampaignPlanGateway,
+                            canEdit: widget.canEdit,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 for (final row in snapshot.data!)
                   Card(
                     child: ListTile(

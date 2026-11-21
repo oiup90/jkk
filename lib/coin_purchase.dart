@@ -409,8 +409,8 @@ class _CoinPurchasePageState extends State<CoinPurchasePage>
                               ),
                           Text(
                             text(
-                              'Use coins across campaigns. Counts are alternatives, not combined; rates may change. Maximum 100 tasks per campaign. No guaranteed results.',
-                              'Coins വിവിധ campaigns-ൽ ഉപയോഗിക്കാം. ഓരോ task count-ഉം വേറിട്ട കണക്കാണ്; നിരക്കുകൾ മാറാം. ഒരു campaign-ൽ പരമാവധി 100 tasks. ഫലം ഉറപ്പില്ല.',
+                              'Use coins across campaigns. Counts are alternatives, not combined; rates may change. See Profile → Campaign Limits for your plan rules. No guaranteed results.',
+                              'Coins വിവിധ campaigns-ൽ ഉപയോഗിക്കാം. ഓരോ task count-ഉം വേറിട്ട കണക്കാണ്; നിരക്കുകൾ മാറാം. Plan പരിധികൾക്ക് Profile → Campaign Limits കാണുക. ഫലം ഉറപ്പില്ല.',
                             ),
                           ),
                           if (rates.isEmpty)

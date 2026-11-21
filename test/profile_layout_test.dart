@@ -3,9 +3,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:growth_circle/main.dart';
+import 'package:growth_circle/referral_history.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class FakeProfileGateway implements ProfileGateway {
+class FakeProfileGateway
+    implements ProfileGateway, ReferralHistoryGateway, CampaignPlanGateway {
   final usernames = <String>['first'];
   int referralCount = 2;
   bool joined = false, signedOut = false, failLoad = false, pinSet = false;
@@ -22,6 +24,20 @@ class FakeProfileGateway implements ProfileGateway {
       pinSet: pinSet,
     );
   }
+
+  @override
+  Future<CampaignPlan> loadCampaignPlan() async =>
+      const CampaignPlan(maxTasks: 8);
+
+  @override
+  Future<List<ReferralHistoryEntry>> loadReferralHistory(int offset) async => [
+    ReferralHistoryEntry.fromRow({
+      'direction': 'referred',
+      'masked_name': 'A***',
+      'masked_email': 'a***@***',
+      'created_at': '2026-11-21T00:00:00Z',
+    }),
+  ];
 
   @override
   Stream<int?> balance(String uid) => Stream.value(42);
@@ -108,6 +124,33 @@ Future<void> showProfile(
 }
 
 void main() {
+  testWidgets('profile opens separate history and campaign limits pages', (
+    tester,
+  ) async {
+    await showProfile(tester, FakeProfileGateway());
+    await tester.ensureVisible(
+      find.byKey(const Key('profile_referral_banner')),
+    );
+    await tester.tap(find.byKey(const Key('profile_referral_banner')));
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsNothing);
+    await tester.tap(find.text('Referral History'));
+    await tester.pumpAndSettle();
+    expect(find.text('A***'), findsOneWidget);
+    expect(find.text('a***@***'), findsOneWidget);
+    expect(find.text('Used your code'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Campaign Limits'));
+    await tester.tap(find.text('Campaign Limits'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 campaign(s) every 24 hours'), findsOneWidget);
+    expect(find.text('3 tasks per campaign'), findsOneWidget);
+    expect(find.text('5 extra tasks with a referral'), findsOneWidget);
+  });
+
   testWidgets('referral share contains the code and app download link', (
     tester,
   ) async {
@@ -124,6 +167,8 @@ void main() {
         ),
       ),
     );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your referral code'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Share referral code'));
     await tester.tap(find.text('Share referral code'));
@@ -151,6 +196,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Your referral code'));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Share referral code'));
     await tester.tap(find.text('Share referral code'));
     await tester.pump();
@@ -177,6 +224,7 @@ void main() {
     expect(find.text('2'), findsOneWidget);
     expect(find.text('Coin history'), findsNothing);
     await tester.ensureVisible(find.text('Security PIN'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Security PIN'));
     await tester.pumpAndSettle();
     expect(find.text('New 4-digit PIN'), findsOneWidget);
@@ -220,8 +268,14 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('profile_referral_banner')));
     await tester.pumpAndSettle();
+    await tester.tap(find.text('Your referral code'));
+    await tester.pumpAndSettle();
     expect(find.text('invite-code'), findsOneWidget);
     expect(find.text('People referred: 2'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(words['referralEnter']![0]));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byType(TextField));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'other-code');
@@ -231,36 +285,37 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'inline referral submission still requires security confirmation',
-    (tester) async {
-      final gateway = FakeProfileGateway();
-      var confirmations = 0;
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: growthTheme(),
-          home: ProfileDetailsPage(
-            uid: 'user',
-            gateway: gateway,
-            accounts: false,
-            authorizeChange: () async {
-              confirmations++;
-              return false;
-            },
-          ),
+  testWidgets('separate referral entry still requires security confirmation', (
+    tester,
+  ) async {
+    final gateway = FakeProfileGateway();
+    var confirmations = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: growthTheme(),
+        home: ProfileDetailsPage(
+          uid: 'user',
+          gateway: gateway,
+          accounts: false,
+          authorizeChange: () async {
+            confirmations++;
+            return false;
+          },
         ),
-      );
-      await tester.pumpAndSettle();
-      await tester.ensureVisible(find.byType(TextField));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'other-code');
-      await tester.tap(find.text('Submit'));
-      await tester.pumpAndSettle();
-      expect(confirmations, 1);
-      expect(gateway.joined, isFalse);
-      expect(find.text('other-code'), findsOneWidget);
-    },
-  );
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(words['referralEnter']![0]));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byType(TextField));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'other-code');
+    await tester.tap(find.text('Submit'));
+    await tester.pumpAndSettle();
+    expect(confirmations, 1);
+    expect(gateway.joined, isFalse);
+    expect(find.text('other-code'), findsOneWidget);
+  });
 
   testWidgets('account menu copies the full username on a narrow screen', (
     tester,
